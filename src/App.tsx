@@ -13,6 +13,7 @@ import { GlobalVoiceRecorderModal } from './components/GlobalVoiceRecorderModal'
 import { VoiceExecutionSnackbar } from './components/VoiceExecutionSnackbar';
 import { ImportWorkflowModal } from './components/ImportWorkflowModal';
 import { ShareableWorkflowData } from './components/ShareWorkflowModal';
+import { MobileAdminDashboard } from './components/MobileAdminDashboard';
 import { User } from 'firebase/auth';
 import { ThemeProvider } from './context/ThemeContext';
 
@@ -22,6 +23,9 @@ export default function App() {
   const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('studio');
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState<boolean>(false);
+  const [isMobileAdminMode, setIsMobileAdminMode] = useState<boolean>(() => {
+    return new URLSearchParams(window.location.search).get('mobile_admin') === 'true';
+  });
 
   // Quick Undo and Voice Execution State
   const [activeVoiceWorkflow, setActiveVoiceWorkflow] = useState<string | null>(null);
@@ -96,6 +100,20 @@ export default function App() {
       setSnackbarWorkflow(null);
     }
   };
+
+  if (isMobileAdminMode) {
+    return (
+      <ThemeProvider>
+        <MobileAdminDashboard 
+          onOpenDesktopView={() => {
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, newUrl);
+            setIsMobileAdminMode(false);
+          }} 
+        />
+      </ThemeProvider>
+    );
+  }
 
   if (needsAuth) {
     return (
