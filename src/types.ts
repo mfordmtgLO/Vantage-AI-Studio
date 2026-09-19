@@ -1,4 +1,4 @@
-export type WorkspaceTab = 'studio' | 'gmail' | 'calendar' | 'drive' | 'sheets' | 'tasks' | 'contacts' | 'brain';
+export type WorkspaceTab = 'studio' | 'gmail' | 'calendar' | 'drive' | 'sheets' | 'tasks' | 'contacts' | 'brain' | 'drafts';
 
 export interface GmailMessage {
   id: string;

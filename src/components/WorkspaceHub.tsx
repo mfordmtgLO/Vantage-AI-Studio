@@ -3,6 +3,7 @@ import { WorkspaceTab, GmailMessage, CalendarEvent, DriveFile, GoogleTask, Googl
 import { getAccessToken } from '../services/firebase';
 import { ActionConfirmationModal } from './ActionConfirmationModal';
 import { SecondBrainView } from './SecondBrainView';
+import { GmailDraftsView } from './GmailDraftsView';
 import { Bot, Mail, Calendar, FileText, Table, CheckSquare, Users, Send, Plus, RefreshCw, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
 
 
@@ -840,6 +841,9 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({ activeTab, setActive
 
       {/* 2ND BRAIN TAB */}
       {activeTab === 'brain' && <SecondBrainView />}
+
+      {/* GMAIL DRAFTS TAB */}
+      {activeTab === 'drafts' && <GmailDraftsView />}
 
       {/* MANDATORY ACTION CONFIRMATION MODAL */}
       <ActionConfirmationModal

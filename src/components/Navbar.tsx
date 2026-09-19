@@ -1,6 +1,6 @@
 import React from 'react';
 import { WorkspaceTab } from '../types';
-import { Sparkles, Mail, Calendar, FileText, Table, CheckSquare, Users, LogOut, Bot, Brain } from 'lucide-react';
+import { Sparkles, Mail, Calendar, FileText, Table, CheckSquare, Users, LogOut, Bot, Brain, Send } from 'lucide-react';
 import { User } from 'firebase/auth';
 
 interface NavbarProps {
@@ -14,6 +14,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, user, o
   const tabs = [
     { id: 'studio' as WorkspaceTab, label: 'Prompt Studio', icon: Bot },
     { id: 'brain' as WorkspaceTab, label: '2nd Brain & Memory', icon: Brain },
+    { id: 'drafts' as WorkspaceTab, label: 'Saved Drafts (18)', icon: Send },
     { id: 'gmail' as WorkspaceTab, label: 'Gmail', icon: Mail },
     { id: 'calendar' as WorkspaceTab, label: 'Calendar', icon: Calendar },
     { id: 'drive' as WorkspaceTab, label: 'Drive & Docs', icon: FileText },
