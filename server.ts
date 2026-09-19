@@ -44,16 +44,43 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", deepseekConfigured: !!process.env.DEEPSEEK_API_KEY });
 });
 
-// Vantage 2nd Brain Memory Ingest & AI Processing
+// Vantage 2nd Brain Memory Ingest & AI Processing (Supports text or URL scraping)
 app.post("/api/vantage/ingest", async (req, res) => {
   try {
-    const { title, content, category, tags } = req.body;
+    let { title, content, category, tags, url } = req.body;
+
+    if (url) {
+      try {
+        const urlRes = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (VantageAI/2.0)' } });
+        const html = await urlRes.text();
+        // Extract title and text snippets or use Gemini with Google Search to fetch/summarize
+        const scrapePrompt = `Analyze this webpage URL (${url}) or HTML content and extract the main title, key text contents, and structured overview for a 2nd brain memory base. HTML snippet: ${html.substring(0, 10000)}`;
+        
+        const scrapeResp = await ai.models.generateContent({
+          model: "gemini-flash-latest",
+          contents: scrapePrompt,
+          config: { tools: [{ googleSearch: {} }] }
+        });
+
+        content = scrapeResp.text || `Scraped content from ${url}`;
+        if (!title) {
+          title = url;
+        }
+        category = 'workspace';
+        if (!tags) tags = ['url', 'web-scrape', 'learning'];
+      } catch (scrapeErr) {
+        console.warn("URL scrape failed, falling back to URL as content:", scrapeErr);
+        if (!title) title = url;
+        content = `Webpage URL: ${url} (Could not auto-scrape raw HTML due to network constraints, ingested as reference bookmark).`;
+      }
+    }
+
     if (!title || !content) {
-      return res.status(400).json({ error: "Title and content are required" });
+      return res.status(400).json({ error: "Title and content (or valid URL) are required" });
     }
 
     let aiSummary = "";
-    const prompt = `Analyze this ingested document/media content for a 2nd brain knowledge base. Provide a concise 2-sentence executive summary and 3-5 relevant lowercase tags:\nTitle: ${title}\nContent: ${content}`;
+    const prompt = `Analyze this ingested document/media/web content for a 2nd brain knowledge base. Provide a concise 2-sentence executive summary and 3-5 relevant lowercase tags:\nTitle: ${title}\nContent: ${content}`;
 
     try {
       const resp = await ai.models.generateContent({
@@ -62,7 +89,6 @@ app.post("/api/vantage/ingest", async (req, res) => {
       });
       aiSummary = resp.text || "Ingested into 2nd brain successfully.";
     } catch (err) {
-      // Fallback if Gemini quota/error occurs
       aiSummary = `Ingested document: ${title} (${category || 'document'})`;
     }
 
