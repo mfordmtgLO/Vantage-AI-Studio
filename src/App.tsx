@@ -9,13 +9,45 @@ import { initAuth, googleSignIn, logout } from './services/firebase';
 import { AuthCard } from './components/AuthCard';
 import { Navbar } from './components/Navbar';
 import { WorkspaceHub } from './components/WorkspaceHub';
+import { GlobalVoiceRecorderModal } from './components/GlobalVoiceRecorderModal';
+import { VoiceExecutionSnackbar } from './components/VoiceExecutionSnackbar';
+import { ImportWorkflowModal } from './components/ImportWorkflowModal';
+import { ShareableWorkflowData } from './components/ShareWorkflowModal';
 import { User } from 'firebase/auth';
+import { ThemeProvider } from './context/ThemeContext';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [needsAuth, setNeedsAuth] = useState<boolean>(true);
   const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('studio');
+  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState<boolean>(false);
+
+  // Quick Undo and Voice Execution State
+  const [activeVoiceWorkflow, setActiveVoiceWorkflow] = useState<string | null>(null);
+  const [snackbarWorkflow, setSnackbarWorkflow] = useState<string | null>(null);
+  const [revertedWorkflow, setRevertedWorkflow] = useState<string | null>(null);
+
+  // Shared workflow import state from URL query
+  const [pendingImportWorkflow, setPendingImportWorkflow] = useState<ShareableWorkflowData | null>(null);
+
+  useEffect(() => {
+    // Check if a shared workflow query is present in the URL
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const importParam = urlParams.get('workflow_import');
+      if (importParam) {
+        const decoded = JSON.parse(decodeURIComponent(atob(importParam)));
+        if (decoded && decoded.steps) {
+          setPendingImportWorkflow(decoded);
+          // Clean URL without refresh
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      }
+    } catch (err) {
+      console.warn('Could not parse workflow_import param:', err);
+    }
+  }, []);
 
   useEffect(() => {
     const unsubscribe = initAuth(
@@ -52,21 +84,77 @@ export default function App() {
     setNeedsAuth(true);
   };
 
+  const handleExecuteVoiceWorkflow = (workflowName: string) => {
+    setActiveVoiceWorkflow(workflowName);
+    setSnackbarWorkflow(workflowName);
+    setActiveTab('orchestrator');
+  };
+
+  const handleQuickUndo = () => {
+    if (snackbarWorkflow) {
+      setRevertedWorkflow(snackbarWorkflow);
+      setSnackbarWorkflow(null);
+    }
+  };
+
   if (needsAuth) {
-    return <AuthCard onLogin={handleLogin} isLoggingIn={isLoggingIn} />;
+    return (
+      <ThemeProvider>
+        <AuthCard onLogin={handleLogin} isLoggingIn={isLoggingIn} />
+      </ThemeProvider>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased">
-      <Navbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        user={user}
-        onLogout={handleLogout}
-      />
-      <main>
-        <WorkspaceHub activeTab={activeTab} setActiveTab={setActiveTab} />
-      </main>
-    </div>
+    <ThemeProvider>
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased transition-colors duration-200">
+        <Navbar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          user={user}
+          onLogout={handleLogout}
+          onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
+        />
+        <main>
+          <WorkspaceHub
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            initialWorkflowName={activeVoiceWorkflow}
+            revertedWorkflowName={revertedWorkflow}
+            onClearRevert={() => setRevertedWorkflow(null)}
+            onExecuteVoiceWorkflow={handleExecuteVoiceWorkflow}
+            importedWorkflow={pendingImportWorkflow}
+            onClearImport={() => setPendingImportWorkflow(null)}
+          />
+        </main>
+
+        <GlobalVoiceRecorderModal
+          isOpen={isVoiceModalOpen}
+          onClose={() => setIsVoiceModalOpen(false)}
+          onRunWorkflowCommand={(workflowName) => {
+            handleExecuteVoiceWorkflow(workflowName);
+          }}
+        />
+
+        {snackbarWorkflow && (
+          <VoiceExecutionSnackbar
+            workflowName={snackbarWorkflow}
+            onUndo={handleQuickUndo}
+            onDismiss={() => setSnackbarWorkflow(null)}
+          />
+        )}
+
+        {pendingImportWorkflow && (
+          <ImportWorkflowModal
+            workflowData={pendingImportWorkflow}
+            onImport={(importedData) => {
+              setPendingImportWorkflow(importedData);
+              setActiveTab('orchestrator');
+            }}
+            onClose={() => setPendingImportWorkflow(null)}
+          />
+        )}
+      </div>
+    </ThemeProvider>
   );
 }

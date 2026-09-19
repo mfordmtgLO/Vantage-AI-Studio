@@ -303,6 +303,93 @@ Return a JSON response matching this schema:
   }
 });
 
+// Workflow Studio Smart Recommendation Engine endpoint
+app.post("/api/workflow/recommend-next-step", async (req, res) => {
+  try {
+    const { workflowName, steps, userIntent } = req.body;
+
+    const systemInstruction = `You are an expert Google Workspace & AI workflow automation architect.
+You analyze an automation pipeline's sequence of steps and recommend the most logical, high-impact next action step(s).
+Available step types are:
+1. 'scrape_url' (Web scraper for competitor intel, research articles, data feeds)
+2. 'ai_synthesize' (Gemini AI DeepThink synthesis, data summarization, classification, decision drafting)
+3. 'docs_create' (Google Docs document creation for permanent executive briefs, reports, and knowledge archiving)
+4. 'gmail_draft' (Gmail draft creation for stakeholder updates, investor briefs, team notifications)
+5. 'calendar_event' (Google Calendar event creation for team reviews, client syncs, or follow-ups)
+
+Analyze the current workflow sequence:
+Workflow Name: "${workflowName || 'Workflow Pipeline'}"
+Current Steps Sequence:
+${JSON.stringify(steps || [], null, 2)}
+${userIntent ? `Additional User Intent/Goal: "${userIntent}"` : ''}
+
+Generate 2 to 3 logical next steps. For each recommendation:
+- stepType: one of 'scrape_url', 'ai_synthesize', 'docs_create', 'gmail_draft', 'calendar_event'
+- title: concise title of the step
+- reason: detailed rationale of why this step logically follows the current chain of actions
+- badge: tag like 'Recommended Next', 'Best Practice', 'Executive Delivery', 'Workflow Closer', 'High Affinity'
+- confidenceScore: integer between 80 and 99
+- config: prefilled configuration object suitable for that stepType:
+  - for scrape_url: { url: string }
+  - for ai_synthesize: { prompt: string }
+  - for docs_create: { docTitle: string }
+  - for gmail_draft: { recipient: string, subject: string }
+  - for calendar_event: { eventTitle: string }
+`;
+
+    const apiConfig: any = {
+      systemInstruction,
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          analysis: { type: Type.STRING, description: "Brief 1-sentence analytical assessment of the current pipeline state" },
+          recommendations: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                id: { type: Type.STRING },
+                stepType: { type: Type.STRING },
+                title: { type: Type.STRING },
+                reason: { type: Type.STRING },
+                badge: { type: Type.STRING },
+                confidenceScore: { type: Type.INTEGER },
+                config: {
+                  type: Type.OBJECT,
+                  properties: {
+                    url: { type: Type.STRING },
+                    prompt: { type: Type.STRING },
+                    recipient: { type: Type.STRING },
+                    subject: { type: Type.STRING },
+                    docTitle: { type: Type.STRING },
+                    eventTitle: { type: Type.STRING }
+                  }
+                }
+              },
+              required: ["id", "stepType", "title", "reason", "badge", "confidenceScore", "config"]
+            }
+          }
+        },
+        required: ["analysis", "recommendations"]
+      }
+    };
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.8-flash",
+      contents: `Recommend the optimal next steps for this workflow sequence: ${workflowName || 'Workflow'} with ${steps?.length || 0} existing steps.`,
+      config: apiConfig
+    });
+
+    const text = response.text || "{}";
+    const parsed = JSON.parse(text);
+    res.json(parsed);
+  } catch (error: any) {
+    console.error("Workflow recommendation error:", error);
+    res.status(500).json({ error: error.message || "Failed to generate workflow recommendations" });
+  }
+});
+
 async function startServer() {
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {

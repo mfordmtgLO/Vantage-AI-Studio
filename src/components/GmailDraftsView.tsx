@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Mail, Send, Sparkles, CheckCircle2, Loader2, Bot, Building2, User } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Mail, Send, Sparkles, CheckCircle2, Loader2, Bot, Building2, User, Mic, MicOff, ExternalLink } from 'lucide-react';
 import { getAccessToken } from '../services/firebase';
 
 interface ContactDraft {
@@ -166,9 +166,59 @@ export const GmailDraftsView: React.FC = () => {
   const [selectedDraftId, setSelectedDraftId] = useState<string>(drafts[0]?.id || '');
   const [isSavingAll, setIsSavingAll] = useState<boolean>(false);
   const [savedStatus, setSavedStatus] = useState<{ [key: string]: boolean }>({});
+  const [gmailDraftIds, setGmailDraftIds] = useState<{ [key: string]: string }>({});
   const [globalSuccess, setGlobalSuccess] = useState<string | null>(null);
 
+  const [isRecording, setIsRecording] = useState<boolean>(false);
+  const recognitionRef = useRef<any>(null);
+
   const activeDraft = drafts.find(d => d.id === selectedDraftId) || drafts[0];
+
+  const toggleSpeechRecognition = () => {
+    if (isRecording) {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      setIsRecording(false);
+      return;
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Speech recognition is not supported in this browser. Please use Chrome or Safari.');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => {
+      setIsRecording(true);
+    };
+
+    recognition.onresult = (event: any) => {
+      let transcript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      if (transcript) {
+        handleUpdateActiveDraft('body', activeDraft.body + '\n\n[Voice Note]: ' + transcript);
+      }
+    };
+
+    recognition.onerror = () => {
+      setIsRecording(false);
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  };
 
   const handleUpdateActiveDraft = (field: keyof ContactDraft, val: string) => {
     setDrafts(prev => prev.map(d => d.id === activeDraft.id ? { ...d, [field]: val } : d));
@@ -219,7 +269,13 @@ export const GmailDraftsView: React.FC = () => {
         throw new Error(err.error?.message || 'Failed to save draft to Gmail');
       }
 
+      const data = await res.json();
+      const createdDraftId = data.id;
+
       setSavedStatus(prev => ({ ...prev, [draft.id]: true }));
+      if (createdDraftId) {
+        setGmailDraftIds(prev => ({ ...prev, [draft.id]: createdDraftId }));
+      }
       setGlobalSuccess(`Successfully saved draft in Gmail for ${draft.name} (${draft.organization})!`);
       setTimeout(() => setGlobalSuccess(null), 4000);
     } catch (err: any) {
@@ -339,11 +395,21 @@ export const GmailDraftsView: React.FC = () => {
                 <h3 className="text-lg font-bold text-slate-900 mt-1">{activeDraft.name}</h3>
                 <p className="text-xs text-slate-500 font-medium">{activeDraft.organization} • &lt;{activeDraft.email}&gt;</p>
               </div>
-              <div>
+              <div className="flex items-center gap-2 flex-wrap">
                 {savedStatus[activeDraft.id] ? (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-xl border border-emerald-200">
-                    <CheckCircle2 className="w-4 h-4" /> Saved in Gmail Drafts
-                  </span>
+                  <>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-xl border border-emerald-200">
+                      <CheckCircle2 className="w-4 h-4" /> Saved in Gmail Drafts
+                    </span>
+                    <a
+                      href={gmailDraftIds[activeDraft.id] ? `https://mail.google.com/mail/u/0/#drafts/${gmailDraftIds[activeDraft.id]}` : 'https://mail.google.com/mail/u/0/#drafts'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl shadow-xs transition"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" /> View in Gmail
+                    </a>
+                  </>
                 ) : (
                   <button
                     onClick={() => handleSaveDraftToGmail(activeDraft)}
@@ -377,7 +443,20 @@ export const GmailDraftsView: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Email Body Draft</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-slate-700">Email Body Draft</label>
+                  <button
+                    type="button"
+                    onClick={toggleSpeechRecognition}
+                    className={`flex items-center gap-1.5 px-3 py-1 text-[11px] font-semibold rounded-lg transition ${
+                      isRecording ? 'bg-red-600 text-white animate-pulse' : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200'
+                    }`}
+                    title="Click to dictate email draft via Voice"
+                  >
+                    {isRecording ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+                    {isRecording ? 'Listening (Click to Stop)...' : 'Talk-to-Text Dictation'}
+                  </button>
+                </div>
                 <textarea
                   rows={10}
                   value={activeDraft.body}
