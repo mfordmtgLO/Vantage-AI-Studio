@@ -15,7 +15,7 @@ export const AuthCard: React.FC<AuthCardProps> = ({ onLogin, isLoggingIn }) => {
         </div>
 
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">AI Workspace Copilot</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Vantage AI Workspace</h1>
           <p className="text-sm text-slate-600">
             Prompt engineer tasks, analyze data, and automate workflows across your Google Workspace with Gemini.
           </p>

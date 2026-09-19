@@ -39,7 +39,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, user, o
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-base font-bold text-slate-900 dark:text-slate-100 leading-tight">AI Workspace Copilot</h1>
+              <h1 className="text-base font-bold text-slate-900 dark:text-slate-100 leading-tight">Vantage AI Workspace</h1>
               <p className="text-xs text-slate-500 dark:text-slate-400">Gemini Prompt Engineering Across Workspace</p>
             </div>
           </div>
