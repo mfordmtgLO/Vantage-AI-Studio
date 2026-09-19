@@ -1,0 +1,7 @@
+{
+  "name": "AI Workspace Copilot",
+  "description": "Prompt engineer tasks and automate workflows across Google Workspace products (Gmail, Calendar, Drive, Docs, Sheets, Tasks, and Contacts) with Gemini.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
