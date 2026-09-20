@@ -1,0 +1,101 @@
+{
+  "entities": {
+    "UserMemory": {
+      "title": "UserMemory",
+      "description": "A persistent memory item, instruction, persona directive, ingested document/URL, or agent automation payload for 2nd Brain recall.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the memory record"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the owner"
+        },
+        "title": {
+          "type": "string",
+          "description": "Summary or title of the remembered instruction or knowledge item"
+        },
+        "content": {
+          "type": "string",
+          "description": "Full text of the remembered prompt instruction, persona, scraped URL text, or workflow payload"
+        },
+        "type": {
+          "type": "string",
+          "description": "Category of memory: persona, instruction, knowledge, url_scrape, file_extracted, agent_workflow, conversation_insight"
+        },
+        "tags": {
+          "type": "array",
+          "description": "Array of tags for fast filtering and semantic retrieval"
+        },
+        "source": {
+          "type": "string",
+          "description": "Origin of the memory: chat_remember_this, url_scrape, file_upload, agent_orchestrator, manual"
+        },
+        "sourceUrl": {
+          "type": "string",
+          "description": "Optional URL if scraped from web"
+        },
+        "fileName": {
+          "type": "string",
+          "description": "Optional file name if extracted from document upload"
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Optional arbitrary metadata such as cron schedules, action payloads, or DeepThink steps"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp when created"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp when updated"
+        }
+      },
+      "required": ["id", "userId", "title", "content", "type", "createdAt"]
+    },
+    "GuardrailSettings": {
+      "title": "GuardrailSettings",
+      "description": "User controlled 2nd brain content censorship boundaries, personality traits, permissible actions, and language curbs.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "personalityPreset": { "type": "string" },
+        "customPersonaDirective": { "type": "string" },
+        "toneDemeanor": { "type": "string" },
+        "empathyLevel": { "type": "number" },
+        "verbosity": { "type": "string" },
+        "humorWit": { "type": "string" },
+        "censorshipMode": { "type": "string" },
+        "sensitiveTopicPolicy": { "type": "string" },
+        "forbiddenTopics": { "type": "array" },
+        "customBoundaryRules": { "type": "string" },
+        "languageCurbs": { "type": "object" },
+        "actionExecutionBoundary": { "type": "string" },
+        "permissibleFeatures": { "type": "object" },
+        "antiSycophancy": { "type": "boolean" },
+        "zeroPreamble": { "type": "boolean" },
+        "citationRequirement": { "type": "string" },
+        "hallucinationStrictness": { "type": "string" },
+        "customGuardrailDirectives": { "type": "array" },
+        "unconstrainedMode": { "type": "boolean" },
+        "customizationHistory": { "type": "array" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "personalityPreset", "censorshipMode", "actionExecutionBoundary"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/memories/{memoryId}": {
+      "schema": "UserMemory",
+      "description": "User specific memory records, persona preferences, scraped context, and automation payloads."
+    },
+    "/users/{userId}/guardrails/{guardrailId}": {
+      "schema": "GuardrailSettings",
+      "description": "User controlled 2nd brain content censorship boundaries, guardrails, and behavioral parameters."
+    }
+  }
+}

@@ -16,6 +16,13 @@ import { ShareableWorkflowData } from './components/ShareWorkflowModal';
 import { MobileAdminDashboard } from './components/MobileAdminDashboard';
 import { User } from 'firebase/auth';
 import { ThemeProvider } from './context/ThemeContext';
+import { AccountPathwayProvider } from './context/AccountPathwayContext';
+import { MemoryProvider } from './context/MemoryContext';
+import { ConnectWorkspaceModal } from './components/ConnectWorkspaceModal';
+import { RememberThisModal } from './components/RememberThisModal';
+import { RememberKnowledgeBaseModal } from './components/RememberKnowledgeBaseModal';
+import { AgentMemoryExplorerModal } from './components/AgentMemoryExplorerModal';
+import { GuardrailsModal } from './components/GuardrailsModal';
 import { safeAtob } from './utils/base64';
 
 export default function App() {
@@ -161,13 +168,16 @@ export default function App() {
   if (isMobileAdminMode) {
     return (
       <ThemeProvider>
-        <MobileAdminDashboard 
-          onOpenDesktopView={() => {
-            const newUrl = window.location.pathname;
-            window.history.replaceState({}, document.title, newUrl);
-            setIsMobileAdminMode(false);
-          }} 
-        />
+        <AccountPathwayProvider>
+          <MobileAdminDashboard 
+            onOpenDesktopView={() => {
+              const newUrl = window.location.pathname;
+              window.history.replaceState({}, document.title, newUrl);
+              setIsMobileAdminMode(false);
+            }} 
+          />
+          <ConnectWorkspaceModal />
+        </AccountPathwayProvider>
       </ThemeProvider>
     );
   }
@@ -188,54 +198,64 @@ export default function App() {
 
   return (
     <ThemeProvider>
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased transition-colors duration-200">
-        <Navbar
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          user={user}
-          onLogout={handleLogout}
-          onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
-        />
-        <main>
-          <WorkspaceHub
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            initialWorkflowName={activeVoiceWorkflow}
-            revertedWorkflowName={revertedWorkflow}
-            onClearRevert={() => setRevertedWorkflow(null)}
-            onExecuteVoiceWorkflow={handleExecuteVoiceWorkflow}
-            importedWorkflow={pendingImportWorkflow}
-            onClearImport={() => setPendingImportWorkflow(null)}
-          />
-        </main>
+      <AccountPathwayProvider>
+        <MemoryProvider>
+          <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased transition-colors duration-200">
+            <Navbar
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              user={user}
+              onLogout={handleLogout}
+              onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
+            />
+            <main>
+              <WorkspaceHub
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                initialWorkflowName={activeVoiceWorkflow}
+                revertedWorkflowName={revertedWorkflow}
+                onClearRevert={() => setRevertedWorkflow(null)}
+                onExecuteVoiceWorkflow={handleExecuteVoiceWorkflow}
+                importedWorkflow={pendingImportWorkflow}
+                onClearImport={() => setPendingImportWorkflow(null)}
+              />
+            </main>
 
-        <GlobalVoiceRecorderModal
-          isOpen={isVoiceModalOpen}
-          onClose={() => setIsVoiceModalOpen(false)}
-          onRunWorkflowCommand={(workflowName) => {
-            handleExecuteVoiceWorkflow(workflowName);
-          }}
-        />
+            <GlobalVoiceRecorderModal
+              isOpen={isVoiceModalOpen}
+              onClose={() => setIsVoiceModalOpen(false)}
+              onRunWorkflowCommand={(workflowName) => {
+                handleExecuteVoiceWorkflow(workflowName);
+              }}
+            />
 
-        {snackbarWorkflow && (
-          <VoiceExecutionSnackbar
-            workflowName={snackbarWorkflow}
-            onUndo={handleQuickUndo}
-            onDismiss={() => setSnackbarWorkflow(null)}
-          />
-        )}
+            <ConnectWorkspaceModal />
+            <RememberThisModal />
+            <RememberKnowledgeBaseModal />
+            <AgentMemoryExplorerModal />
+            <GuardrailsModal />
 
-        {pendingImportWorkflow && (
-          <ImportWorkflowModal
-            workflowData={pendingImportWorkflow}
-            onImport={(importedData) => {
-              setPendingImportWorkflow(importedData);
-              setActiveTab('orchestrator');
-            }}
-            onClose={() => setPendingImportWorkflow(null)}
-          />
-        )}
-      </div>
+            {snackbarWorkflow && (
+              <VoiceExecutionSnackbar
+                workflowName={snackbarWorkflow}
+                onUndo={handleQuickUndo}
+                onDismiss={() => setSnackbarWorkflow(null)}
+              />
+            )}
+
+            {pendingImportWorkflow && (
+              <ImportWorkflowModal
+                workflowData={pendingImportWorkflow}
+                onImport={(importedData) => {
+                  setPendingImportWorkflow(importedData);
+                  setActiveTab('orchestrator');
+                }}
+                onClose={() => setPendingImportWorkflow(null)}
+              />
+            )}
+          </div>
+        </MemoryProvider>
+      </AccountPathwayProvider>
     </ThemeProvider>
   );
 }

@@ -9,10 +9,14 @@ import {
   signOut,
   User
 } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-const auth = getAuth(app);
+export const auth = getAuth(app);
+export const db = firebaseConfig.firestoreDatabaseId
+  ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
+  : getFirestore(app);
 
 export const provider = new GoogleAuthProvider();
 // Standard Google sign-in (no Google Workspace scopes)
@@ -20,9 +24,29 @@ provider.setCustomParameters({
   prompt: 'select_account',
 });
 
+// Dedicated Google Workspace Provider for users opting to connect their enterprise/paid Workspace
+export const workspaceProvider = new GoogleAuthProvider();
+[
+  'https://www.googleapis.com/auth/gmail.readonly',
+  'https://www.googleapis.com/auth/gmail.send',
+  'https://www.googleapis.com/auth/calendar',
+  'https://www.googleapis.com/auth/drive.readonly',
+  'https://www.googleapis.com/auth/tasks',
+  'https://www.googleapis.com/auth/contacts.readonly',
+].forEach((scope) => workspaceProvider.addScope(scope));
+workspaceProvider.setCustomParameters({
+  prompt: 'consent select_account',
+});
+
 let isSigningIn = false;
 let isCheckingRedirect = true;
-let cachedAccessToken: string | null = null;
+let cachedAccessToken: string | null = (() => {
+  try {
+    return localStorage.getItem('vantage_workspace_token') || null;
+  } catch {
+    return null;
+  }
+})();
 
 // Detect if running on an iPhone, iPad, iOS Safari, or mobile browser
 export const isMobileOrSafariDevice = (): boolean => {
@@ -146,5 +170,61 @@ export const getAccessToken = async (): Promise<string | null> => {
 export const logout = async () => {
   await signOut(auth);
   cachedAccessToken = null;
+  try {
+    localStorage.removeItem('vantage_workspace_token');
+    localStorage.removeItem('vantage_workspace_connected');
+    localStorage.removeItem('vantage_workspace_user_email');
+  } catch {}
+};
+
+/**
+ * Explicit Google Workspace OAuth Connector
+ * Only called when the user clicks "Connect Google Workspace" to link an enterprise Workspace account.
+ */
+export const connectGoogleWorkspace = async (): Promise<{ user: User; accessToken: string } | null> => {
+  try {
+    const result = await signInWithPopup(auth, workspaceProvider);
+    const credential = GoogleAuthProvider.credentialFromResult(result);
+    if (credential?.accessToken) {
+      cachedAccessToken = credential.accessToken;
+      try {
+        localStorage.setItem('vantage_workspace_token', credential.accessToken);
+        localStorage.setItem('vantage_workspace_connected', 'true');
+        if (result.user.email) {
+          localStorage.setItem('vantage_workspace_user_email', result.user.email);
+        }
+      } catch {}
+      return { user: result.user, accessToken: credential.accessToken };
+    }
+    return null;
+  } catch (error: any) {
+    console.error('Workspace connect error:', error);
+    throw error;
+  }
+};
+
+export const disconnectGoogleWorkspace = () => {
+  cachedAccessToken = null;
+  try {
+    localStorage.removeItem('vantage_workspace_token');
+    localStorage.removeItem('vantage_workspace_connected');
+    localStorage.removeItem('vantage_workspace_user_email');
+  } catch {}
+};
+
+export const isWorkspaceConnected = (): boolean => {
+  try {
+    return localStorage.getItem('vantage_workspace_connected') === 'true';
+  } catch {
+    return false;
+  }
+};
+
+export const getConnectedWorkspaceEmail = (): string | null => {
+  try {
+    return localStorage.getItem('vantage_workspace_user_email');
+  } catch {
+    return null;
+  }
 };
 

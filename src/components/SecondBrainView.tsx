@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
-import { Brain, Upload, Search, Sparkles, FileText, Database, Shield, Cpu, Tag, CheckCircle2, Loader2, ArrowRight, User, RotateCcw } from 'lucide-react';
+import { useMemory } from '../context/MemoryContext';
+import { Brain, Upload, Search, Sparkles, FileText, Database, Shield, Cpu, Tag, CheckCircle2, Loader2, ArrowRight, User, RotateCcw, Trash2, CloudCheck, ExternalLink, Cloud, Code, Box } from 'lucide-react';
+import { AgentMemoryExplorer } from './AgentMemoryExplorer';
+import { GuardrailsAndBoundariesStudio } from './GuardrailsAndBoundariesStudio';
+import { StandalonePluginArchetypeGenerator } from './StandalonePluginArchetypeGenerator';
 
 interface BrainChatMessage {
   id: string;
@@ -11,11 +15,26 @@ interface BrainChatMessage {
 }
 
 export const SecondBrainView: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'recall' | 'ingest' | 'knowledge'>('recall');
+  const {
+    memories,
+    saveMemory,
+    deleteMemory,
+    ingestUrl,
+    ingestFile,
+    openRememberModal,
+    cloudSyncStatus,
+    setIsKnowledgeBaseOpen,
+    activePersona,
+    guardrails,
+    setIsGuardrailsModalOpen
+  } = useMemory();
+
+  const [activeTab, setActiveTab] = useState<'recall' | 'ingest' | 'explorer' | 'guardrails' | 'plugin_generator'>('recall');
   const [query, setQuery] = useState<string>('');
   const [engine, setEngine] = useState<'hybrid' | 'deepseek' | 'gemini'>('hybrid');
   const [enableDeepThink, setEnableDeepThink] = useState<boolean>(true);
   const [enableSearch, setEnableSearch] = useState<boolean>(true);
+  const [enableCodeExpansion, setEnableCodeExpansion] = useState<boolean>(true);
 
   const [chatHistory, setChatHistory] = useState<BrainChatMessage[]>([]);
   const [recallResult, setRecallResult] = useState<{ answer: string; engineUsed: string; memoriesSearched: number } | null>(null);
@@ -25,25 +44,13 @@ export const SecondBrainView: React.FC = () => {
   const [title, setTitle] = useState<string>('');
   const [content, setContent] = useState<string>('');
   const [urlInput, setUrlInput] = useState<string>('');
-  const [category, setCategory] = useState<'document' | 'media' | 'note' | 'workspace'>('document');
-  const [tagsInput, setTagsInput] = useState<string>('ai, memory, notes');
+  const [category, setCategory] = useState<'instruction' | 'knowledge' | 'workflow' | 'document'>('knowledge');
+  const [tagsInput, setTagsInput] = useState<string>('ai, memory, vantage');
   const [isIngesting, setIsIngesting] = useState<boolean>(false);
   const [ingestSuccess, setIngestSuccess] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isExtractingAudio, setIsExtractingAudio] = useState<boolean>(false);
-
-  const [memories, setMemories] = useState<Array<{ id: string; title: string; content: string; category: string; tags: string[]; createdAt: string; aiSummary?: string }>>([
-    {
-      id: 'mem_1',
-      title: 'Vantage AI Assist Architecture Overview',
-      content: 'Hybrid Gemini + Deepseek 2nd brain architecture integrating Google Workspace apps, persistent memory recall, and deepthink reasoning.',
-      category: 'document',
-      tags: ['ai', 'architecture', 'vantage'],
-      createdAt: new Date().toISOString(),
-      aiSummary: 'Core architecture blueprint for hybrid multi-model reasoning and workspace integration.'
-    }
-  ]);
 
   const handleRecall = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,7 +78,10 @@ export const SecondBrainView: React.FC = () => {
           engine,
           enableDeepThink,
           enableSearch,
-          history: chatHistory.map(h => ({ sender: h.sender, text: h.text }))
+          enableCodeExpansion,
+          history: chatHistory.map(h => ({ sender: h.sender, text: h.text })),
+          userMemories: memories,
+          guardrails: guardrails
         }),
       });
 
@@ -117,41 +127,20 @@ export const SecondBrainView: React.FC = () => {
       return;
     }
 
-    setVideoFile(file); // reused state for general uploaded file
+    setUploadedFile(file);
     setIsExtractingAudio(true);
-    setToastMessage(`Processing & converting "${file.name}" to text / JSON (Max 50MB)...`);
+    setToastMessage(`Processing & extracting text from "${file.name}" with Gemini AI...`);
 
     try {
-      const reader = new FileReader();
-      const fileExt = file.name.split('.').pop()?.toLowerCase() || '';
-
-      if (['txt', 'csv', 'json', 'md'].includes(fileExt)) {
-        reader.onload = (event) => {
-          const textContent = event.target?.result as string || '';
-          setTitle(file.name.replace(/\.[^/.]+$/, ""));
-          setContent(textContent);
-          setCategory(fileExt === 'json' ? 'workspace' : 'document');
-          setIsExtractingAudio(false);
-          setToastMessage(`Successfully parsed and converted "${file.name}" to memory format!`);
-          setTimeout(() => setToastMessage(null), 5000);
-        };
-        reader.readAsText(file);
-      } else {
-        // For PDF, DOCX, XLSX, MP4, MPEG-2, AVI, HEIC, AAC, QT, MP3, FLAC, RAW, TIFF
-        setTimeout(() => {
-          const simulatedExtractedContent = `[Extracted & Converted Data from ${file.name} (${fileExt.toUpperCase()}, ${(file.size / (1024 * 1024)).toFixed(2)} MB)]\n- File Type: ${fileExt.toUpperCase()}\n- Parsed successfully into structured text & JSON format for Vantage 2nd Brain long-term situational memory recall.\n- Extracted text snippets: Document structure, metadata, transcription, and key numerical/textual entities verified.`;
-          
-          setTitle(file.name.replace(/\.[^/.]+$/, ""));
-          setContent(simulatedExtractedContent);
-          setCategory(['mp4', 'mpeg', 'avi', 'qt', 'aac', 'mp3', 'flac'].includes(fileExt) ? 'media' : 'document');
-          setIsExtractingAudio(false);
-          setToastMessage(`Successfully extracted & converted "${file.name}" (${fileExt.toUpperCase()}) to text / JSON!`);
-          setTimeout(() => setToastMessage(null), 5000);
-        }, 1500);
-      }
+      const newMemory = await ingestFile(file);
+      setIsExtractingAudio(false);
+      const successMsg = `Successfully extracted & persisted "${newMemory.title}" to Firebase Firestore & local session!`;
+      setIngestSuccess(successMsg);
+      setToastMessage(successMsg);
+      setTimeout(() => setToastMessage(null), 5000);
     } catch (err: any) {
       console.error(err);
-      alert('File processing error: ' + err.message);
+      alert('File extraction error: ' + err.message);
       setIsExtractingAudio(false);
     }
   };
@@ -167,20 +156,22 @@ export const SecondBrainView: React.FC = () => {
 
     try {
       const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean);
-      const res = await fetch('/api/vantage/ingest', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content, url: urlInput, category, tags }),
-      });
-
-      if (!res.ok) throw new Error('Failed to ingest document or URL');
-      const data = await res.json();
-      if (data.memory) {
-        setMemories(prev => [data.memory, ...prev]);
+      if (urlInput.trim()) {
+        const mem = await ingestUrl(urlInput.trim(), tags);
+        const successMsg = `Successfully scraped, summarized & persisted URL: ${urlInput} to Firestore!`;
+        setIngestSuccess(successMsg);
+        setToastMessage(successMsg);
+      } else {
+        await saveMemory({
+          title: title.trim(),
+          content: content.trim(),
+          type: category as any,
+          tags
+        });
+        const successMsg = `Successfully ingested "${title}" into 2nd Brain Cloud Persistence!`;
+        setIngestSuccess(successMsg);
+        setToastMessage(successMsg);
       }
-      const successMsg = urlInput ? `Successfully scraped and ingested URL: ${urlInput}` : `Successfully ingested "${title}" into your 2nd Brain!`;
-      setIngestSuccess(successMsg);
-      setToastMessage(successMsg);
       setTimeout(() => setToastMessage(null), 5000);
 
       setTitle('');
@@ -251,12 +242,34 @@ export const SecondBrainView: React.FC = () => {
           <Upload className="w-4 h-4" /> Ingest Docs & Media
         </button>
         <button
-          onClick={() => setActiveTab('knowledge')}
+          onClick={() => setActiveTab('explorer')}
           className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold border-b-2 transition cursor-pointer ${
-            activeTab === 'knowledge' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-900'
+            activeTab === 'explorer' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-900'
           }`}
         >
-          <Database className="w-4 h-4" /> Knowledge Base ({memories.length})
+          <Database className="w-4 h-4" /> Agent Memory Explorer ({memories.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('guardrails')}
+          className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold border-b-2 transition cursor-pointer ${
+            activeTab === 'guardrails' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-900'
+          }`}
+        >
+          <Shield className="w-4 h-4 text-emerald-600" /> Boundaries & Guardrails
+          <span className="text-[10px] uppercase font-bold px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800">
+            {guardrails.personalityPreset}
+          </span>
+        </button>
+        <button
+          onClick={() => setActiveTab('plugin_generator')}
+          className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold border-b-2 transition cursor-pointer ${
+            activeTab === 'plugin_generator' ? 'border-indigo-600 text-indigo-600 font-bold' : 'border-transparent text-slate-500 hover:text-slate-900'
+          }`}
+        >
+          <Box className="w-4 h-4 text-indigo-600" /> Standalone Plugin & Prompt Generator
+          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">
+            Export
+          </span>
         </button>
       </div>
 
@@ -305,7 +318,16 @@ export const SecondBrainView: React.FC = () => {
                     onChange={(e) => setEnableDeepThink(e.target.checked)}
                     className="w-4 h-4 text-blue-600 rounded border-slate-300"
                   />
-                  Enable DeepThink Reasoning Mode
+                  <span>Enable DeepThink Reasoning Mode</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={enableCodeExpansion}
+                    onChange={(e) => setEnableCodeExpansion(e.target.checked)}
+                    className="w-4 h-4 text-indigo-600 rounded border-slate-300"
+                  />
+                  <span>Reasoning Skills & Code Expansion (Production logic & complete code)</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700">
                   <input
@@ -314,7 +336,7 @@ export const SecondBrainView: React.FC = () => {
                     onChange={(e) => setEnableSearch(e.target.checked)}
                     className="w-4 h-4 text-blue-600 rounded border-slate-300"
                   />
-                  Google Search Grounding
+                  <span>Google Search Grounding</span>
                 </label>
               </div>
 
@@ -333,14 +355,59 @@ export const SecondBrainView: React.FC = () => {
                   </>
                 )}
               </button>
+
+              {/* Active Guardrails Card */}
+              <div className="pt-3 border-t border-slate-100 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5 text-emerald-600" /> Active Guardrails
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('guardrails')}
+                    className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
+                  >
+                    Customize
+                  </button>
+                </div>
+                <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80 text-[11px] space-y-1.5">
+                  <div className="flex justify-between items-center text-slate-600">
+                    <span>Archetype:</span>
+                    <span className="font-bold text-slate-800 capitalize">{guardrails.personalityPreset}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-slate-600">
+                    <span>Demeanor:</span>
+                    <span className="font-medium text-slate-700 capitalize">{guardrails.toneDemeanor?.replace('_', ' ')}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-slate-600">
+                    <span>Action Boundary:</span>
+                    <span className="font-medium text-slate-700 capitalize">{guardrails.actionExecutionBoundary?.replace('_', ' ')}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-slate-600">
+                    <span>Forbidden Curbs:</span>
+                    <span className="font-semibold text-rose-600">{guardrails.forbiddenTopics?.length || 0} topics</span>
+                  </div>
+                </div>
+              </div>
             </form>
           </div>
 
           <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs flex flex-col min-h-[500px]">
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Brain className="w-5 h-5 text-indigo-600" /> 2nd Brain Reasoning & Conversation
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <Brain className="w-5 h-5 text-indigo-600" /> 2nd Brain Reasoning & Conversation
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setIsGuardrailsModalOpen(true)}
+                  className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition cursor-pointer"
+                  title="Click to view or edit 2nd Brain guardrails"
+                >
+                  <Shield className="w-3 h-3 text-emerald-600" />
+                  <span>Aligned: {guardrails.personalityPreset}</span>
+                </button>
+              </div>
               {chatHistory.length > 0 && (
                 <button
                   type="button"
@@ -399,6 +466,41 @@ export const SecondBrainView: React.FC = () => {
                       }`}
                     >
                       {msg.text}
+
+                      <div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-end gap-2">
+                        {msg.text.includes('```') && (
+                          <button
+                            type="button"
+                            onClick={() => openRememberModal({
+                              title: `Code: ${msg.text.slice(0, 30).replace(/[`\n]/g, '')}`,
+                              content: msg.text,
+                              type: 'agent_workflow'
+                            })}
+                            className="flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg transition cursor-pointer bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200"
+                            title="Save this expanded code / automation script to persistent memory"
+                          >
+                            <Code className="w-3 h-3" />
+                            <span>Save Code</span>
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => openRememberModal({
+                            title: msg.sender === 'user' ? `Query Directive: ${msg.text.slice(0, 35)}` : `Learned Insight: ${msg.text.slice(0, 35)}`,
+                            content: msg.text,
+                            type: 'instruction'
+                          })}
+                          className={`flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg transition cursor-pointer ${
+                            msg.sender === 'user'
+                              ? 'bg-white/20 hover:bg-white/30 text-white'
+                              : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200'
+                          }`}
+                          title="Save this to persistent Firestore memory and persona"
+                        >
+                          <Brain className="w-3 h-3" />
+                          <span>Remember this</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -464,9 +566,9 @@ export const SecondBrainView: React.FC = () => {
                   />
                 </label>
               </div>
-              {videoFile && !isExtractingAudio && (
+              {uploadedFile && !isExtractingAudio && (
                 <div className="text-[11px] text-indigo-800 font-medium flex items-center justify-between bg-white p-2 rounded-lg border border-indigo-100">
-                  <span>Uploaded: {videoFile.name} ({(videoFile.size / (1024 * 1024)).toFixed(2)} MB)</span>
+                  <span>Uploaded: {uploadedFile.name} ({(uploadedFile.size / (1024 * 1024)).toFixed(2)} MB)</span>
                   <span className="text-emerald-600 font-bold">Converted to .txt / JSON</span>
                 </div>
               )}
@@ -558,48 +660,21 @@ export const SecondBrainView: React.FC = () => {
         </div>
       )}
 
-      {/* Tab 3: Knowledge Base */}
-      {activeTab === 'knowledge' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <Database className="w-5 h-5 text-blue-600" /> Stored Memories ({memories.length})
-            </h3>
-            <span className="text-xs text-slate-500 font-medium">Synced with Persistent Cloud & Local Index</span>
-          </div>
+      {/* Tab 3: Agent Memory Explorer */}
+      {activeTab === 'explorer' && (
+        <AgentMemoryExplorer />
+      )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {memories.map((mem) => (
-              <div key={mem.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md">
-                      {mem.category}
-                    </span>
-                    <h4 className="text-sm font-bold text-slate-900 mt-1">{mem.title}</h4>
-                  </div>
-                  <span className="text-[11px] text-slate-400">{new Date(mem.createdAt).toLocaleDateString()}</span>
-                </div>
-
-                {mem.aiSummary && (
-                  <p className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100 font-medium">
-                    <span className="font-semibold text-blue-600">AI Summary:</span> {mem.aiSummary}
-                  </p>
-                )}
-
-                <p className="text-xs text-slate-500 line-clamp-2">{mem.content}</p>
-
-                <div className="flex flex-wrap gap-1 pt-2 border-t border-slate-100">
-                  {mem.tags.map((tag, idx) => (
-                    <span key={idx} className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md flex items-center gap-1">
-                      <Tag className="w-3 h-3 text-slate-400" /> {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+      {/* Tab 4: Boundaries & Guardrail Customization Studio */}
+      {activeTab === 'guardrails' && (
+        <div className="rounded-2xl border border-slate-200 overflow-hidden shadow-xs min-h-[700px]">
+          <GuardrailsAndBoundariesStudio />
         </div>
+      )}
+
+      {/* Tab 5: Standalone Plugin Archetype & LLM Prompt Generator */}
+      {activeTab === 'plugin_generator' && (
+        <StandalonePluginArchetypeGenerator />
       )}
     </div>
   );

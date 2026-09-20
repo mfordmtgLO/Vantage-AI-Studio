@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { WorkflowStep, WorkflowTemplate } from './LogicOrchestratorView';
+import { useMemory } from '../context/MemoryContext';
 import { Bot, Sparkles, Bookmark, ThumbsUp, ThumbsDown, Heart, Search, Tag, Plus, X, Share2, Download, Code, FileText, Eye, RefreshCw, CheckCircle2, AlertCircle, Mic, Brain, Trash2, Calendar, Mail, File, Table, CheckSquare, Users } from 'lucide-react';
 
 interface AppAIPromptAndTemplateManagerProps {
@@ -146,6 +147,8 @@ export const AppAIPromptAndTemplateManager: React.FC<AppAIPromptAndTemplateManag
   onExecuteAction,
   onLoadTemplateToStudio
 }) => {
+  const { guardrails, memories } = useMemory();
+
   // Local persistent state for app templates
   const [appTemplates, setAppTemplates] = useState<WorkflowTemplate[]>(() => {
     try {
@@ -221,7 +224,9 @@ export const AppAIPromptAndTemplateManager: React.FC<AppAIPromptAndTemplateManag
           workspaceContext: contextData || {},
           activeTab: appId,
           enableDeepThink,
-          enableSearch
+          enableSearch,
+          userMemories: memories,
+          guardrails: guardrails
         }),
       });
 

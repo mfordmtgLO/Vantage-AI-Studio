@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Play, Plus, Trash2, ArrowRight, Sparkles, CheckCircle2, Clock, Globe, Database, Mail, Calendar, FileText, CheckSquare, Layers, Cpu, Loader2, AlertCircle, GitCommit, ArrowDown, Bookmark, Save, Search, Share2, RotateCcw, ListOrdered, Check, Square, ChevronRight, PlayCircle, XCircle, Network, Bot, MessageSquare, Tag, User, MessagesSquare, Download, Code, Upload, X, Filter, FolderArchive, Eye, ThumbsUp, ThumbsDown, Heart } from 'lucide-react';
 import { getAccessToken } from '../services/firebase';
 import { safeBtoa } from '../utils/base64';
+import { useMemory } from '../context/MemoryContext';
 import { ShareWorkflowModal, ShareableWorkflowData } from './ShareWorkflowModal';
 import { SmartStepRecommendations } from './SmartStepRecommendations';
 import { WorkflowDependencyGraph } from './WorkflowDependencyGraph';
@@ -422,6 +423,8 @@ export const LogicOrchestratorView: React.FC<LogicOrchestratorViewProps> = ({
   importedWorkflow,
   onClearImport,
 }) => {
+  const { guardrails, memories } = useMemory();
+
   const [workflowName, setWorkflowName] = useState<string>(() => {
     if (initialWorkflowName) return initialWorkflowName;
     try {
@@ -1050,7 +1053,9 @@ export const LogicOrchestratorView: React.FC<LogicOrchestratorViewProps> = ({
                 prompt: `Orchestrator Step instruction: ${promptText}\nContext from previous step: ${previousStepOutput}`,
                 enableDeepThink: true,
                 enableSearch: true,
-                useDeepseek: true
+                useDeepseek: true,
+                userMemories: memories,
+                guardrails: guardrails
               })
             });
             if (!aiRes.ok) throw new Error('AI synthesis failed');

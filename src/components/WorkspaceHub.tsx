@@ -13,7 +13,10 @@ import { AppAIPromptAndTemplateManager } from './AppAIPromptAndTemplateManager';
 import { LeadDatabaseCleanupTool } from './LeadDatabaseCleanupTool';
 import { PushNotificationManager } from './PushNotificationManager';
 import { LiveTwoWayNotesModal } from './LiveTwoWayNotesModal';
-import { Bot, Mail, Calendar, FileText, Table, CheckSquare, Users, Send, Plus, RefreshCw, Sparkles, CheckCircle2, AlertCircle, Bell, MessageSquare, User, Copy, Check, RotateCcw, ArrowRight, CornerDownLeft, X, Layers } from 'lucide-react';
+import { GoogleAppHeader } from './GoogleAppHeader';
+import { useAccountPathway } from '../context/AccountPathwayContext';
+import { useMemory } from '../context/MemoryContext';
+import { Bot, Mail, Calendar, FileText, Table, CheckSquare, Users, Send, Plus, RefreshCw, Sparkles, CheckCircle2, AlertCircle, Bell, MessageSquare, User, Copy, Check, RotateCcw, ArrowRight, CornerDownLeft, X, Layers, Brain, Shield } from 'lucide-react';
 
 
 import { ShareableWorkflowData } from './ShareWorkflowModal';
@@ -49,6 +52,27 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
   importedWorkflow,
   onClearImport,
 }) => {
+  const {
+    pathway,
+    setPathway,
+    isWorkspaceConnected,
+    connectedWorkspaceEmail,
+    setIsWorkspaceModalOpen,
+    syncData: pathwaySync,
+    isSyncing,
+    lastSynced,
+    syncStatusMsg,
+  } = useAccountPathway();
+
+  const { 
+    memories, 
+    openRememberModal, 
+    setIsKnowledgeBaseOpen, 
+    activePersona,
+    guardrails,
+    setIsGuardrailsModalOpen
+  } = useMemory();
+
   const [messages, setMessages] = useState<GmailMessage[]>([]);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [files, setFiles] = useState<DriveFile[]>([]);
@@ -170,90 +194,129 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
     setError(null);
     try {
       const token = await getAccessToken();
-      if (!token) {
-        // Standard Google sign-in is active (no Google Workspace scopes requested)
-        // Provide rich sample workspace data for prompt engineering and copilot
-        setMessages([
-          {
-            id: 'm1',
-            threadId: 't1',
-            subject: 'Q3 Product Strategy Alignment & Next Steps',
-            from: 'Sarah Chen <sarah.chen@vantageai.internal>',
-            date: 'Today, 09:15 AM',
-            snippet: 'Following up on our review of Gemini 2.5 Flash and DeepThink orchestration for enterprise accounts...'
-          },
-          {
-            id: 'm2',
-            threadId: 't2',
-            subject: 'Investor Update & Growth Projections',
-            from: 'Dave McClure <dave@ventures.capital>',
-            date: 'Yesterday, 04:30 PM',
-            snippet: 'Great metrics on user retention and cross-workflow automation features. Ready for Friday review.'
-          },
-          {
-            id: 'm3',
-            threadId: 't3',
-            subject: 'Security Review & API Integration Guidelines',
-            from: 'SecOps Team <security@internal.io>',
-            date: 'Sep 18, 2026',
-            snippet: 'All Gemini API endpoints proxy securely via server-side routes with zero client secret exposure.'
-          }
-        ]);
+      if (!token || pathway === 'google_apps') {
+        // Standard Google Apps mode (Free Google account - no paid workspace required)
+        // Retrieve persistent user data or initialize with rich starter data
+        let savedTasks: GoogleTask[] = [];
+        let savedEvents: CalendarEvent[] = [];
+        let savedMessages: GmailMessage[] = [];
+        let savedFiles: DriveFile[] = [];
+        let savedContacts: GoogleContact[] = [];
 
-        setEvents([
-          {
-            id: 'e1',
-            summary: 'Executive AI Architecture & Copilot Sync',
-            start: { dateTime: new Date(Date.now() + 3600000).toISOString() },
-            end: { dateTime: new Date(Date.now() + 7200000).toISOString() }
-          },
-          {
-            id: 'e2',
-            summary: 'Weekly Product Roadmap Review',
-            start: { dateTime: new Date(Date.now() + 86400000).toISOString() },
-            end: { dateTime: new Date(Date.now() + 90000000).toISOString() }
-          },
-          {
-            id: 'e3',
-            summary: 'Gemini DeepThink & Search Grounding Deep Dive',
-            start: { dateTime: new Date(Date.now() + 172800000).toISOString() },
-            end: { dateTime: new Date(Date.now() + 176400000).toISOString() }
-          }
-        ]);
+        try {
+          const t = localStorage.getItem('vantage_google_apps_tasks');
+          if (t) savedTasks = JSON.parse(t);
+          const e = localStorage.getItem('vantage_google_apps_events');
+          if (e) savedEvents = JSON.parse(e);
+          const m = localStorage.getItem('vantage_google_apps_messages');
+          if (m) savedMessages = JSON.parse(m);
+          const f = localStorage.getItem('vantage_google_apps_files');
+          if (f) savedFiles = JSON.parse(f);
+          const c = localStorage.getItem('vantage_google_apps_contacts');
+          if (c) savedContacts = JSON.parse(c);
+        } catch {}
 
-        setFiles([
-          {
-            id: 'f1',
-            name: 'Q3_Market_Overview.docx',
-            mimeType: 'application/vnd.google-apps.document',
-            webViewLink: '#'
-          },
-          {
-            id: 'f2',
-            name: 'AI_Funding_Metrics_2026.xlsx',
-            mimeType: 'application/vnd.google-apps.spreadsheet',
-            webViewLink: '#'
-          },
-          {
-            id: 'f3',
-            name: 'Vantage_Strategy_Deck_Final.pdf',
-            mimeType: 'application/pdf',
-            webViewLink: '#'
-          }
-        ]);
+        if (savedMessages.length === 0) {
+          savedMessages = [
+            {
+              id: 'm1',
+              threadId: 't1',
+              subject: 'Q3 Product Strategy Alignment & Next Steps',
+              from: 'Sarah Chen <sarah.chen@vantageai.internal>',
+              date: 'Today, 09:15 AM',
+              snippet: 'Following up on our review of Gemini 2.5 Flash and DeepThink orchestration for enterprise accounts...'
+            },
+            {
+              id: 'm2',
+              threadId: 't2',
+              subject: 'Investor Update & Growth Projections',
+              from: 'Dave McClure <dave@ventures.capital>',
+              date: 'Yesterday, 04:30 PM',
+              snippet: 'Great metrics on user retention and cross-workflow automation features. Ready for Friday review.'
+            },
+            {
+              id: 'm3',
+              threadId: 't3',
+              subject: 'Security Review & API Integration Guidelines',
+              from: 'SecOps Team <security@internal.io>',
+              date: 'Sep 18, 2026',
+              snippet: 'All Gemini API endpoints proxy securely via server-side routes with zero client secret exposure.'
+            }
+          ];
+          try { localStorage.setItem('vantage_google_apps_messages', JSON.stringify(savedMessages)); } catch {}
+        }
 
-        setTasks([
-          { id: 'tk1', title: 'Complete Gemini latency benchmarking', status: 'needsAction' },
-          { id: 'tk2', title: 'Publish multi-step logic orchestrator template', status: 'needsAction' },
-          { id: 'tk3', title: 'Verify Google authentication flows', status: 'completed' }
-        ]);
+        if (savedEvents.length === 0) {
+          savedEvents = [
+            {
+              id: 'e1',
+              summary: 'Executive AI Architecture & Copilot Sync',
+              start: { dateTime: new Date(Date.now() + 3600000).toISOString() },
+              end: { dateTime: new Date(Date.now() + 7200000).toISOString() }
+            },
+            {
+              id: 'e2',
+              summary: 'Weekly Product Roadmap Review',
+              start: { dateTime: new Date(Date.now() + 86400000).toISOString() },
+              end: { dateTime: new Date(Date.now() + 90000000).toISOString() }
+            },
+            {
+              id: 'e3',
+              summary: 'Gemini DeepThink & Search Grounding Deep Dive',
+              start: { dateTime: new Date(Date.now() + 172800000).toISOString() },
+              end: { dateTime: new Date(Date.now() + 176400000).toISOString() }
+            }
+          ];
+          try { localStorage.setItem('vantage_google_apps_events', JSON.stringify(savedEvents)); } catch {}
+        }
 
-        setContacts([
-          { resourceName: 'c1', name: 'Sarah Chen', email: 'sarah.chen@vantageai.internal', phone: '+1 (555) 234-5678' },
-          { resourceName: 'c2', name: 'Dave McClure', email: 'dave@ventures.capital', phone: '+1 (555) 876-5432' },
-          { resourceName: 'c3', name: 'Alex Rivera', email: 'alex.rivera@techlead.dev', phone: '+1 (555) 345-6789' }
-        ]);
+        if (savedFiles.length === 0) {
+          savedFiles = [
+            {
+              id: 'f1',
+              name: 'Q3_Market_Overview.docx',
+              mimeType: 'application/vnd.google-apps.document',
+              webViewLink: 'https://docs.google.com'
+            },
+            {
+              id: 'f2',
+              name: 'AI_Funding_Metrics_2026.xlsx',
+              mimeType: 'application/vnd.google-apps.spreadsheet',
+              webViewLink: 'https://sheets.google.com'
+            },
+            {
+              id: 'f3',
+              name: 'Vantage_Strategy_Deck_Final.pdf',
+              mimeType: 'application/pdf',
+              webViewLink: 'https://drive.google.com'
+            }
+          ];
+          try { localStorage.setItem('vantage_google_apps_files', JSON.stringify(savedFiles)); } catch {}
+        }
 
+        if (savedTasks.length === 0) {
+          savedTasks = [
+            { id: 'tk1', title: 'Complete Gemini latency benchmarking', status: 'needsAction' },
+            { id: 'tk2', title: 'Publish multi-step logic orchestrator template', status: 'needsAction' },
+            { id: 'tk3', title: 'Verify Google authentication flows', status: 'completed' }
+          ];
+          try { localStorage.setItem('vantage_google_apps_tasks', JSON.stringify(savedTasks)); } catch {}
+        }
+
+        if (savedContacts.length === 0) {
+          savedContacts = [
+            { resourceName: 'c1', name: 'Sarah Chen', email: 'sarah.chen@vantageai.internal', phone: '+1 (555) 234-5678' },
+            { resourceName: 'c2', name: 'Dave McClure', email: 'dave@ventures.capital', phone: '+1 (555) 876-5432' },
+            { resourceName: 'c3', name: 'Alex Rivera', email: 'alex.rivera@techlead.dev', phone: '+1 (555) 345-6789' }
+          ];
+          try { localStorage.setItem('vantage_google_apps_contacts', JSON.stringify(savedContacts)); } catch {}
+        }
+
+        setMessages(savedMessages);
+        setEvents(savedEvents);
+        setFiles(savedFiles);
+        setTasks(savedTasks);
+        setContacts(savedContacts);
         setLoading(false);
         return;
       }
@@ -396,7 +459,9 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
           activeTab,
           enableDeepThink,
           enableSearch,
-          history: recentHistory
+          history: recentHistory,
+          userMemories: memories,
+          guardrails: guardrails
         }),
       });
 
@@ -501,41 +566,63 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
     setError(null);
     try {
       const token = await getAccessToken();
-      if (!token) {
-        // Execution for standard Google sign-in (workspace sandbox mode)
+      if (!token || pathway === 'google_apps') {
+        // Execution for Google Apps pathway (standard Google account)
         if (action.type === 'gmail_send') {
           const { to, subject } = action.payload;
-          setActionSuccessMsg(`Email action prepared and verified for ${to}! (Google Account Authenticated)`);
+          const newMsg: GmailMessage = {
+            id: 'm_' + Date.now(),
+            threadId: 't_' + Date.now(),
+            subject: subject || 'Draft Message',
+            from: 'You (Google Account)',
+            date: 'Just now',
+            snippet: `Sent/Drafted to ${to}: ${subject}`
+          };
+          setMessages(prev => {
+            const updated = [newMsg, ...prev];
+            try { localStorage.setItem('vantage_google_apps_messages', JSON.stringify(updated)); } catch {}
+            return updated;
+          });
+          setActionSuccessMsg(`Email draft prepared and verified for ${to} in Google Apps!`);
           triggerPushAlert('Email Prepared', `Draft ready for ${to}: "${subject}"`);
         } else if (action.type === 'calendar_create') {
           const { summary, startDateTime } = action.payload;
-          setEvents(prev => [
-            {
-              id: 'event_' + Date.now(),
-              summary,
-              start: { dateTime: startDateTime || new Date().toISOString() },
-              end: { dateTime: new Date(Date.now() + 3600000).toISOString() }
-            },
-            ...prev
-          ]);
+          const newEvent: CalendarEvent = {
+            id: 'event_' + Date.now(),
+            summary,
+            start: { dateTime: startDateTime || new Date().toISOString() },
+            end: { dateTime: new Date(Date.now() + 3600000).toISOString() }
+          };
+          setEvents(prev => {
+            const updated = [newEvent, ...prev];
+            try { localStorage.setItem('vantage_google_apps_events', JSON.stringify(updated)); } catch {}
+            return updated;
+          });
           setActionSuccessMsg(`Calendar event "${summary}" successfully scheduled!`);
           triggerPushAlert('Calendar Event Scheduled', `"${summary}" added to schedule.`);
         } else if (action.type === 'tasks_create') {
           const { title } = action.payload;
-          setTasks(prev => [{ id: 'tk_' + Date.now(), title, status: 'needsAction' }, ...prev]);
+          const newTask: GoogleTask = { id: 'tk_' + Date.now(), title, status: 'needsAction' };
+          setTasks(prev => {
+            const updated = [newTask, ...prev];
+            try { localStorage.setItem('vantage_google_apps_tasks', JSON.stringify(updated)); } catch {}
+            return updated;
+          });
           setActionSuccessMsg(`Task "${title}" added successfully!`);
           triggerPushAlert('Task Created', `"${title}" added to your task list.`);
         } else if (action.type === 'docs_create') {
           const { title } = action.payload;
-          setFiles(prev => [
-            {
-              id: 'doc_' + Date.now(),
-              name: `${title}.docx`,
-              mimeType: 'application/vnd.google-apps.document',
-              webViewLink: '#'
-            },
-            ...prev
-          ]);
+          const newFile: DriveFile = {
+            id: 'doc_' + Date.now(),
+            name: `${title}.docx`,
+            mimeType: 'application/vnd.google-apps.document',
+            webViewLink: 'https://docs.google.com'
+          };
+          setFiles(prev => {
+            const updated = [newFile, ...prev];
+            try { localStorage.setItem('vantage_google_apps_files', JSON.stringify(updated)); } catch {}
+            return updated;
+          });
           setActionSuccessMsg(`Document "${title}" created successfully!`);
           triggerPushAlert('Document Created', `"${title}" added to your files.`);
         }
@@ -747,6 +834,22 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
                   Push Alerts
                 </button>
                 <button
+                  onClick={() => setIsKnowledgeBaseOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 dark:hover:bg-purple-900/60 rounded-xl transition cursor-pointer border border-purple-200 dark:border-purple-900/60"
+                  title="Manage 2nd Brain Memory & Ingested Knowledge"
+                >
+                  <Brain className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                  <span>2nd Brain ({memories.length})</span>
+                </button>
+                <button
+                  onClick={() => setIsGuardrailsModalOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 rounded-xl transition cursor-pointer border border-emerald-200 dark:border-emerald-900/60"
+                  title="Customize 2nd Brain personality, censorship boundaries & permissible scope"
+                >
+                  <Shield className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>Guardrails ({guardrails.personalityPreset})</span>
+                </button>
+                <button
                   onClick={fetchWorkspaceData}
                   disabled={loading}
                   className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition cursor-pointer border border-slate-200 dark:border-slate-700"
@@ -755,6 +858,46 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
                   Sync Workspace
                 </button>
               </div>
+            </div>
+          </div>
+
+          {/* Active Persona & Situational Memory Banner */}
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-gradient-to-r from-purple-50/90 via-indigo-50/80 to-blue-50/90 dark:from-purple-950/40 dark:via-indigo-950/30 dark:to-blue-950/40 border border-purple-200/80 dark:border-purple-900/60 rounded-2xl text-xs shadow-xs">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-xs">
+                <Brain className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="font-bold text-slate-900 dark:text-slate-100 mr-2">
+                  2nd Brain Memory & Persona Recall Active:
+                </span>
+                <span className="text-purple-800 dark:text-purple-300 font-medium">
+                  {activePersona ? activePersona.title : 'Consistent Persona'} • {memories.length} memories • <span className="text-emerald-700 dark:text-emerald-300 font-semibold">{guardrails.personalityPreset} Guardrails ({guardrails.forbiddenTopics?.length || 0} curbs)</span>
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsGuardrailsModalOpen(true)}
+                className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800 rounded-xl text-[11px] font-semibold transition cursor-pointer flex items-center gap-1"
+                title="Configure Censorship Boundaries & Guardrails"
+              >
+                <Shield className="w-3 h-3 text-emerald-600" />
+                <span>Boundaries</span>
+              </button>
+              <button
+                onClick={() => openRememberModal({ title: 'New Custom Instruction', content: '', type: 'instruction' })}
+                className="px-2.5 py-1 bg-white dark:bg-slate-900 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950/60 border border-purple-200 dark:border-purple-800 rounded-xl text-[11px] font-semibold transition cursor-pointer"
+              >
+                + Remember New
+              </button>
+              <button
+                onClick={() => setIsKnowledgeBaseOpen(true)}
+                className="text-[11px] font-semibold text-purple-700 dark:text-purple-400 hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                View Knowledge Base &rarr;
+              </button>
             </div>
           </div>
 
@@ -815,6 +958,25 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
                           Search
                         </span>
                       )}
+                      
+                      {/* Remember This Button */}
+                      <button
+                        onClick={() => openRememberModal({
+                          title: turn.sender === 'user' ? `Learned Instruction: ${turn.text.slice(0, 35)}` : `Copilot Insight: ${turn.text.slice(0, 35)}`,
+                          content: turn.text,
+                          type: 'instruction'
+                        })}
+                        className={`flex items-center gap-1 text-[11px] transition cursor-pointer px-2 py-0.5 rounded-md ${
+                          turn.sender === 'user'
+                            ? 'text-white/90 hover:text-white bg-white/15 hover:bg-white/25'
+                            : 'text-purple-600 dark:text-purple-400 hover:text-purple-700 bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800/80'
+                        }`}
+                        title="Remember this context in 2nd Brain & Firestore"
+                      >
+                        <Brain className="w-3 h-3" />
+                        <span>Remember this</span>
+                      </button>
+
                       {turn.sender === 'assistant' && (
                         <button
                           onClick={() => handleCopyText(turn.id, turn.text)}
@@ -1010,7 +1172,18 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
 
       {/* GMAIL TAB */}
       {activeTab === 'gmail' && (
-        <div className="space-y-8">
+        <div className="space-y-6">
+          <GoogleAppHeader
+            appName="Gmail"
+            appDescription="Supercharge email triage, VIP thread summarization, and automated draft routines."
+            appWebUrl="https://mail.google.com"
+            appIcon={<Mail className="w-5 h-5" />}
+            itemCount={messages.length}
+            itemLabel="messages"
+            onRefresh={fetchWorkspaceData}
+            isRefreshing={loading}
+          />
+
           <AppAIPromptAndTemplateManager
             appId="gmail"
             appName="Gmail"
@@ -1109,7 +1282,18 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
 
       {/* CALENDAR TAB */}
       {activeTab === 'calendar' && (
-        <div className="space-y-8">
+        <div className="space-y-6">
+          <GoogleAppHeader
+            appName="Google Calendar"
+            appDescription="Supercharge batch meeting scheduling, agenda generation, and time-blocking routines."
+            appWebUrl="https://calendar.google.com"
+            appIcon={<Calendar className="w-5 h-5" />}
+            itemCount={events.length}
+            itemLabel="upcoming events"
+            onRefresh={fetchWorkspaceData}
+            isRefreshing={loading}
+          />
+
           <AppAIPromptAndTemplateManager
             appId="calendar"
             appName="Google Calendar"
@@ -1201,7 +1385,17 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
 
       {/* DRIVE & DOCS TAB */}
       {activeTab === 'drive' && (
-        <div className="space-y-8">
+        <div className="space-y-6">
+          <GoogleAppHeader
+            appName="Google Drive & Docs"
+            appDescription="Supercharge file organization, document summarization, and PDF archival routines."
+            appWebUrl="https://drive.google.com"
+            appIcon={<FileText className="w-5 h-5" />}
+            itemCount={files.length}
+            itemLabel="files"
+            onRefresh={fetchWorkspaceData}
+            isRefreshing={loading}
+          />
           <AppAIPromptAndTemplateManager
             appId="drive"
             appName="Google Drive & Docs"
@@ -1217,7 +1411,15 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
 
       {/* SHEETS TAB */}
       {activeTab === 'sheets' && (
-        <div className="space-y-8">
+        <div className="space-y-6">
+          <GoogleAppHeader
+            appName="Google Sheets"
+            appDescription="Supercharge tabular metric aggregation, financial analysis, and automated sheet feeds."
+            appWebUrl="https://sheets.google.com"
+            appIcon={<Table className="w-5 h-5" />}
+            onRefresh={fetchWorkspaceData}
+            isRefreshing={loading}
+          />
           <AppAIPromptAndTemplateManager
             appId="sheets"
             appName="Google Sheets"
@@ -1232,7 +1434,18 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
 
       {/* TASKS TAB */}
       {activeTab === 'tasks' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="space-y-6">
+          <GoogleAppHeader
+            appName="Google Tasks"
+            appDescription="Supercharge daily action items, priority tracking, and execution flows."
+            appWebUrl="https://tasks.google.com"
+            appIcon={<CheckSquare className="w-5 h-5" />}
+            itemCount={tasks.length}
+            itemLabel="tasks"
+            onRefresh={fetchWorkspaceData}
+            isRefreshing={loading}
+          />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
@@ -1307,11 +1520,23 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
             </div>
           </div>
         </div>
+        </div>
       )}
 
       {/* CONTACTS TAB */}
       {activeTab === 'contacts' && (
-        <div className="space-y-4">
+        <div className="space-y-6">
+          <GoogleAppHeader
+            appName="Google Contacts"
+            appDescription="Manage clients, partners, and lead contacts directly across your workflow."
+            appWebUrl="https://contacts.google.com"
+            appIcon={<Users className="w-5 h-5" />}
+            itemCount={contacts.length}
+            itemLabel="contacts"
+            onRefresh={fetchWorkspaceData}
+            isRefreshing={loading}
+          />
+          <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
               <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -1339,6 +1564,7 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
               ))}
             </div>
           )}
+        </div>
         </div>
       )}
 
