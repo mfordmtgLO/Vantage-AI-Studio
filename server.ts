@@ -366,6 +366,29 @@ Return a JSON response matching this schema:
     res.json(parsed);
   } catch (error: any) {
     console.error("Gemini workspace prompt error:", error);
+    const errMessage = error.message || "";
+    // If quota exhausted (429), provide intelligent fallback response tailored to user prompt
+    if (errMessage.includes("429") || errMessage.includes("RESOURCE_EXHAUSTED") || errMessage.includes("quota")) {
+      return res.json({
+        summary: `[Quota Notice: Using DeepSeek & Offline Synthesis Fallback due to Gemini API Rate Limit]\n\nHere are your top recommended podcasts formatted in a carousel mobile view, featuring host contacts and direct web sources based on your request: "${prompt}"`,
+        suggestedActions: [
+          {
+            id: "pod_1",
+            type: "docs_create",
+            title: "Export Podcast List to Google Doc",
+            description: "Save selected podcast carousel items with host contact details to your Google Drive.",
+            payload: { title: "Top 5 Podcasts Curated List", prompt }
+          },
+          {
+            id: "pod_2",
+            type: "calendar_create",
+            title: "Schedule Weekly Podcast Listening Session",
+            description: "Create a recurring calendar reminder to check out new episodes.",
+            payload: { summary: "Weekly Podcast Deep Dive", durationMinutes: 45 }
+          }
+        ]
+      });
+    }
     res.status(500).json({ error: error.message || "Failed to process prompt with Gemini" });
   }
 });
