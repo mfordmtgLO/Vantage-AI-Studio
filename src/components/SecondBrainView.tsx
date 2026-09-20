@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useMemory } from '../context/MemoryContext';
-import { Brain, Upload, Search, Sparkles, FileText, Database, Shield, Cpu, Tag, CheckCircle2, Loader2, ArrowRight, User, RotateCcw, Trash2, CloudCheck, ExternalLink, Cloud, Code, Box } from 'lucide-react';
+import { Brain, Upload, Search, Sparkles, FileText, Database, Shield, Cpu, Tag, CheckCircle2, Loader2, ArrowRight, User, RotateCcw, Trash2, CloudCheck, ExternalLink, Cloud, Code, Box, Lock } from 'lucide-react';
 import { AgentMemoryExplorer } from './AgentMemoryExplorer';
 import { GuardrailsAndBoundariesStudio } from './GuardrailsAndBoundariesStudio';
 import { StandalonePluginArchetypeGenerator } from './StandalonePluginArchetypeGenerator';
+import { isMikeFordAdmin, ADMIN_PRIMARY_EMAIL, ADMIN_PRIMARY_NAME } from '../utils/adminAuth';
+import { auth } from '../services/firebase';
 
 interface BrainChatMessage {
   id: string;
@@ -224,10 +226,10 @@ export const SecondBrainView: React.FC = () => {
       </div>
 
       {/* Navigation sub-tabs */}
-      <div className="flex border-b border-slate-200">
+      <div className="flex border-b border-slate-200 overflow-x-auto">
         <button
           onClick={() => setActiveTab('recall')}
-          className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold border-b-2 transition cursor-pointer ${
+          className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
             activeTab === 'recall' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-900'
           }`}
         >
@@ -235,7 +237,7 @@ export const SecondBrainView: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('ingest')}
-          className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold border-b-2 transition cursor-pointer ${
+          className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
             activeTab === 'ingest' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-900'
           }`}
         >
@@ -243,7 +245,7 @@ export const SecondBrainView: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('explorer')}
-          className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold border-b-2 transition cursor-pointer ${
+          className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
             activeTab === 'explorer' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-900'
           }`}
         >
@@ -251,7 +253,7 @@ export const SecondBrainView: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('guardrails')}
-          className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold border-b-2 transition cursor-pointer ${
+          className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
             activeTab === 'guardrails' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-900'
           }`}
         >
@@ -260,17 +262,31 @@ export const SecondBrainView: React.FC = () => {
             {guardrails.personalityPreset}
           </span>
         </button>
-        <button
-          onClick={() => setActiveTab('plugin_generator')}
-          className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold border-b-2 transition cursor-pointer ${
-            activeTab === 'plugin_generator' ? 'border-indigo-600 text-indigo-600 font-bold' : 'border-transparent text-slate-500 hover:text-slate-900'
-          }`}
-        >
-          <Box className="w-4 h-4 text-indigo-600" /> Standalone Plugin & Prompt Generator
-          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">
-            Export
-          </span>
-        </button>
+
+        {/* Secured Admin-Only Plugin Distribution Vault */}
+        {isMikeFordAdmin(auth.currentUser) ? (
+          <button
+            onClick={() => setActiveTab('plugin_generator')}
+            className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
+              activeTab === 'plugin_generator' ? 'border-indigo-600 text-indigo-600 font-bold' : 'border-transparent text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            <Lock className="w-4 h-4 text-indigo-600" /> Admin Plugin Vault
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">
+              Mike Ford
+            </span>
+          </button>
+        ) : (
+          <button
+            onClick={() => setActiveTab('plugin_generator')}
+            className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold border-b-2 transition shrink-0 opacity-60 hover:opacity-100 cursor-pointer ${
+              activeTab === 'plugin_generator' ? 'border-amber-600 text-amber-600 font-bold' : 'border-transparent text-slate-400 hover:text-slate-700'
+            }`}
+            title="Secured Admin Portal - Mike Ford credentials required"
+          >
+            <Lock className="w-3.5 h-3.5" /> Admin Vault
+          </button>
+        )}
       </div>
 
       {/* Tab 1: AI Memory Recall */}

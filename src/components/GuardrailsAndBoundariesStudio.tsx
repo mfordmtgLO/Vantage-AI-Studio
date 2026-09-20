@@ -51,6 +51,8 @@ import {
   compileGuardrailPromptDirectives,
   DEFAULT_CUSTOMIZATION_HISTORY 
 } from '../services/guardrailService';
+import { isMikeFordAdmin, ADMIN_PRIMARY_EMAIL, ADMIN_PRIMARY_NAME } from '../utils/adminAuth';
+import { auth } from '../services/firebase';
 
 interface GuardrailsStudioProps {
   isModal?: boolean;
@@ -261,8 +263,12 @@ export const GuardrailsAndBoundariesStudio: React.FC<GuardrailsStudioProps> = ({
     const unconstrainedStatus = isUnconstrainedActive
       ? '⚡ UNCONSTRAINED FREEDOM (Clean Wiped - Zero Curbs)'
       : 'Active Guardrails & Boundaries Enforced';
+    const currentEmail = auth.currentUser?.email || 'Public Session';
+    const isAdmin = isMikeFordAdmin(auth.currentUser);
 
-    let md = `# 🛡️ Vantage 2nd Brain Guardrails & Boundaries Specification\n\n`;
+    let md = `/**\n * VANTAGE AI WORKSPACE - 2ND BRAIN GUARDRAILS SPECIFICATION\n * Authenticated Administrator: ${ADMIN_PRIMARY_NAME} (${ADMIN_PRIMARY_EMAIL})\n * Admin Status: ${isAdmin ? 'VERIFIED ADMIN' : 'AUTHORIZED DISTRIBUTION'}\n * Timestamp: ${new Date().toISOString()}\n */\n\n`;
+    md += `# 🛡️ Vantage 2nd Brain Guardrails & Boundaries Specification\n\n`;
+    md += `> **Administrator / Author:** ${ADMIN_PRIMARY_NAME} (${ADMIN_PRIMARY_EMAIL})  \n`;
     md += `> **Generated:** ${dateStr}  \n`;
     md += `> **Export Scope:** ${scopeLabel}  \n`;
     md += `> **Total Rules/Curbs:** ${items.length}  \n`;
@@ -325,6 +331,8 @@ export const GuardrailsAndBoundariesStudio: React.FC<GuardrailsStudioProps> = ({
     const payload = {
       exportMetadata: {
         title: "Vantage 2nd Brain Guardrails & Boundaries Export",
+        administrator: ADMIN_PRIMARY_NAME,
+        adminEmail: ADMIN_PRIMARY_EMAIL,
         exportedAt: new Date().toISOString(),
         scope: scopeLabel,
         totalExportedRules: items.length,
