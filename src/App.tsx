@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { WorkspaceTab } from './types';
-import { initAuth, googleSignIn, logout } from './services/firebase';
+import { initAuth, googleSignIn, logout, checkRedirectSignIn } from './services/firebase';
 import { AuthCard } from './components/AuthCard';
 import { Navbar } from './components/Navbar';
 import { WorkspaceHub } from './components/WorkspaceHub';
@@ -16,11 +16,13 @@ import { ShareableWorkflowData } from './components/ShareWorkflowModal';
 import { MobileAdminDashboard } from './components/MobileAdminDashboard';
 import { User } from 'firebase/auth';
 import { ThemeProvider } from './context/ThemeContext';
+import { safeAtob } from './utils/base64';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [needsAuth, setNeedsAuth] = useState<boolean>(true);
   const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('studio');
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState<boolean>(false);
   const [isMobileAdminMode, setIsMobileAdminMode] = useState<boolean>(() => {
@@ -41,12 +43,16 @@ export default function App() {
       const urlParams = new URLSearchParams(window.location.search);
       const importParam = urlParams.get('workflow_import');
       if (importParam) {
-        const decoded = JSON.parse(decodeURIComponent(atob(importParam)));
-        if (decoded && decoded.steps) {
-          setPendingImportWorkflow(decoded);
-          // Clean URL without refresh
-          window.history.replaceState({}, document.title, window.location.pathname);
+        try {
+          const decoded = JSON.parse(decodeURIComponent(safeAtob(importParam)));
+          if (decoded && decoded.steps) {
+            setPendingImportWorkflow(decoded);
+          }
+        } catch (decodeErr) {
+          console.warn('Invalid base64 workflow import payload:', decodeErr);
         }
+        // Clean URL without refresh
+        window.history.replaceState({}, document.title, window.location.pathname);
       }
     } catch (err) {
       console.warn('Could not parse workflow_import param:', err);
@@ -54,32 +60,83 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = initAuth(
-      (currentUser) => {
-        setUser(currentUser);
-        setNeedsAuth(false);
-      },
-      () => {
-        setUser(null);
-        setNeedsAuth(true);
+    let isMounted = true;
+
+    async function initializeAuth() {
+      try {
+        const redirectResult = await checkRedirectSignIn();
+        if (redirectResult && isMounted) {
+          setUser(redirectResult.user);
+          setNeedsAuth(false);
+          return;
+        }
+      } catch (err: any) {
+        console.warn('Redirect sign-in inspection:', err);
+        if (isMounted) {
+          setAuthError(err?.message || 'Error processing Google sign-in redirect.');
+        }
       }
-    );
-    return () => unsubscribe();
+
+      if (!isMounted) return;
+
+      const unsubscribe = initAuth(
+        (currentUser) => {
+          if (isMounted) {
+            setUser(currentUser);
+            setNeedsAuth(false);
+          }
+        },
+        () => {
+          if (isMounted) {
+            setUser(null);
+            setNeedsAuth(true);
+          }
+        }
+      );
+
+      return unsubscribe;
+    }
+
+    const authPromise = initializeAuth();
+
+    return () => {
+      isMounted = false;
+      authPromise.then((unsub) => {
+        if (typeof unsub === 'function') unsub();
+      });
+    };
   }, []);
 
-  const handleLogin = async () => {
+  const handleLogin = async (method: 'auto' | 'popup' | 'redirect' = 'auto') => {
     setIsLoggingIn(true);
+    setAuthError(null);
     try {
-      const result = await googleSignIn();
+      const result = await googleSignIn({ method });
       if (result) {
         setUser(result.user);
         setNeedsAuth(false);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Login failed:', err);
+      let message = err?.message || 'Google sign-in could not be completed.';
+      if (err?.code === 'auth/popup-timeout') {
+        message = 'Safari or your browser took too long to open the sign-in pop-up. Tap "Continue with Direct Sign-In" below to sign in directly.';
+      } else if (err?.code === 'auth/popup-blocked') {
+        message = 'Safari blocked the sign-in pop-up window. Tap "Continue with Direct Sign-In" below to sign in without pop-ups.';
+      } else if (err?.code === 'auth/popup-closed-by-user') {
+        message = 'The sign-in window was closed before completing. Please try again.';
+      } else if (err?.code === 'auth/cancelled-popup-request') {
+        message = 'The sign-in request was cancelled. Please try again.';
+      }
+      setAuthError(message);
     } finally {
       setIsLoggingIn(false);
     }
+  };
+
+  const handleCancelLogin = () => {
+    setIsLoggingIn(false);
+    setAuthError(null);
   };
 
   const handleLogout = async () => {
@@ -118,7 +175,13 @@ export default function App() {
   if (needsAuth) {
     return (
       <ThemeProvider>
-        <AuthCard onLogin={handleLogin} isLoggingIn={isLoggingIn} />
+        <AuthCard
+          onLogin={handleLogin}
+          onCancelLogin={handleCancelLogin}
+          isLoggingIn={isLoggingIn}
+          error={authError}
+          onClearError={() => setAuthError(null)}
+        />
       </ThemeProvider>
     );
   }

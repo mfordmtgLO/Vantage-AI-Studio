@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Plus, Trash2, ArrowRight, Sparkles, CheckCircle2, Clock, Globe, Database, Mail, Calendar, FileText, CheckSquare, Layers, Cpu, Loader2, AlertCircle, GitCommit, ArrowDown, Bookmark, Save, Search, Share2, RotateCcw, ListOrdered, Check, Square, ChevronRight, PlayCircle, XCircle, Network, Bot, MessageSquare, Tag, User, MessagesSquare, Download, Code, Upload, X, Filter, FolderArchive, Eye, ThumbsUp, ThumbsDown, Heart } from 'lucide-react';
 import { getAccessToken } from '../services/firebase';
+import { safeBtoa } from '../utils/base64';
 import { ShareWorkflowModal, ShareableWorkflowData } from './ShareWorkflowModal';
 import { SmartStepRecommendations } from './SmartStepRecommendations';
 import { WorkflowDependencyGraph } from './WorkflowDependencyGraph';
@@ -1086,7 +1087,7 @@ export const LogicOrchestratorView: React.FC<LogicOrchestratorViewProps> = ({
               ``,
               body
             ];
-            const rawEmail = btoa(emailLines.join('\n')).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+            const rawEmail = safeBtoa(emailLines.join('\n')).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
             const gmailRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts', {
               method: 'POST',

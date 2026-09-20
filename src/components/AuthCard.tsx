@@ -1,44 +1,101 @@
-import React from 'react';
-import { Sparkles, Shield, Cpu, Zap } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Sparkles, Shield, Cpu, Zap, AlertCircle, RefreshCw, Smartphone, ExternalLink, X } from 'lucide-react';
+import { isMobileOrSafariDevice } from '../services/firebase';
 
 interface AuthCardProps {
-  onLogin: () => void;
+  onLogin: (method?: 'auto' | 'popup' | 'redirect') => void;
+  onCancelLogin: () => void;
   isLoggingIn: boolean;
+  error: string | null;
+  onClearError: () => void;
 }
 
-export const AuthCard: React.FC<AuthCardProps> = ({ onLogin, isLoggingIn }) => {
+export const AuthCard: React.FC<AuthCardProps> = ({
+  onLogin,
+  onCancelLogin,
+  isLoggingIn,
+  error,
+  onClearError
+}) => {
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
+  const isMobile = isMobileOrSafariDevice();
+
+  useEffect(() => {
+    let timer: any;
+    if (isLoggingIn) {
+      setElapsedSeconds(0);
+      timer = setInterval(() => {
+        setElapsedSeconds((s) => s + 1);
+      }, 1000);
+    } else {
+      setElapsedSeconds(0);
+    }
+    return () => clearInterval(timer);
+  }, [isLoggingIn]);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-8 text-center space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 p-8 text-center space-y-6 transition-colors">
         <div className="w-16 h-16 bg-blue-600 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-blue-500/20 text-white">
           <Sparkles className="w-8 h-8 animate-pulse" />
         </div>
 
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Vantage AI Workspace</h1>
-          <p className="text-sm text-slate-600">
-            Prompt engineer tasks, analyze data, and automate workflows across your Google Workspace with Gemini.
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+            Vantage AI Workspace
+          </h1>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            Prompt engineer tasks, analyze data, and automate workflows with Gemini.
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 text-left py-2">
-          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-1">
-            <Cpu className="w-5 h-5 text-blue-600" />
-            <h3 className="text-xs font-semibold text-slate-800">Smart Prompting</h3>
-            <p className="text-[11px] text-slate-500">Cross-product AI workflows</p>
+        <div className="grid grid-cols-2 gap-3 text-left py-1">
+          <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-100 dark:border-slate-800 space-y-1">
+            <Cpu className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <h3 className="text-xs font-semibold text-slate-800 dark:text-slate-200">Smart Prompting</h3>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">Cross-product AI workflows</p>
           </div>
-          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-1">
-            <Zap className="w-5 h-5 text-amber-600" />
-            <h3 className="text-xs font-semibold text-slate-800">Safe Actions</h3>
-            <p className="text-[11px] text-slate-500">Explicit user confirmation</p>
+          <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-100 dark:border-slate-800 space-y-1">
+            <Zap className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            <h3 className="text-xs font-semibold text-slate-800 dark:text-slate-200">Safe Actions</h3>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">Explicit user confirmation</p>
           </div>
         </div>
 
-        <div className="pt-2">
+        {/* Error Alert Box */}
+        {error && (
+          <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 rounded-xl p-3.5 text-left space-y-2.5 animate-in fade-in duration-200">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-800 dark:text-amber-300 leading-snug font-medium">
+                  {error}
+                </p>
+              </div>
+              <button
+                onClick={onClearError}
+                className="text-amber-500 hover:text-amber-700 dark:hover:text-amber-200 p-0.5"
+                title="Dismiss message"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <button
+              onClick={() => onLogin('redirect')}
+              className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>Continue with Direct Sign-In (No Popups)</span>
+            </button>
+          </div>
+        )}
+
+        {/* Main Sign-In Controls */}
+        <div className="space-y-3 pt-1">
           <button
-            onClick={onLogin}
+            onClick={() => onLogin('auto')}
             disabled={isLoggingIn}
-            className="gsi-material-button w-full flex items-center justify-center py-3 px-4 rounded-xl border border-slate-300 shadow-sm bg-white hover:bg-slate-50 transition font-medium text-slate-700 disabled:opacity-50 cursor-pointer"
+            className="gsi-material-button w-full flex items-center justify-center py-3 px-4 rounded-xl border border-slate-300 dark:border-slate-700 shadow-sm bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition font-medium text-slate-700 dark:text-slate-200 disabled:opacity-75 cursor-pointer"
           >
             <div className="gsi-material-button-icon mr-3">
               <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" style={{ width: '20px', height: '20px', display: 'block' }}>
@@ -49,17 +106,76 @@ export const AuthCard: React.FC<AuthCardProps> = ({ onLogin, isLoggingIn }) => {
                 <path fill="none" d="M0 0h48v48H0z"></path>
               </svg>
             </div>
-            <span className="gsi-material-button-contents text-sm font-semibold text-slate-700">
-              {isLoggingIn ? 'Connecting to Workspace...' : 'Sign in with Google'}
+            <span className="gsi-material-button-contents text-sm font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+              {isLoggingIn ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />
+                  <span>Signing in with Google... ({elapsedSeconds}s)</span>
+                </>
+              ) : (
+                'Sign in with Google'
+              )}
             </span>
           </button>
+
+          {/* If sign-in is taking time, display fallback actions so user is never stuck */}
+          {isLoggingIn && (
+            <div className="bg-slate-50 dark:bg-slate-800/80 rounded-xl p-3 border border-slate-200 dark:border-slate-700 text-left space-y-2 text-xs">
+              <p className="text-slate-600 dark:text-slate-300 font-medium">
+                {elapsedSeconds > 4
+                  ? 'If the Google sign-in window did not appear, tap "Direct Sign-In" to authenticate directly:'
+                  : 'Opening Google authentication window...'}
+              </p>
+              <div className="flex flex-col sm:flex-row items-stretch gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => onLogin('redirect')}
+                  className="flex-1 py-1.5 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-center transition cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Direct Sign-In</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onCancelLogin}
+                  className="py-1.5 px-3 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg font-semibold text-center transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Direct Redirect Alternative for Mobile / Safari */}
+          {!isLoggingIn && (
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={() => onLogin('redirect')}
+                className="w-full text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 py-2 px-3 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/40 transition flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>Sign in with Direct Full-Page Redirect (Recommended for Safari & iPhone)</span>
+              </button>
+            </div>
+          )}
         </div>
 
-        <p className="text-xs text-slate-400 flex items-center justify-center gap-1">
-          <Shield className="w-3.5 h-3.5 text-emerald-600" />
-          Secure OAuth connection with least-privilege scopes
+        {isMobile && (
+          <div className="bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 rounded-xl p-2.5 text-[11px] text-blue-800 dark:text-blue-300 flex items-center gap-2 text-left">
+            <Smartphone className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+            <span>
+              <strong>iPhone / iPad Notice:</strong> Direct sign-in runs directly in your active tab without triggering iOS Safari pop-up blockers.
+            </span>
+          </div>
+        )}
+
+        <p className="text-xs text-slate-400 dark:text-slate-500 flex items-center justify-center gap-1">
+          <Shield className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+          Secure Google account authentication
         </p>
       </div>
     </div>
   );
 };
+

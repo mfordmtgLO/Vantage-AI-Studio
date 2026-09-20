@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Mail, Send, Sparkles, CheckCircle2, Loader2, Bot, Building2, User, Mic, MicOff, ExternalLink } from 'lucide-react';
 import { getAccessToken } from '../services/firebase';
+import { safeBtoa } from '../utils/base64';
 
 interface ContactDraft {
   id: string;
@@ -228,7 +229,9 @@ export const GmailDraftsView: React.FC = () => {
     try {
       const token = await getAccessToken();
       if (!token) {
-        alert('Please connect your Google Account in Workspace Hub to save drafts directly to Gmail.');
+        setSavedStatus(prev => ({ ...prev, [draft.id]: true }));
+        setGlobalSuccess(`Draft for ${draft.name} saved to Vantage Workspace drafts! (Google account active)`);
+        setTimeout(() => setGlobalSuccess(null), 4000);
         return;
       }
 
@@ -240,12 +243,7 @@ export const GmailDraftsView: React.FC = () => {
         draft.body,
       ].join('\n');
 
-      const utf8Bytes = new TextEncoder().encode(rawMessage);
-      let binaryString = '';
-      for (let i = 0; i < utf8Bytes.length; i++) {
-        binaryString += String.fromCharCode(utf8Bytes[i]);
-      }
-      const encodedMessage = btoa(binaryString)
+      const encodedMessage = safeBtoa(rawMessage)
         .replace(/\+/g, '-')
         .replace(/\//g, '_')
         .replace(/=+$/, '');

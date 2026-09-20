@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { Brain, Upload, Search, Sparkles, FileText, Database, Shield, Cpu, Tag, CheckCircle2, Loader2, ArrowRight } from 'lucide-react';
+import { Brain, Upload, Search, Sparkles, FileText, Database, Shield, Cpu, Tag, CheckCircle2, Loader2, ArrowRight, User, RotateCcw } from 'lucide-react';
+
+interface BrainChatMessage {
+  id: string;
+  sender: 'user' | 'assistant';
+  text: string;
+  timestamp: string;
+  engineUsed?: string;
+  memoriesSearched?: number;
+}
 
 export const SecondBrainView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'recall' | 'ingest' | 'knowledge'>('recall');
@@ -8,6 +17,7 @@ export const SecondBrainView: React.FC = () => {
   const [enableDeepThink, setEnableDeepThink] = useState<boolean>(true);
   const [enableSearch, setEnableSearch] = useState<boolean>(true);
 
+  const [chatHistory, setChatHistory] = useState<BrainChatMessage[]>([]);
   const [recallResult, setRecallResult] = useState<{ answer: string; engineUsed: string; memoriesSearched: number } | null>(null);
   const [isRecalling, setIsRecalling] = useState<boolean>(false);
 
@@ -37,26 +47,65 @@ export const SecondBrainView: React.FC = () => {
 
   const handleRecall = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!query.trim()) return;
+    const promptText = query.trim();
+    if (!promptText) return;
+
+    const userMessage: BrainChatMessage = {
+      id: 'msg_' + Date.now(),
+      sender: 'user',
+      text: promptText,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    const newHistory = [...chatHistory, userMessage];
+    setChatHistory(newHistory);
+    setQuery('');
     setIsRecalling(true);
-    setRecallResult(null);
 
     try {
       const res = await fetch('/api/vantage/recall', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, engine, enableDeepThink, enableSearch }),
+        body: JSON.stringify({
+          query: promptText,
+          engine,
+          enableDeepThink,
+          enableSearch,
+          history: chatHistory.map(h => ({ sender: h.sender, text: h.text }))
+        }),
       });
 
-      if (!res.ok) throw new Error('Failed to recall memory');
+      if (!res.ok) throw new Error('Failed to query 2nd Brain');
       const data = await res.json();
+      const botMessage: BrainChatMessage = {
+        id: 'bot_' + Date.now(),
+        sender: 'assistant',
+        text: data.answer,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        engineUsed: data.engineUsed,
+        memoriesSearched: data.memoriesSearched
+      };
+      setChatHistory([...newHistory, botMessage]);
       setRecallResult(data);
     } catch (err: any) {
       console.error(err);
-      setRecallResult({ answer: 'Error executing memory recall: ' + err.message, engineUsed: 'error', memoriesSearched: 0 });
+      const errorMsg: BrainChatMessage = {
+        id: 'err_' + Date.now(),
+        sender: 'assistant',
+        text: 'Error executing query: ' + err.message,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        engineUsed: 'error',
+        memoriesSearched: 0
+      };
+      setChatHistory([...newHistory, errorMsg]);
     } finally {
       setIsRecalling(false);
     }
+  };
+
+  const handleClearChat = () => {
+    setChatHistory([]);
+    setRecallResult(null);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -287,33 +336,82 @@ export const SecondBrainView: React.FC = () => {
             </form>
           </div>
 
-          <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs flex flex-col">
-            <h3 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <Brain className="w-5 h-5 text-indigo-600" /> Recall Synthesis & Insights
-            </h3>
+          <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs flex flex-col min-h-[500px]">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Brain className="w-5 h-5 text-indigo-600" /> 2nd Brain Reasoning & Conversation
+              </h3>
+              {chatHistory.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearChat}
+                  className="text-xs text-slate-500 hover:text-red-600 flex items-center gap-1 font-medium transition cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" /> Clear Chat
+                </button>
+              )}
+            </div>
 
-            {isRecalling ? (
-              <div className="flex-1 flex flex-col items-center justify-center py-16 text-slate-400 space-y-3">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-                <p className="text-xs font-medium">Synthesizing across Deepseek & Gemini memory banks...</p>
-              </div>
-            ) : recallResult ? (
-              <div className="space-y-4 flex-1">
-                <div className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
-                  <span className="font-semibold text-slate-700">Engine Used: <span className="text-blue-600 uppercase">{recallResult.engineUsed}</span></span>
-                  <span className="text-slate-500">{recallResult.memoriesSearched} memories indexed</span>
+            {chatHistory.length === 0 && !isRecalling ? (
+              <div className="flex-1 flex flex-col items-center justify-center py-16 text-slate-400 text-center space-y-3">
+                <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center">
+                  <Brain className="w-7 h-7 text-indigo-500" />
                 </div>
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-sm text-slate-800 leading-relaxed whitespace-pre-wrap font-sans">
-                  {recallResult.answer}
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-slate-700">Your 2nd Brain is ready with free unconstrained reasoning.</p>
+                  <p className="text-xs text-slate-400 max-w-md">
+                    Ask any prompt engineering question, exploratory learning topic, deep research inquiry, or query your ingested documents.
+                  </p>
                 </div>
               </div>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center py-16 text-slate-400 text-center space-y-2">
-                <Brain className="w-12 h-12 text-slate-300" />
-                <p className="text-sm font-medium text-slate-600">Enter a prompt on the left to query your 2nd Brain.</p>
-                <p className="text-xs text-slate-400 max-w-sm">
-                  Leverages true persistence learning memory recall with Deepseek and Gemini.
-                </p>
+              <div className="flex-1 space-y-4 overflow-y-auto max-h-[600px] pr-2">
+                {chatHistory.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
+                  >
+                    <div className="flex items-center gap-1.5 mb-1 px-1 text-[11px] text-slate-400 font-medium">
+                      {msg.sender === 'user' ? (
+                        <>
+                          <span>You</span>
+                          <span>•</span>
+                          <span>{msg.timestamp}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-indigo-600 font-semibold">2nd Brain</span>
+                          {msg.engineUsed && (
+                            <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-mono text-[10px] uppercase border border-blue-200">
+                              {msg.engineUsed}
+                            </span>
+                          )}
+                          <span>•</span>
+                          <span>{msg.timestamp}</span>
+                        </>
+                      )}
+                    </div>
+                    <div
+                      className={`p-4 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
+                        msg.sender === 'user'
+                          ? 'bg-blue-600 text-white max-w-[85%] rounded-tr-xs shadow-xs'
+                          : 'bg-slate-50 border border-slate-200 text-slate-800 max-w-[95%] rounded-tl-xs font-sans'
+                      }`}
+                    >
+                      {msg.text}
+                    </div>
+                  </div>
+                ))}
+
+                {isRecalling && (
+                  <div className="flex items-start gap-3 p-4 bg-indigo-50/60 rounded-2xl border border-indigo-100 animate-pulse">
+                    <Loader2 className="w-5 h-5 text-indigo-600 animate-spin shrink-0 mt-0.5" />
+                    <div className="text-xs text-indigo-900 space-y-1">
+                      <p className="font-semibold">2nd Brain is reasoning deeply...</p>
+                      <p className="text-indigo-700">Synthesizing insights across hybrid Gemini & DeepSeek models.</p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

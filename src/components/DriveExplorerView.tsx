@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Folder, FileText, Plus, Trash2, Upload, Search, Share2, Sparkles, FolderPlus, FilePlus, ChevronRight, HardDrive, CheckCircle2 } from 'lucide-react';
-import { getAccessToken } from '../services/firebase';
 
 interface DriveItem {
   id: string;

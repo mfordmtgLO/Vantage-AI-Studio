@@ -54,13 +54,16 @@ export const PushNotificationManager: React.FC<PushNotificationManagerProps> = (
       const messaging = getMessaging(app);
 
       if (Notification.permission === 'granted') {
-        const token = await getToken(messaging, {
-          serviceWorkerRegistration: swReg,
-          vapidKey: 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-8vMeAtU5HXgDkJ0jP8eXQ8k7L_2V5K4Jg3v6F7d8s9a0b1c2d3e4f5' // Standard VAPID public key placeholder
-        }).catch(() => null);
+        try {
+          const token = await getToken(messaging, {
+            serviceWorkerRegistration: swReg,
+          }).catch(() => null);
 
-        if (token) {
-          setFcmToken(token);
+          if (token) {
+            setFcmToken(token);
+          }
+        } catch (tokenErr) {
+          console.warn('FCM push token acquisition non-critical error:', tokenErr);
         }
       }
 

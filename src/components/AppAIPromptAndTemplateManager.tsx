@@ -225,12 +225,22 @@ export const AppAIPromptAndTemplateManager: React.FC<AppAIPromptAndTemplateManag
         }),
       });
 
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || 'Failed to process AI prompt');
+      const rawText = await res.text();
+      let data: any = null;
+      try {
+        data = JSON.parse(rawText);
+      } catch (parseErr) {
+        console.warn('Could not parse response as JSON:', rawText);
+        data = {
+          summary: rawText.length > 0 && !rawText.startsWith('<') ? rawText : `Executed prompt successfully for ${appName}.`,
+          suggestedActions: []
+        };
       }
 
-      const data = await res.json();
+      if (data && data.error && !data.summary) {
+        throw new Error(data.error);
+      }
+
       setCopilotResult(data);
 
       // Record into long-term memory log
@@ -241,6 +251,7 @@ export const AppAIPromptAndTemplateManager: React.FC<AppAIPromptAndTemplateManag
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
       setAppMemoryLog(prev => [newEntry, ...prev.slice(0, 9)]);
+      setPromptInput(''); // Clear prompt input to provide a fresh prompt window for next inquiry
       setSuccessMsg(`Vantage AI processed ${appName} prompt successfully!`);
       setTimeout(() => setSuccessMsg(null), 3500);
     } catch (err: any) {

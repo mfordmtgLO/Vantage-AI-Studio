@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Share2, Copy, Check, Mail, Send, Link, Globe, Shield, Sparkles, X, CheckCircle2, UserCheck } from 'lucide-react';
 import { getAccessToken } from '../services/firebase';
+import { safeBtoa } from '../utils/base64';
 
 export interface WorkflowStep {
   id: string;
@@ -60,7 +61,7 @@ export const ShareWorkflowModal: React.FC<ShareWorkflowModalProps> = ({
     version: '1.0',
   };
 
-  const encodedPayload = btoa(encodeURIComponent(JSON.stringify(payloadData)));
+  const encodedPayload = safeBtoa(JSON.stringify(payloadData));
   const publicShareUrl = `${window.location.origin}?workflow_import=${encodedPayload}`;
 
   const handleCopyLink = () => {
@@ -82,7 +83,7 @@ export const ShareWorkflowModal: React.FC<ShareWorkflowModalProps> = ({
     setIsSendingEmail(true);
     setEmailStatus(null);
 
-    const token = getAccessToken();
+    const token = await getAccessToken();
     const emailSubject = `Vantage AI Workflow Template: ${workflowName}`;
     const emailBody = `Hi,\n\n${authorEmail} has shared a Vantage AI multi-step workflow template with you:\n\n` +
       `Workflow: ${workflowName}\n` +
@@ -104,7 +105,7 @@ export const ShareWorkflowModal: React.FC<ShareWorkflowModalProps> = ({
           emailBody,
         ].join('\r\n');
 
-        const base64EncodedEmail = btoa(unescape(encodeURIComponent(rawMessage)))
+        const base64EncodedEmail = safeBtoa(rawMessage)
           .replace(/\+/g, '-')
           .replace(/\//g, '_')
           .replace(/=+$/, '');
