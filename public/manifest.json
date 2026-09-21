@@ -1,21 +1,64 @@
 {
-  "name": "AI Workspace Copilot",
+  "id": "/",
+  "name": "Vantage AI Studio-Suite",
   "short_name": "Vantage AI",
-  "description": "Prompt engineer tasks and automate workflows across Google Workspace products with Gemini and DeepSeek.",
-  "start_url": "/",
+  "description": "Comprehensive Multi-Module Autonomous AI Workspace & Plugin Platform featuring Real Estate GeoMap, 2nd Brain Vector Memory, Voice Orchestrator, and Google Workspace Automation.",
+  "start_url": "/?lead=1&source=pwa",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "orientation": "any",
+  "background_color": "#0f172a",
   "theme_color": "#2563eb",
+  "categories": ["business", "productivity", "utilities", "finance"],
   "icons": [
     {
-      "src": "/assets/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
+      "src": "/icon-192.svg",
+      "sizes": "192x192 256x256 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
     },
     {
-      "src": "/assets/icon-512.png",
+      "src": "/icon-512.svg",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Real Estate GeoMap & DPA",
+      "short_name": "GeoMap DPA",
+      "description": "USDA 100% Zero-Down & Census Tract $5k-$10k Grant Match",
+      "url": "/?plugin=geomap&lead=1&source=pwa_shortcut",
+      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "2nd Brain Cognitive Memory",
+      "short_name": "2nd Brain",
+      "description": "Vector Memory Vault & Guardrails Studio",
+      "url": "/?plugin=brain&lead=1&source=pwa_shortcut",
+      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Voice Orchestrator Studio",
+      "short_name": "Voice Macro",
+      "description": "Speech-to-Intent Decomposition & Safety Airgap",
+      "url": "/?plugin=voice&lead=1&source=pwa_shortcut",
+      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Workspace UI Cockpit",
+      "short_name": "Workspace UI",
+      "description": "Gmail Live Drafts & 15-Min Buffer Scheduler",
+      "url": "/?plugin=workspace&lead=1&source=pwa_shortcut",
+      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Vantage Master Suite",
+      "short_name": "Master Suite",
+      "description": "Complete 4-in-1 Turnkey Commercial AI Hub",
+      "url": "/?plugin=suite&lead=1&source=pwa_shortcut",
+      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192" }]
     }
   ]
 }

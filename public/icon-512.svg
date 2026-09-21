@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="vantage_grad_512" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="50%" stop-color="#2563eb" />
+      <stop offset="100%" stop-color="#1e3a8a" />
+    </linearGradient>
+    <linearGradient id="sparkle_grad_512" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#93c5fd" />
+      <stop offset="100%" stop-color="#ffffff" />
+    </linearGradient>
+    <filter id="glow_512" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#1e3a8a" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+  <!-- Background with maskable safe margin -->
+  <rect width="512" height="512" rx="110" fill="url(#vantage_grad_512)" filter="url(#glow_512)"/>
+  
+  <!-- Outer orbital ring -->
+  <circle cx="256" cy="256" r="180" stroke="rgba(255, 255, 255, 0.2)" stroke-width="6" fill="none" stroke-dasharray="16 8"/>
+  
+  <!-- Central Stylized V -->
+  <path d="M144 165 L256 368 L368 165" stroke="#ffffff" stroke-width="32" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  
+  <!-- Central AI Sparkle Star -->
+  <path d="M256 120 L256 220 M206 170 L306 170" stroke="url(#sparkle_grad_512)" stroke-width="16" stroke-linecap="round"/>
+  <circle cx="256" cy="170" r="14" fill="#ffffff"/>
+
+  <!-- Module Satellite Nodes -->
+  <circle cx="120" cy="256" r="12" fill="#93c5fd"/>
+  <circle cx="392" cy="256" r="12" fill="#93c5fd"/>
+  <circle cx="256" cy="400" r="12" fill="#60a5fa"/>
+  <circle cx="256" cy="90" r="12" fill="#60a5fa"/>
+</svg>

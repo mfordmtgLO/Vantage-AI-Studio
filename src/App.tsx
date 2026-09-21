@@ -31,6 +31,8 @@ import { CommercialLicenseProtectionStudio } from './components/CommercialLicens
 import { CommercialPitchDeckModal } from './components/CommercialPitchDeckModal';
 import { ByokCredentialsModal } from './components/ByokCredentialsModal';
 import { ByokChecklistGuideModal } from './components/ByokChecklistGuideModal';
+import { MobileAddToHomeScreenBanner } from './components/MobileAddToHomeScreenBanner';
+import { LeadMobileShareLinksModal } from './components/LeadMobileShareLinksModal';
 import { safeAtob } from './utils/base64';
 
 export default function App() {
@@ -41,6 +43,12 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<WorkspaceTab>(() => {
     try {
       const urlParams = new URLSearchParams(window.location.search);
+      const pluginParam = urlParams.get('plugin');
+      if (pluginParam === 'geomap' || pluginParam === 'real_estate') return 'real_estate';
+      if (pluginParam === 'brain') return 'brain';
+      if (pluginParam === 'voice' || pluginParam === 'orchestrator') return 'orchestrator';
+      if (pluginParam === 'workspace' || pluginParam === 'suite') return 'studio';
+
       const tabParam = urlParams.get('tab');
       const isAdminQuery = urlParams.get('admin') === 'true' || urlParams.get('admin_vault') === 'true';
       if (isAdminQuery || tabParam === 'admin' || tabParam === 'admin_plugins') {
@@ -60,6 +68,7 @@ export default function App() {
   const [isPitchDeckOpen, setIsPitchDeckOpen] = useState<boolean>(false);
   const [isByokDrawerOpen, setIsByokDrawerOpen] = useState<boolean>(false);
   const [isByokChecklistOpen, setIsByokChecklistOpen] = useState<boolean>(false);
+  const [isShareLinksModalOpen, setIsShareLinksModalOpen] = useState<boolean>(false);
   const [isMobileAdminMode, setIsMobileAdminMode] = useState<boolean>(() => {
     return new URLSearchParams(window.location.search).get('mobile_admin') === 'true';
   });
@@ -118,9 +127,15 @@ export default function App() {
     let isMounted = true;
 
     async function initializeAuth() {
-      // Check if user previously logged in via guest mode
+      // Check if user previously logged in via guest mode or is opening a lead preview link
       try {
-        if (localStorage.getItem('vantage_guest_mode') === 'true') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const isLeadQuery = urlParams.get('lead') === '1' || 
+          urlParams.get('lead_mode') === '1' || 
+          urlParams.get('guest') === '1' ||
+          urlParams.get('plugin') !== null;
+
+        if (isLeadQuery || localStorage.getItem('vantage_guest_mode') === 'true') {
           if (isMounted) {
             setUser(createGuestUser());
             setNeedsAuth(false);
@@ -280,11 +295,34 @@ export default function App() {
     );
   }
 
+  const getCurrentPluginTitle = (): string => {
+    switch (activeTab) {
+      case 'real_estate':
+        return 'Vantage AI Studio-Real Estate GeoMap & DPA';
+      case 'brain':
+        return 'Vantage AI Studio-2nd Brain Vector Memory';
+      case 'orchestrator':
+      case 'voice-macros':
+        return 'Vantage AI Studio-Voice Orchestrator';
+      case 'admin_plugins':
+        return 'Vantage AI Studio-Plugin Vault & Scaffolding';
+      case 'studio':
+      default:
+        return 'Vantage AI Studio-Workspace UI Cockpit';
+    }
+  };
+
   return (
     <ThemeProvider>
       <AccountPathwayProvider>
         <MemoryProvider>
           <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased transition-colors duration-200">
+            {/* Mobile PWA Add-to-Home-Screen Dynamic Header Banner */}
+            <MobileAddToHomeScreenBanner
+              currentPluginName={getCurrentPluginTitle()}
+              onOpenShareModal={() => setIsShareLinksModalOpen(true)}
+            />
+
             <Navbar
               activeTab={activeTab}
               setActiveTab={setActiveTab}
@@ -298,6 +336,7 @@ export default function App() {
               onOpenPitchDeck={() => setIsPitchDeckOpen(true)}
               onOpenByokDrawer={() => setIsByokDrawerOpen(true)}
               onOpenByokChecklist={() => setIsByokChecklistOpen(true)}
+              onOpenShareLinksModal={() => setIsShareLinksModalOpen(true)}
             />
             <main>
               <WorkspaceHub
@@ -311,8 +350,15 @@ export default function App() {
                 onClearImport={() => setPendingImportWorkflow(null)}
                 onOpenPitchDeck={() => setIsPitchDeckOpen(true)}
                 onOpenByokDrawer={() => setIsByokDrawerOpen(true)}
+                onOpenShareLinksModal={() => setIsShareLinksModalOpen(true)}
               />
             </main>
+
+            {/* Lead Mobile Share URLs & Add-to-Home-Screen Modal */}
+            <LeadMobileShareLinksModal
+              isOpen={isShareLinksModalOpen}
+              onClose={() => setIsShareLinksModalOpen(false)}
+            />
 
             {/* BYOK (Bring Your Own Key) In-App Drawer Modal */}
             <ByokCredentialsModal

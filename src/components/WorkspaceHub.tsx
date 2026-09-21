@@ -19,7 +19,7 @@ import { LiveTwoWayNotesModal } from './LiveTwoWayNotesModal';
 import { GoogleAppHeader } from './GoogleAppHeader';
 import { useAccountPathway } from '../context/AccountPathwayContext';
 import { useMemory } from '../context/MemoryContext';
-import { Bot, Mail, Calendar, FileText, Table, CheckSquare, Users, Send, Plus, RefreshCw, Sparkles, CheckCircle2, AlertCircle, Bell, MessageSquare, User, Copy, Check, RotateCcw, ArrowRight, CornerDownLeft, X, Layers, Brain, Shield, Megaphone, BookOpen } from 'lucide-react';
+import { Bot, Mail, Calendar, FileText, Table, CheckSquare, Users, Send, Plus, RefreshCw, Sparkles, CheckCircle2, AlertCircle, Bell, MessageSquare, User, Copy, Check, RotateCcw, ArrowRight, CornerDownLeft, X, Layers, Brain, Shield, Megaphone, BookOpen, Smartphone } from 'lucide-react';
 
 
 import { ShareableWorkflowData } from './ShareWorkflowModal';
@@ -45,6 +45,7 @@ interface WorkspaceHubProps {
   onClearImport?: () => void;
   onOpenPitchDeck?: () => void;
   onOpenByokDrawer?: () => void;
+  onOpenShareLinksModal?: () => void;
 }
 
 export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
@@ -58,6 +59,7 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
   onClearImport,
   onOpenPitchDeck,
   onOpenByokDrawer,
+  onOpenShareLinksModal,
 }) => {
   const {
     pathway,
@@ -1619,33 +1621,44 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
       {/* ADMIN PLUGINS & CODE GENERATORS TAB */}
       {activeTab === 'admin_plugins' && (
         <div className="space-y-6">
-          {onOpenPitchDeck && (
-            <div className="bg-gradient-to-r from-amber-500/10 via-indigo-500/10 to-purple-500/10 border border-indigo-200 dark:border-indigo-800/60 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                  <Megaphone className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                    Commercial Retail Software Suite Sales Pitch Deck
-                    <span className="text-[10px] px-2 py-0.5 bg-indigo-600 text-white rounded-full font-extrabold uppercase">
-                      Master Reference
-                    </span>
-                  </h4>
-                  <p className="text-xs text-slate-600 dark:text-slate-300">
-                    4 Turnkey Commercial Plugins • $49/mo to $499/mo SaaS Tiers • Perpetual Buyout Models • Ad Copy Angles
-                  </p>
-                </div>
+          <div className="bg-gradient-to-r from-blue-600/10 via-indigo-600/10 to-purple-600/10 border border-blue-200 dark:border-blue-800/60 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <Sparkles className="w-5 h-5" />
               </div>
-              <button
-                onClick={onOpenPitchDeck}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer flex items-center justify-center gap-2 shrink-0"
-              >
-                <BookOpen className="w-4 h-4" />
-                <span>Open Pitch Deck</span>
-              </button>
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  Live Mobile Add-to-Home-Screen Endpoints
+                  <span className="text-[10px] px-2 py-0.5 bg-blue-600 text-white rounded-full font-extrabold uppercase">
+                    5 Live URLs
+                  </span>
+                </h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300">
+                  Direct shareable URLs for Real Estate GeoMap, 2nd Brain, Workspace UI, Voice Macro, and Master Suite.
+                </p>
+              </div>
             </div>
-          )}
+            <div className="flex items-center gap-2 shrink-0">
+              {onOpenShareLinksModal && (
+                <button
+                  onClick={onOpenShareLinksModal}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <Smartphone className="w-4 h-4 text-amber-300" />
+                  <span>Get Live Mobile URLs</span>
+                </button>
+              )}
+              {onOpenPitchDeck && (
+                <button
+                  onClick={onOpenPitchDeck}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  <span>Pitch Deck</span>
+                </button>
+              )}
+            </div>
+          </div>
           <StandalonePluginArchetypeGenerator currentUserEmail={connectedWorkspaceEmail} />
         </div>
       )}

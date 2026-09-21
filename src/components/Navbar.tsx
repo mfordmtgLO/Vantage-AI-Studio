@@ -3,7 +3,8 @@ import { WorkspaceTab } from '../types';
 import { 
   Sparkles, Mail, Calendar, FileText, Table, CheckSquare, Users, LogOut, 
   Bot, Brain, Send, Cpu, Clock, Mic, Moon, Sun, Building2, RefreshCw, CheckCircle2,
-  Database, Shield, Lock, Home, Code, FileCode, Layers, TrendingUp, Megaphone, Key
+  Database, Shield, Lock, Home, Code, FileCode, Layers, TrendingUp, Megaphone, Key,
+  Smartphone, Share2
 } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { useTheme } from '../context/ThemeContext';
@@ -24,6 +25,7 @@ interface NavbarProps {
   onOpenPitchDeck?: () => void;
   onOpenByokDrawer?: () => void;
   onOpenByokChecklist?: () => void;
+  onOpenShareLinksModal?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ 
@@ -38,7 +40,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenLicenseStudio,
   onOpenPitchDeck,
   onOpenByokDrawer,
-  onOpenByokChecklist
+  onOpenByokChecklist,
+  onOpenShareLinksModal
 }) => {
   const { theme, toggleTheme } = useTheme();
   const {
@@ -259,6 +262,23 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 <Shield className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                 <span>License Key</span>
+              </button>
+            )}
+
+            {/* Shareable Live Mobile URLs & PWA Launcher Button */}
+            {onOpenShareLinksModal && (
+              <button
+                id="lead-mobile-urls-nav-btn"
+                onClick={onOpenShareLinksModal}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl transition shadow-md shadow-blue-500/20 cursor-pointer"
+                title="Open Live Shareable Mobile & Desktop URLs with 1-Click Add-to-Home-Screen for Leads"
+              >
+                <Smartphone className="w-3.5 h-3.5 text-amber-300" />
+                <span className="hidden sm:inline">Lead Mobile URLs</span>
+                <span className="sm:hidden">URLs</span>
+                <span className="text-[9px] px-1.5 py-0.2 bg-amber-400 text-slate-950 font-black rounded-sm uppercase tracking-wide">
+                  PWA
+                </span>
               </button>
             )}
 

@@ -25,8 +25,12 @@ import {
   PlusCircle,
   X,
   Shield,
-  Key
+  Key,
+  Smartphone,
+  Share2
 } from 'lucide-react';
+import { usePwaInstallPrompt } from '../hooks/usePwaInstallPrompt';
+import { IosInstallGuideModal } from './IosInstallGuideModal';
 import {
   BuyerDtiProfile,
   FirstTimeHomebuyerGeoPluginProps,
@@ -193,6 +197,20 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
   const [requestProgram, setRequestProgram] = useState<'USDA 100%' | 'LMI CRA Grant' | 'HomeReady 3%' | 'Any Low/No Down'>('Any Low/No Down');
   const [areaRequestSuccess, setAreaRequestSuccess] = useState<string | null>(null);
 
+  // Mobile PWA Install Helper
+  const { isInstallable, isInstalled, isIOS, isIosGuideOpen, setIsIosGuideOpen, triggerInstall } = usePwaInstallPrompt();
+
+  const handleMobileInstallClick = async () => {
+    if (isIOS) {
+      setIsIosGuideOpen(true);
+      return;
+    }
+    const res = await triggerInstall();
+    if (res === 'ios_guide') {
+      setIsIosGuideOpen(true);
+    }
+  };
+
   // Compute DTI Envelope
   const prequalResult = useMemo(() => {
     const res = calculateDtiEnvelope(buyerProfile);
@@ -313,8 +331,20 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
           </div>
         </div>
 
-        {/* Action Buttons: 1-Click Sync & Request Area Listings */}
-        <div className="flex items-center gap-2">
+        {/* Action Buttons: 1-Click Sync & Request Area Listings & Add to Mobile */}
+        <div className="flex flex-wrap items-center gap-2">
+          {!isInstalled && (
+            <button
+              type="button"
+              onClick={handleMobileInstallClick}
+              className="px-3.5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-md cursor-pointer"
+              title="Add this interactive tool directly to your iPhone or Android Home Screen"
+            >
+              <Smartphone className="w-3.5 h-3.5" />
+              <span>Add to Phone (App)</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={handleSyncMasterFeed}
@@ -732,6 +762,13 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
           </div>
         </div>
       )}
+
+      {/* iOS Step-by-Step Installation Modal */}
+      <IosInstallGuideModal
+        isOpen={isIosGuideOpen}
+        onClose={() => setIsIosGuideOpen(false)}
+        pluginName="First-Time Homebuyer GeoMap & DPA Tool"
+      />
 
       {/* Footer & Copyright */}
       <div className="pt-3 border-t border-stone-800 flex flex-col sm:flex-row items-center justify-between text-[10px] text-stone-500 font-mono">
