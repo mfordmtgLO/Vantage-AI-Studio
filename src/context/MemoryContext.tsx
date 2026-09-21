@@ -44,6 +44,11 @@ interface MemoryContextType {
   // Agent Memory Explorer modal
   isMemoryExplorerOpen: boolean;
   setIsMemoryExplorerOpen: (open: boolean) => void;
+  // Memory Scenarios modal / playbook
+  isMemoryScenariosOpen: boolean;
+  setIsMemoryScenariosOpen: (open: boolean) => void;
+  openMemoryScenarios: () => void;
+  closeMemoryScenarios: () => void;
   // 2nd Brain Guardrails & Boundaries customization
   guardrails: GuardrailSettings;
   updateGuardrails: (newSettings: Partial<GuardrailSettings>) => Promise<void>;
@@ -73,6 +78,8 @@ export const MemoryProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [isKnowledgeBaseOpen, setIsKnowledgeBaseOpen] = useState(false);
   // Agent Memory Explorer modal state
   const [isMemoryExplorerOpen, setIsMemoryExplorerOpen] = useState(false);
+  // Memory Scenarios modal state
+  const [isMemoryScenariosOpen, setIsMemoryScenariosOpen] = useState(false);
   // Guardrails & Boundaries modal state
   const [isGuardrailsModalOpen, setIsGuardrailsModalOpen] = useState(false);
   // User 2nd Brain Guardrail Settings
@@ -234,6 +241,14 @@ export const MemoryProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setRememberModalData(null);
   };
 
+  const openMemoryScenarios = () => {
+    setIsMemoryScenariosOpen(true);
+  };
+
+  const closeMemoryScenarios = () => {
+    setIsMemoryScenariosOpen(false);
+  };
+
   const activePersona = memories.find(m => m.type === 'persona') || null;
 
   return (
@@ -257,6 +272,10 @@ export const MemoryProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setIsKnowledgeBaseOpen,
         isMemoryExplorerOpen,
         setIsMemoryExplorerOpen,
+        isMemoryScenariosOpen,
+        setIsMemoryScenariosOpen,
+        openMemoryScenarios,
+        closeMemoryScenarios,
         guardrails,
         updateGuardrails: handleUpdateGuardrails,
         resetGuardrailsToDefault: handleResetGuardrails,

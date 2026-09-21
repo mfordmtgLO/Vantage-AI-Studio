@@ -25,7 +25,8 @@ import {
   Filter,
   Layers,
   Sliders,
-  Code
+  Code,
+  BookOpen
 } from 'lucide-react';
 
 interface AgentMemoryExplorerProps {
@@ -42,6 +43,7 @@ export const AgentMemoryExplorer: React.FC<AgentMemoryExplorerProps> = ({ onClos
     deleteMemory,
     refreshMemories,
     openRememberModal,
+    openMemoryScenarios,
     setIsGuardrailsModalOpen
   } = useMemory();
 
@@ -242,6 +244,14 @@ export const AgentMemoryExplorer: React.FC<AgentMemoryExplorerProps> = ({ onClos
             >
               <Download className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Export JSON</span>
+            </button>
+            <button
+              onClick={() => openMemoryScenarios()}
+              className="px-3 py-1.5 text-xs font-semibold rounded-xl border border-blue-200 dark:border-blue-800/80 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 transition flex items-center gap-1.5 cursor-pointer"
+              title="Open Memory Scenarios & Playbook"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-blue-600" />
+              <span>Scenarios Playbook</span>
             </button>
             <button
               onClick={() => setIsGuardrailsModalOpen(true)}

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useMemory } from '../context/MemoryContext';
-import { Brain, Upload, Search, Sparkles, FileText, Database, Shield, Cpu, Tag, CheckCircle2, Loader2, ArrowRight, User, RotateCcw, Trash2, CloudCheck, ExternalLink, Cloud, Code, Box, Lock } from 'lucide-react';
+import { Brain, Upload, Search, Sparkles, FileText, Database, Shield, Cpu, Tag, CheckCircle2, Loader2, ArrowRight, User, RotateCcw, Trash2, CloudCheck, ExternalLink, Cloud, Code, Box, Lock, BookOpen } from 'lucide-react';
 import { AgentMemoryExplorer } from './AgentMemoryExplorer';
 import { GuardrailsAndBoundariesStudio } from './GuardrailsAndBoundariesStudio';
 import { StandalonePluginArchetypeGenerator } from './StandalonePluginArchetypeGenerator';
+import { MemoryScenariosPanel } from './MemoryScenariosPanel';
 import { isMikeFordAdmin, ADMIN_PRIMARY_EMAIL, ADMIN_PRIMARY_NAME } from '../utils/adminAuth';
 import { auth } from '../services/firebase';
 
@@ -31,7 +32,7 @@ export const SecondBrainView: React.FC = () => {
     setIsGuardrailsModalOpen
   } = useMemory();
 
-  const [activeTab, setActiveTab] = useState<'recall' | 'ingest' | 'explorer' | 'guardrails' | 'plugin_generator'>('recall');
+  const [activeTab, setActiveTab] = useState<'recall' | 'ingest' | 'explorer' | 'guardrails' | 'scenarios' | 'plugin_generator'>('recall');
   const [query, setQuery] = useState<string>('');
   const [engine, setEngine] = useState<'hybrid' | 'deepseek' | 'gemini'>('hybrid');
   const [enableDeepThink, setEnableDeepThink] = useState<boolean>(true);
@@ -260,6 +261,17 @@ export const SecondBrainView: React.FC = () => {
           <Shield className="w-4 h-4 text-emerald-600" /> Boundaries & Guardrails
           <span className="text-[10px] uppercase font-bold px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800">
             {guardrails.personalityPreset}
+          </span>
+        </button>
+        <button
+          onClick={() => setActiveTab('scenarios')}
+          className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
+            activeTab === 'scenarios' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-900'
+          }`}
+        >
+          <BookOpen className="w-4 h-4 text-blue-600" /> Memory Scenarios
+          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-blue-100 text-blue-800">
+            3 Categories
           </span>
         </button>
 
@@ -686,6 +698,11 @@ export const SecondBrainView: React.FC = () => {
         <div className="rounded-2xl border border-slate-200 overflow-hidden shadow-xs min-h-[700px]">
           <GuardrailsAndBoundariesStudio />
         </div>
+      )}
+
+      {/* Tab: Memory Scenarios Playbook */}
+      {activeTab === 'scenarios' && (
+        <MemoryScenariosPanel />
       )}
 
       {/* Tab 5: Standalone Plugin Archetype & LLM Prompt Generator */}

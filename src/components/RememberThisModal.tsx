@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useMemory } from '../context/MemoryContext';
 import { MemoryType } from '../types';
-import { Brain, X, Check, Cloud, Shield, Sparkles, Tag, FileText } from 'lucide-react';
+import { Brain, X, Check, Cloud, Shield, Sparkles, Tag, FileText, BookOpen, ChevronRight } from 'lucide-react';
 
 export const RememberThisModal: React.FC = () => {
-  const { isRememberModalOpen, closeRememberModal, rememberModalData, saveMemory, cloudSyncStatus } = useMemory();
+  const { isRememberModalOpen, closeRememberModal, rememberModalData, saveMemory, cloudSyncStatus, openMemoryScenarios } = useMemory();
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -92,6 +92,33 @@ export const RememberThisModal: React.FC = () => {
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
+          {/* Quick Helper Banner to Open Memory Scenarios */}
+          <button
+            type="button"
+            onClick={() => {
+              openMemoryScenarios();
+            }}
+            className="w-full p-2.5 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40 border border-blue-200/80 dark:border-blue-800/60 text-left flex items-center justify-between hover:border-blue-400 dark:hover:border-blue-600 transition group cursor-pointer"
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-xs">
+                <BookOpen className="w-3.5 h-3.5" />
+              </div>
+              <div>
+                <span className="text-xs font-bold text-blue-900 dark:text-blue-200 flex items-center gap-1.5">
+                  Need Help? Browse Memory Scenarios
+                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-blue-200 dark:bg-blue-900 text-blue-800 dark:text-blue-300">
+                    3 Categories
+                  </span>
+                </span>
+                <p className="text-[10px] text-blue-700/80 dark:text-blue-300/70">
+                  Project Context, Communication Preferences & Process Rules examples
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 transition" />
+          </button>
+
           {/* Memory Type Selector */}
           <div>
             <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1.5">

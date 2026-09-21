@@ -23,6 +23,7 @@ import { RememberThisModal } from './components/RememberThisModal';
 import { RememberKnowledgeBaseModal } from './components/RememberKnowledgeBaseModal';
 import { AgentMemoryExplorerModal } from './components/AgentMemoryExplorerModal';
 import { GuardrailsModal } from './components/GuardrailsModal';
+import { MemoryScenariosModal } from './components/MemoryScenariosModal';
 import { safeAtob } from './utils/base64';
 
 export default function App() {
@@ -234,6 +235,7 @@ export default function App() {
             <RememberKnowledgeBaseModal />
             <AgentMemoryExplorerModal />
             <GuardrailsModal />
+            <MemoryScenariosModal />
 
             {snackbarWorkflow && (
               <VoiceExecutionSnackbar
