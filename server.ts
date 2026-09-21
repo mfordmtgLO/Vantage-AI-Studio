@@ -748,11 +748,10 @@ Generate 2 to 3 logical next steps. For each recommendation:
       }
     };
 
-    const response = await ai.models.generateContent({
-      model: "gemini-flash-latest",
-      contents: `Recommend the optimal next steps for this workflow sequence: ${workflowName || 'Workflow'} with ${steps?.length || 0} existing steps.`,
-      config: apiConfig
-    });
+    const response = await generateResilientGeminiContent(
+      `Recommend the optimal next steps for this workflow sequence: ${workflowName || 'Workflow'} with ${steps?.length || 0} existing steps.`,
+      apiConfig
+    );
 
     const text = response.text || "{}";
     const parsed = JSON.parse(text);
@@ -774,7 +773,7 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*all', (req, res) => {
+    app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
