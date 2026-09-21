@@ -3,12 +3,13 @@ import { WorkspaceTab } from '../types';
 import { 
   Sparkles, Mail, Calendar, FileText, Table, CheckSquare, Users, LogOut, 
   Bot, Brain, Send, Cpu, Clock, Mic, Moon, Sun, Building2, RefreshCw, CheckCircle2,
-  Database, Shield
+  Database, Shield, Lock, Home, Code, FileCode, Layers, TrendingUp, Megaphone, Key
 } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { useTheme } from '../context/ThemeContext';
 import { useAccountPathway } from '../context/AccountPathwayContext';
 import { useMemory } from '../context/MemoryContext';
+import { isMikeFordAdmin } from '../utils/adminAuth';
 
 interface NavbarProps {
   activeTab: WorkspaceTab;
@@ -16,9 +17,29 @@ interface NavbarProps {
   user: User | null;
   onLogout: () => void;
   onOpenVoiceModal: () => void;
+  onOpenWizard?: () => void;
+  onOpenSalesAssistant?: () => void;
+  onOpenScaffolding?: () => void;
+  onOpenLicenseStudio?: () => void;
+  onOpenPitchDeck?: () => void;
+  onOpenByokDrawer?: () => void;
+  onOpenByokChecklist?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, user, onLogout, onOpenVoiceModal }) => {
+export const Navbar: React.FC<NavbarProps> = ({ 
+  activeTab, 
+  setActiveTab, 
+  user, 
+  onLogout, 
+  onOpenVoiceModal,
+  onOpenWizard,
+  onOpenSalesAssistant,
+  onOpenScaffolding,
+  onOpenLicenseStudio,
+  onOpenPitchDeck,
+  onOpenByokDrawer,
+  onOpenByokChecklist
+}) => {
   const { theme, toggleTheme } = useTheme();
   const {
     pathway,
@@ -39,9 +60,12 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, user, o
     memories 
   } = useMemory();
 
+  const isAdmin = isMikeFordAdmin(user) || isMikeFordAdmin({ email: connectedWorkspaceEmail });
+
   const tabs = [
     { id: 'studio' as WorkspaceTab, label: 'Prompt Studio', icon: Bot },
     { id: 'brain' as WorkspaceTab, label: '2nd Brain & Memory', icon: Brain },
+    { id: 'real_estate' as WorkspaceTab, label: 'Real Estate GeoMap', icon: Home },
     { id: 'orchestrator' as WorkspaceTab, label: 'Logic Orchestrator', icon: Cpu },
     { id: 'scheduler' as WorkspaceTab, label: 'Workflow Scheduler', icon: Clock },
     { id: 'drafts' as WorkspaceTab, label: 'Saved Drafts (18)', icon: Send },
@@ -63,8 +87,8 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, user, o
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-base font-bold text-slate-900 dark:text-slate-100 leading-tight">Vantage AI Workspace</h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Gemini Prompt Engineering Across Workspace</p>
+              <h1 className="text-base font-bold text-slate-900 dark:text-slate-100 leading-tight">Vantage AI Studio</h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Autonomous Plugin Modules & Commercial Suite</p>
             </div>
           </div>
 
@@ -172,6 +196,19 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, user, o
               )}
             </button>
 
+            {/* In-App BYOK (Bring Your Own Key) Settings Drawer */}
+            {onOpenByokDrawer && (
+              <button
+                id="byok-settings-btn"
+                onClick={onOpenByokDrawer}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800/70 text-xs font-bold rounded-xl transition shadow-xs cursor-pointer"
+                title="Bring Your Own Keys (BYOK): Gemini, RentCast, DeepSeek"
+              >
+                <Key className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                <span>API Keys (BYOK)</span>
+              </button>
+            )}
+
             <button
               onClick={onOpenVoiceModal}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900/60 text-xs font-semibold rounded-xl transition shadow-xs cursor-pointer"
@@ -180,6 +217,64 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, user, o
               <Mic className="w-3.5 h-3.5 text-red-600 dark:text-red-400 animate-pulse" />
               <span>Voice Studio</span>
             </button>
+
+            {isAdmin && onOpenWizard && (
+              <button
+                onClick={onOpenWizard}
+                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900/60 text-xs font-semibold rounded-xl transition shadow-xs cursor-pointer"
+                title="Launch Plugin Integration Wizard"
+              >
+                <Code className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                <span>Wizard</span>
+              </button>
+            )}
+
+            {isAdmin && onOpenSalesAssistant && (
+              <button
+                onClick={onOpenSalesAssistant}
+                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-900/60 text-xs font-semibold rounded-xl transition shadow-xs cursor-pointer"
+                title="Generate Digital Product Sales Copy"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                <span>Sales Copy</span>
+              </button>
+            )}
+
+            {isAdmin && onOpenScaffolding && (
+              <button
+                onClick={onOpenScaffolding}
+                className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-xl transition shadow-xs cursor-pointer"
+                title="1-Click Zero-Shot Full Website Scaffolding Prompt"
+              >
+                <Layers className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
+                <span>Scaffold</span>
+              </button>
+            )}
+
+            {isAdmin && onOpenLicenseStudio && (
+              <button
+                onClick={onOpenLicenseStudio}
+                className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-900/60 text-xs font-semibold rounded-xl transition shadow-xs cursor-pointer"
+                title="Commercial Domain-Locking & License Keys"
+              >
+                <Shield className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                <span>License Key</span>
+              </button>
+            )}
+
+            {isAdmin && onOpenPitchDeck && (
+              <button
+                onClick={onOpenPitchDeck}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500/10 to-indigo-500/10 hover:from-amber-500/20 hover:to-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold rounded-xl transition shadow-xs cursor-pointer"
+                title="Commercial Retail Software Suite Sales Pitch Deck Reference (Admin Only)"
+              >
+                <Megaphone className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                <span>Pitch Deck</span>
+                <span className="hidden sm:inline text-[9px] px-1.5 py-0.5 bg-indigo-600 text-white rounded-md font-extrabold uppercase tracking-wide">
+                  Master
+                </span>
+              </button>
+            )}
 
             {user && (
               <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-full border border-slate-200 dark:border-slate-700">

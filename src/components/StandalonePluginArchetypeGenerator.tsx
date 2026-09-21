@@ -3,6 +3,16 @@ import { useMemory } from '../context/MemoryContext';
 import { 
   PluginPackagingConfig, 
   DEFAULT_PACKAGING_CONFIG, 
+  PluginArchetypeId,
+  PluginArchetypeMeta,
+  VANTAGE_PLUGIN_ARCHETYPES,
+  getArchetypeMeta,
+  generatePluginBuildPrompt,
+  generatePluginReactCode,
+  generatePluginHookCode,
+  generatePluginBackendCode,
+  generatePluginCliOrConfig,
+  generatePluginScriptEmbed,
   generateLLMBuildModePrompt, 
   generateStandaloneReactWidgetCode, 
   generateBackendRouterCode, 
@@ -51,7 +61,18 @@ import {
   Trash2,
   CheckSquare,
   AlertCircle,
-  Plus
+  Plus,
+  Building2,
+  Mic,
+  Radio,
+  Volume2,
+  Table,
+  HardDrive,
+  Mail,
+  Command,
+  ArrowRight,
+  RefreshCw,
+  FileSpreadsheet
 } from 'lucide-react';
 
 interface StandalonePluginArchetypeGeneratorProps {
@@ -62,6 +83,11 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
   currentUserEmail
 }) => {
   const { guardrails, memories } = useMemory();
+  
+  // Selected Plugin Archetype: 'second_brain' | 'workplace_ui' | 'voice_plugin'
+  const [selectedArchetype, setSelectedArchetype] = useState<PluginArchetypeId>('second_brain');
+  const currentMeta = useMemo(() => getArchetypeMeta(selectedArchetype), [selectedArchetype]);
+
   const [config, setConfig] = useState<PluginPackagingConfig>(DEFAULT_PACKAGING_CONFIG);
   const [activeView, setActiveView] = useState<'prompt' | 'react_widget' | 'headless_hook' | 'backend_router' | 'dsh_cli' | 'html_embed' | 'live_sandbox' | 'distribution_vault'>('prompt');
   const [llmPreset, setLlmPreset] = useState<'universal' | 'claude' | 'chatgpt' | 'gemini' | 'deepseek' | 'cursor'>('universal');
@@ -76,12 +102,27 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
   // Client Distribution Packaging State (Mike Ford Admin Vault)
   const [clientName, setClientName] = useState('Acme Corporation');
   const [clientDomain, setClientDomain] = useState('acme.example.com');
-  const [licenseKey, setLicenseKey] = useState(() => `VNTG-2NDBRAIN-${Math.random().toString(36).substring(2, 6).toUpperCase()}-2026`);
+  const [licenseKey, setLicenseKey] = useState(() => `${currentMeta.licensePrefix}-${Math.random().toString(36).substring(2, 6).toUpperCase()}-2026`);
   const [distributionNotes, setDistributionNotes] = useState('Client standalone portal deployment with hybrid reasoning');
   const [includeWatermark, setIncludeWatermark] = useState(true);
   const [distributionRecords, setDistributionRecords] = useState<PluginDistributionRecord[]>(() => getSavedPluginDistributions());
 
-  // Live Sandbox state
+  // Handle Archetype Switch
+  const handleSelectArchetype = (archetypeId: PluginArchetypeId) => {
+    setSelectedArchetype(archetypeId);
+    const meta = getArchetypeMeta(archetypeId);
+    setConfig(meta.defaultConfig);
+    setLicenseKey(`${meta.licensePrefix}-${Math.random().toString(36).substring(2, 6).toUpperCase()}-2026`);
+    if (archetypeId === 'workplace_ui') {
+      setDistributionNotes('Standalone Vantage Workplace UI Cockpit deployment');
+    } else if (archetypeId === 'voice_plugin') {
+      setDistributionNotes('Standalone Vantage Voice Assistant & Speech Macro deployment');
+    } else {
+      setDistributionNotes('Client standalone portal deployment with hybrid reasoning');
+    }
+  };
+
+  // Live Sandbox state (2nd Brain)
   const [sandboxPrompt, setSandboxPrompt] = useState<string>('Research top 3 enterprise generative AI security trends and schedule weekly update');
   const [sandboxEngine, setSandboxEngine] = useState<'hybrid' | 'deepseek' | 'gemini'>('hybrid');
   const [isSandboxRunning, setIsSandboxRunning] = useState<boolean>(false);
@@ -92,8 +133,61 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
     { id: 'job_1', name: 'Weekly Executive AI Trend Brief', cron: '0 9 * * 1', task: 'Scan web for top AI security breakthroughs and summarize.' }
   ]);
 
+  // Workplace UI Sandbox state
+  const [workplaceActiveTab, setWorkplaceActiveTab] = useState<'orchestrator' | 'gmail' | 'drive' | 'sheets' | 'tasks'>('orchestrator');
+  const [workplaceWorkflowRunning, setWorkplaceWorkflowRunning] = useState<string | null>(null);
+  const [workplaceLogs, setWorkplaceLogs] = useState<string[]>([
+    'System ready. Connected to Google Workspace (Authenticated as Mike Ford).',
+    'Background cron triggers active: 09:00 EST daily briefing.'
+  ]);
+  const [workplaceTasks, setWorkplaceTasks] = useState([
+    { id: 't1', title: 'Review Q3 Executive Forecast in Sheets', done: true, priority: 'High' },
+    { id: 't2', title: 'Approve AI-generated Gmail response to Apex Health', done: false, priority: 'Urgent' },
+    { id: 't3', title: 'Sync Drive documentation to 2nd Brain memory index', done: false, priority: 'Normal' }
+  ]);
+
+  const handleRunWorkplaceWorkflow = (workflowName: string) => {
+    setWorkplaceWorkflowRunning(workflowName);
+    setWorkplaceLogs((prev) => [`[${new Date().toLocaleTimeString()}] Dispatched: ${workflowName}...`, ...prev]);
+    setTimeout(() => {
+      setWorkplaceWorkflowRunning(null);
+      setWorkplaceLogs((prev) => [
+        `[${new Date().toLocaleTimeString()}] Completed: ${workflowName} successfully processed & synchronized.`,
+        ...prev
+      ]);
+    }, 1800);
+  };
+
+  // Voice Plugin Sandbox state
+  const [isVoiceListening, setIsVoiceListening] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState('Hey Copilot, summarize my morning priorities');
+  const [voiceStatus, setVoiceStatus] = useState<string>('Ready for speech input or macro simulation');
+  const [voiceResponse, setVoiceResponse] = useState<string | null>(
+    'Priority 1: Q3 Board Review Deck pending approval in Google Drive. Priority 2: 3 unread client emails in Gmail requiring executive action.'
+  );
+
+  const handleSimulateVoiceCommand = (cmd: string) => {
+    setIsVoiceListening(true);
+    setVoiceTranscript(cmd);
+    setVoiceStatus(`Transcribing speech audio: "${cmd}"...`);
+    setVoiceResponse(null);
+    setTimeout(() => {
+      setIsVoiceListening(false);
+      setVoiceStatus(`Executing voice macro: "${cmd}"`);
+      let resp = `Voice Macro executed: Successfully processed command "${cmd}". Output dispatched to workspace.`;
+      if (cmd.toLowerCase().includes('inbox') || cmd.toLowerCase().includes('email')) {
+        resp = `Inbox Scan Complete: 2 urgent emails from Apex Health & Vantage Ventures found. Drafted suggested replies in Gmail tab.`;
+      } else if (cmd.toLowerCase().includes('briefing') || cmd.toLowerCase().includes('morning') || cmd.toLowerCase().includes('priority') || cmd.toLowerCase().includes('priorities')) {
+        resp = `Good Morning Mike: 3 priority tasks scheduled today. Cloud infrastructure is 100% operational. Financial runway models updated.`;
+      } else if (cmd.toLowerCase().includes('drive') || cmd.toLowerCase().includes('deck') || cmd.toLowerCase().includes('report')) {
+        resp = `Drive Sync Complete: Q3 Pitch Deck has been exported and synced with 2nd Brain memory vectors.`;
+      }
+      setVoiceResponse(resp);
+    }, 1200);
+  };
+
   const handleGenerateNewKey = () => {
-    setLicenseKey(`VNTG-2NDBRAIN-${Math.random().toString(36).substring(2, 6).toUpperCase()}-2026`);
+    setLicenseKey(`${currentMeta.licensePrefix}-${Math.random().toString(36).substring(2, 6).toUpperCase()}-2026`);
   };
 
   const handleRegisterDistribution = () => {
@@ -107,13 +201,15 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
       targetDomain: clientDomain.trim() || 'all-authorized-domains',
       licenseKey: licenseKey.trim(),
       distributionType: 'full_hybrid',
+      archetypeId: selectedArchetype,
+      pluginTitle: currentMeta.name,
       distributedAt: new Date().toISOString(),
       notes: distributionNotes.trim(),
       status: 'active'
     };
     savePluginDistribution(newRecord);
     setDistributionRecords(getSavedPluginDistributions());
-    setDownloadSuccess(`Registered & Watermarked Distribution for "${clientName}"!`);
+    setDownloadSuccess(`Registered & Watermarked "${currentMeta.name}" for "${clientName}"!`);
     setTimeout(() => setDownloadSuccess(null), 4000);
   };
 
@@ -136,11 +232,11 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
   // Generate artifacts
   const watermarkHeader = useMemo(() => {
     if (!includeWatermark) return '';
-    return generateDistributionWatermarkHeader(clientName, clientDomain, licenseKey);
-  }, [includeWatermark, clientName, clientDomain, licenseKey]);
+    return generateDistributionWatermarkHeader(clientName, clientDomain, licenseKey, currentMeta.name);
+  }, [includeWatermark, clientName, clientDomain, licenseKey, currentMeta]);
 
   const generatedPrompt = useMemo(() => {
-    let base = generateLLMBuildModePrompt(config, config.includeGuardrailsAndBoundaries ? guardrails : undefined, memories);
+    let base = generatePluginBuildPrompt(selectedArchetype, config, config.includeGuardrailsAndBoundaries ? guardrails : undefined, memories);
     if (llmPreset === 'claude') {
       base = `<!-- SYSTEM PROMPT FOR CLAUDE 3.7 SONNET / OPUS -->\n${base}`;
     } else if (llmPreset === 'deepseek') {
@@ -154,27 +250,32 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
       base = `${watermarkHeader}\n${base}`;
     }
     return base;
-  }, [config, guardrails, memories, llmPreset, includeWatermark, watermarkHeader]);
+  }, [selectedArchetype, config, guardrails, memories, llmPreset, includeWatermark, watermarkHeader]);
 
   const generatedReactWidget = useMemo(() => {
-    const code = generateStandaloneReactWidgetCode(config);
+    const code = generatePluginReactCode(selectedArchetype, config);
     return includeWatermark ? `${watermarkHeader}${code}` : code;
-  }, [config, includeWatermark, watermarkHeader]);
+  }, [selectedArchetype, config, includeWatermark, watermarkHeader]);
+
+  const generatedHeadlessHook = useMemo(() => {
+    const code = generatePluginHookCode(selectedArchetype, config);
+    return includeWatermark ? `${watermarkHeader}${code}` : code;
+  }, [selectedArchetype, config, includeWatermark, watermarkHeader]);
 
   const generatedBackendRouter = useMemo(() => {
-    const code = generateBackendRouterCode(config);
+    const code = generatePluginBackendCode(selectedArchetype, config);
     return includeWatermark ? `${watermarkHeader}${code}` : code;
-  }, [config, includeWatermark, watermarkHeader]);
+  }, [selectedArchetype, config, includeWatermark, watermarkHeader]);
 
   const generatedDshCli = useMemo(() => {
-    const code = generateDshCliConfig(config);
+    const code = generatePluginCliOrConfig(selectedArchetype, config);
     return includeWatermark ? `# ${watermarkHeader.replace(/\n/g, '\n# ')}\n${code}` : code;
-  }, [config, includeWatermark, watermarkHeader]);
+  }, [selectedArchetype, config, includeWatermark, watermarkHeader]);
 
   const generatedHtmlEmbed = useMemo(() => {
-    const code = generateUniversalScriptEmbed(config);
+    const code = generatePluginScriptEmbed(selectedArchetype, config);
     return includeWatermark ? `<!-- \n${watermarkHeader} -->\n${code}` : code;
-  }, [config, includeWatermark, watermarkHeader]);
+  }, [selectedArchetype, config, includeWatermark, watermarkHeader]);
 
   const activeContent = useMemo(() => {
     switch (activeView) {
@@ -182,6 +283,8 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
         return generatedPrompt;
       case 'react_widget':
         return generatedReactWidget;
+      case 'headless_hook':
+        return generatedHeadlessHook;
       case 'backend_router':
         return generatedBackendRouter;
       case 'dsh_cli':
@@ -191,7 +294,7 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
       default:
         return generatedPrompt;
     }
-  }, [activeView, generatedPrompt, generatedReactWidget, generatedBackendRouter, generatedDshCli, generatedHtmlEmbed]);
+  }, [activeView, generatedPrompt, generatedReactWidget, generatedHeadlessHook, generatedBackendRouter, generatedDshCli, generatedHtmlEmbed]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(activeContent);
@@ -207,14 +310,17 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
     if (activeView === 'react_widget') {
       filename = `${config.pluginName}.tsx`;
       mime = 'text/typescript';
+    } else if (activeView === 'headless_hook') {
+      filename = `use${config.pluginName}.ts`;
+      mime = 'text/typescript';
     } else if (activeView === 'backend_router') {
-      filename = `vantageHarnessRouter.ts`;
+      filename = `${config.pluginName}Router.ts`;
       mime = 'text/typescript';
     } else if (activeView === 'dsh_cli') {
-      filename = `dsh-profile.yaml`;
+      filename = `${config.pluginName}-spec.yaml`;
       mime = 'text/yaml';
     } else if (activeView === 'html_embed') {
-      filename = `embed-snippet.html`;
+      filename = `${config.pluginName.toLowerCase()}-embed.html`;
       mime = 'text/html';
     }
 
@@ -235,14 +341,16 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
   const handleExportFullJsonPackage = () => {
     const pkg = {
       metadata: {
-        title: 'Vantage 2nd Brain & DeepSeek Harness Agent Plugin Distribution Package',
+        title: `${currentMeta.name} Distribution Package`,
+        archetypeId: selectedArchetype,
+        pluginName: config.pluginName,
         author: ADMIN_PRIMARY_NAME,
         adminEmail: ADMIN_PRIMARY_EMAIL,
         licensedTo: clientName,
         authorizedDomain: clientDomain,
         licenseKey: licenseKey,
         issuedAt: new Date().toISOString(),
-        version: '2.5.0-hybrid'
+        version: '2.5.0-proprietary'
       },
       configuration: config,
       guardrails: guardrails,
@@ -251,7 +359,7 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
         llmBuildPrompt: generatedPrompt,
         standaloneReactWidget: generatedReactWidget,
         backendRouter: generatedBackendRouter,
-        dshCliConfig: generatedDshCli,
+        cliOrModuleConfig: generatedDshCli,
         universalHtmlEmbed: generatedHtmlEmbed
       }
     };
@@ -389,6 +497,81 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
         </div>
       )}
 
+      {/* Vantage Plugin Archetype Selector Bar */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+              Active Plugin Archetype
+            </div>
+            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+              Select Vantage Plugin to Configure, Inspect & Export
+            </h3>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-3 py-1 rounded-full">
+            <Layers className="w-3.5 h-3.5 text-blue-500" />
+            <span>3 Modular Archetypes Loaded</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {VANTAGE_PLUGIN_ARCHETYPES.map((arch) => {
+            const isSelected = selectedArchetype === arch.id;
+            return (
+              <button
+                key={arch.id}
+                type="button"
+                onClick={() => handleSelectArchetype(arch.id)}
+                className={`p-4 rounded-2xl text-left border transition-all cursor-pointer relative flex flex-col justify-between ${
+                  isSelected
+                    ? 'bg-blue-50/70 dark:bg-blue-950/40 border-blue-500 shadow-md ring-2 ring-blue-500/20'
+                    : 'bg-slate-50/70 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                }`}
+              >
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className={`p-2.5 rounded-xl ${
+                      isSelected 
+                        ? 'bg-blue-600 text-white shadow-sm' 
+                        : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600'
+                    }`}>
+                      {arch.icon === 'brain' && <Brain className="w-5 h-5" />}
+                      {arch.icon === 'layout' && <Building2 className="w-5 h-5" />}
+                      {arch.icon === 'mic' && <Mic className="w-5 h-5" />}
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      isSelected
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                    }`}>
+                      {arch.badge}
+                    </span>
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 line-clamp-1">
+                      {arch.name}
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
+                      {arch.tagline}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-3 mt-3 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-[11px]">
+                  <span className="font-mono text-[10px] text-slate-400">
+                    {arch.defaultConfig.pluginName}
+                  </span>
+                  <span className={`font-semibold flex items-center gap-1 ${isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`}>
+                    {isSelected ? 'Active Selection' : 'Select'} <ChevronRight className="w-3.5 h-3.5" />
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Admin Security Banner */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-900 rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden border border-slate-800">
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -398,14 +581,14 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
                 <Shield className="w-3.5 h-3.5 text-emerald-400" /> Verified Admin: {ADMIN_PRIMARY_NAME} ({ADMIN_PRIMARY_EMAIL})
               </span>
               <span className="px-2.5 py-0.5 bg-blue-500/20 text-cyan-300 rounded-full text-[11px] font-semibold border border-cyan-400/20">
-                Proprietary Plugin Distribution Vault
+                {currentMeta.badge} Distribution Vault
               </span>
             </div>
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-              2nd Brain Plugin Packaging & Distribution Studio
+              {currentMeta.name}
             </h2>
             <p className="text-slate-300 text-xs md:text-sm max-w-3xl leading-relaxed">
-              Generate secured, watermarked, domain-locked distribution packages of your hybrid DeepSeek + Gemini 2nd Brain, multi-step search (<code className="text-cyan-300 bg-white/10 px-1 py-0.5 rounded">dsh-tool-web</code>), and autonomous cron agents (<code className="text-cyan-300 bg-white/10 px-1 py-0.5 rounded">dsh-cron</code>) for authorized clients of your choice.
+              {currentMeta.tagline}. Generate secured, watermarked, domain-locked distribution packages of your standalone React widgets, backend routers, and full deployment specs for authorized clients.
             </p>
           </div>
 
@@ -415,7 +598,7 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
               className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-lg transition cursor-pointer"
             >
               {copied ? <Check className="w-4 h-4 text-emerald-300" /> : <Copy className="w-4 h-4" />}
-              <span>{copied ? 'Copied Prompt to Clipboard!' : 'Copy Code / Prompt'}</span>
+              <span>{copied ? 'Copied to Clipboard!' : 'Copy Code / Prompt'}</span>
             </button>
             <button
               onClick={handleDownloadFile}
@@ -445,7 +628,7 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                Client Packaging & Licensing Lock
+                Client Packaging & Licensing Lock ({currentMeta.name})
               </h3>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 Watermark and lock your exported code to a specific client organization and domain.
@@ -590,57 +773,149 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
 
             {/* Feature Checkboxes */}
             <div className="space-y-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase">
-                Included Capabilities
-              </label>
-
-              <label className="flex items-center gap-2.5 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={config.includeWebSearchTool}
-                  onChange={(e) => setConfig({ ...config, includeWebSearchTool: e.target.checked })}
-                  className="w-4 h-4 text-blue-600 rounded border-slate-300 dark:border-slate-600"
-                />
-                <span className="flex items-center gap-1.5 font-medium">
-                  <Search className="w-3.5 h-3.5 text-blue-500" /> Multi-Step Web Search (<code className="text-[10px]">dsh-tool-web</code>)
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase">
+                  {selectedArchetype === 'second_brain' && 'Agent Capabilities'}
+                  {selectedArchetype === 'workplace_ui' && 'Workplace Modules'}
+                  {selectedArchetype === 'voice_plugin' && 'Voice Capabilities'}
+                </label>
+                <span className="text-[10px] text-slate-500 font-mono">
+                  {selectedArchetype}
                 </span>
-              </label>
+              </div>
 
-              <label className="flex items-center gap-2.5 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={config.includeCronScheduler}
-                  onChange={(e) => setConfig({ ...config, includeCronScheduler: e.target.checked })}
-                  className="w-4 h-4 text-blue-600 rounded border-slate-300 dark:border-slate-600"
-                />
-                <span className="flex items-center gap-1.5 font-medium">
-                  <Clock className="w-3.5 h-3.5 text-purple-500" /> Scheduled Cron Engine (<code className="text-[10px]">dsh-cron</code>)
-                </span>
-              </label>
+              {selectedArchetype === 'second_brain' && (
+                <>
+                  <label className="flex items-center gap-2.5 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={config.includeWebSearchTool}
+                      onChange={(e) => setConfig({ ...config, includeWebSearchTool: e.target.checked })}
+                      className="w-4 h-4 text-blue-600 rounded border-slate-300 dark:border-slate-600"
+                    />
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <Search className="w-3.5 h-3.5 text-blue-500" /> Multi-Step Web Search (<code className="text-[10px]">dsh-tool-web</code>)
+                    </span>
+                  </label>
 
-              <label className="flex items-center gap-2.5 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={config.includeDeepSeekHarness}
-                  onChange={(e) => setConfig({ ...config, includeDeepSeekHarness: e.target.checked })}
-                  className="w-4 h-4 text-blue-600 rounded border-slate-300 dark:border-slate-600"
-                />
-                <span className="flex items-center gap-1.5 font-medium">
-                  <Brain className="w-3.5 h-3.5 text-emerald-500" /> DeepThink Reasoning Protocol
-                </span>
-              </label>
+                  <label className="flex items-center gap-2.5 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={config.includeCronScheduler}
+                      onChange={(e) => setConfig({ ...config, includeCronScheduler: e.target.checked })}
+                      className="w-4 h-4 text-blue-600 rounded border-slate-300 dark:border-slate-600"
+                    />
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <Clock className="w-3.5 h-3.5 text-purple-500" /> Scheduled Cron Engine (<code className="text-[10px]">dsh-cron</code>)
+                    </span>
+                  </label>
 
-              <label className="flex items-center gap-2.5 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={config.includeGuardrailsAndBoundaries}
-                  onChange={(e) => setConfig({ ...config, includeGuardrailsAndBoundaries: e.target.checked })}
-                  className="w-4 h-4 text-blue-600 rounded border-slate-300 dark:border-slate-600"
-                />
-                <span className="flex items-center gap-1.5 font-medium">
-                  <Shield className="w-3.5 h-3.5 text-amber-500" /> Real-Time Guardrails & Boundaries
-                </span>
-              </label>
+                  <label className="flex items-center gap-2.5 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={config.includeDeepSeekHarness}
+                      onChange={(e) => setConfig({ ...config, includeDeepSeekHarness: e.target.checked })}
+                      className="w-4 h-4 text-blue-600 rounded border-slate-300 dark:border-slate-600"
+                    />
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <Brain className="w-3.5 h-3.5 text-emerald-500" /> DeepThink Reasoning Protocol
+                    </span>
+                  </label>
+
+                  <label className="flex items-center gap-2.5 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={config.includeGuardrailsAndBoundaries}
+                      onChange={(e) => setConfig({ ...config, includeGuardrailsAndBoundaries: e.target.checked })}
+                      className="w-4 h-4 text-blue-600 rounded border-slate-300 dark:border-slate-600"
+                    />
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <Shield className="w-3.5 h-3.5 text-amber-500" /> Real-Time Guardrails & Boundaries
+                    </span>
+                  </label>
+                </>
+              )}
+
+              {selectedArchetype === 'workplace_ui' && (
+                <>
+                  <div className="p-2.5 bg-blue-50/60 dark:bg-blue-950/40 rounded-xl border border-blue-200 dark:border-blue-800 text-[11px] text-blue-700 dark:text-blue-300 space-y-1">
+                    <div className="font-bold flex items-center gap-1">
+                      <Building2 className="w-3.5 h-3.5" /> 5 Integrated Workspace Tabs:
+                    </div>
+                    <ul className="list-disc pl-4 space-y-0.5 text-slate-600 dark:text-slate-300">
+                      <li>Logic Orchestrator (Workflows & Cron)</li>
+                      <li>Gmail Drafts & AI Email Composer</li>
+                      <li>Google Drive Document Explorer</li>
+                      <li>Sheets Automated Data Grid</li>
+                      <li>Integrated Tasks & Calendar Sync</li>
+                    </ul>
+                  </div>
+
+                  <label className="flex items-center gap-2.5 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={config.includeUIWidget}
+                      onChange={(e) => setConfig({ ...config, includeUIWidget: e.target.checked })}
+                      className="w-4 h-4 text-blue-600 rounded border-slate-300 dark:border-slate-600"
+                    />
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <Command className="w-3.5 h-3.5 text-indigo-500" /> Embeddable Cockpit Shell
+                    </span>
+                  </label>
+
+                  <label className="flex items-center gap-2.5 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={config.includeGuardrailsAndBoundaries}
+                      onChange={(e) => setConfig({ ...config, includeGuardrailsAndBoundaries: e.target.checked })}
+                      className="w-4 h-4 text-blue-600 rounded border-slate-300 dark:border-slate-600"
+                    />
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <Shield className="w-3.5 h-3.5 text-amber-500" /> Executive Guardrails & Scopes
+                    </span>
+                  </label>
+                </>
+              )}
+
+              {selectedArchetype === 'voice_plugin' && (
+                <>
+                  <div className="p-2.5 bg-purple-50/60 dark:bg-purple-950/40 rounded-xl border border-purple-200 dark:border-purple-800 text-[11px] text-purple-700 dark:text-purple-300 space-y-1">
+                    <div className="font-bold flex items-center gap-1">
+                      <Mic className="w-3.5 h-3.5" /> Configured Hotwords & Macros:
+                    </div>
+                    <ul className="list-disc pl-4 space-y-0.5 text-slate-600 dark:text-slate-300">
+                      <li>"Hey Copilot, run weekly briefing"</li>
+                      <li>"Good morning executive digest"</li>
+                      <li>"Scan inbox for urgent items"</li>
+                      <li>"Export latest draft to Drive"</li>
+                    </ul>
+                  </div>
+
+                  <label className="flex items-center gap-2.5 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={config.includeUIWidget}
+                      onChange={(e) => setConfig({ ...config, includeUIWidget: e.target.checked })}
+                      className="w-4 h-4 text-purple-600 rounded border-slate-300 dark:border-slate-600"
+                    />
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <Radio className="w-3.5 h-3.5 text-purple-500" /> Floating Mic & Waveform Widget
+                    </span>
+                  </label>
+
+                  <label className="flex items-center gap-2.5 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={config.includeWebSearchTool}
+                      onChange={(e) => setConfig({ ...config, includeWebSearchTool: e.target.checked })}
+                      className="w-4 h-4 text-purple-600 rounded border-slate-300 dark:border-slate-600"
+                    />
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <Volume2 className="w-3.5 h-3.5 text-indigo-500" /> Web Speech API Text-to-Speech
+                    </span>
+                  </label>
+                </>
+              )}
             </div>
           </div>
 
@@ -838,105 +1113,431 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
           {/* Live Sandbox View */}
           {activeView === 'live_sandbox' && (
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-6">
-              <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                  <Play className="w-5 h-5 text-purple-600" /> Interactive Harness Agent Sandbox
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  Test the standalone DeepSeek Harness agent tool execution and cron scheduling directly in real-time.
-                </p>
-              </div>
-
-              <form onSubmit={handleRunSandbox} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Multi-Step Task Prompt
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={sandboxPrompt}
-                    onChange={(e) => setSandboxPrompt(e.target.value)}
-                    placeholder="Enter an autonomous research, synthesis, or scheduled monitoring command..."
-                    className="w-full text-xs p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 outline-none focus:border-purple-500"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* 1. SECOND BRAIN SANDBOX */}
+              {selectedArchetype === 'second_brain' && (
+                <>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Cron Schedule Expression
-                    </label>
-                    <input
-                      type="text"
-                      value={sandboxCronExpression}
-                      onChange={(e) => setSandboxCronExpression(e.target.value)}
-                      placeholder="0 9 * * 1 (Every Monday 9 AM)"
-                      className="w-full text-xs p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 font-mono"
-                    />
+                    <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                      <Play className="w-5 h-5 text-purple-600" /> Interactive Harness Agent Sandbox
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      Test the standalone DeepSeek Harness agent tool execution and cron scheduling directly in real-time.
+                    </p>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Reasoning Engine
-                    </label>
-                    <select
-                      value={sandboxEngine}
-                      onChange={(e: any) => setSandboxEngine(e.target.value)}
-                      className="w-full text-xs p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-medium"
+                  <form onSubmit={handleRunSandbox} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        Multi-Step Task Prompt
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={sandboxPrompt}
+                        onChange={(e) => setSandboxPrompt(e.target.value)}
+                        placeholder="Enter an autonomous research, synthesis, or scheduled monitoring command..."
+                        className="w-full text-xs p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 outline-none focus:border-purple-500"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          Cron Schedule Expression
+                        </label>
+                        <input
+                          type="text"
+                          value={sandboxCronExpression}
+                          onChange={(e) => setSandboxCronExpression(e.target.value)}
+                          placeholder="0 9 * * 1 (Every Monday 9 AM)"
+                          className="w-full text-xs p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 font-mono"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          Reasoning Engine
+                        </label>
+                        <select
+                          value={sandboxEngine}
+                          onChange={(e: any) => setSandboxEngine(e.target.value)}
+                          className="w-full text-xs p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-medium"
+                        >
+                          <option value="hybrid">Hybrid (DeepSeek R1 + Gemini)</option>
+                          <option value="deepseek">DeepSeek Reasoner Only</option>
+                          <option value="gemini">Gemini 2.5 Flash Only</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isSandboxRunning}
+                      className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition cursor-pointer disabled:opacity-50"
                     >
-                      <option value="hybrid">Hybrid (DeepSeek R1 + Gemini)</option>
-                      <option value="deepseek">DeepSeek Reasoner Only</option>
-                      <option value="gemini">Gemini 2.5 Flash Only</option>
-                    </select>
-                  </div>
-                </div>
+                      {isSandboxRunning ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" /> Dispatching Autonomous Harness Agent...
+                        </>
+                      ) : (
+                        <>
+                          <Play className="w-4 h-4" /> Execute Multi-Step Search & Cron Agent
+                        </>
+                      )}
+                    </button>
+                  </form>
 
-                <button
-                  type="submit"
-                  disabled={isSandboxRunning}
-                  className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition cursor-pointer disabled:opacity-50"
-                >
-                  {isSandboxRunning ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" /> Dispatching Autonomous Harness Agent...
-                    </>
-                  ) : (
-                    <>
-                      <Play className="w-4 h-4" /> Execute Multi-Step Search & Cron Agent
-                    </>
+                  {/* Execution Trace */}
+                  {sandboxTrace.length > 0 && (
+                    <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                      <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                        Agent Execution Trace
+                      </h4>
+                      <div className="space-y-2">
+                        {sandboxTrace.map((trace, idx) => (
+                          <div key={idx} className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 flex items-start gap-3 text-xs">
+                            <span className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-950 text-purple-600 font-bold flex items-center justify-center shrink-0 text-[10px]">
+                              {trace.step}
+                            </span>
+                            <div className="flex-1 space-y-0.5">
+                              <div className="font-bold text-slate-800 dark:text-slate-200 font-mono text-[11px]">{trace.action}</div>
+                              <div className="text-slate-600 dark:text-slate-400">{trace.details}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   )}
-                </button>
-              </form>
 
-              {/* Execution Trace */}
-              {sandboxTrace.length > 0 && (
-                <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-                  <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                    Agent Execution Trace
-                  </h4>
-                  <div className="space-y-2">
-                    {sandboxTrace.map((trace, idx) => (
-                      <div key={idx} className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 flex items-start gap-3 text-xs">
-                        <span className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-950 text-purple-600 font-bold flex items-center justify-center shrink-0 text-[10px]">
-                          {trace.step}
+                  {/* Final Synthesis Result */}
+                  {sandboxResult && (
+                    <div className="p-4 bg-purple-50/50 dark:bg-purple-950/30 rounded-xl border border-purple-200 dark:border-purple-800/60 space-y-2 text-xs text-slate-800 dark:text-slate-200">
+                      <div className="font-bold text-purple-700 dark:text-purple-300 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4" /> Agent Synthesis Completed
+                      </div>
+                      <pre className="whitespace-pre-wrap font-sans text-xs leading-relaxed">{sandboxResult}</pre>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* 2. WORKPLACE UI COCKPIT SANDBOX */}
+              {selectedArchetype === 'workplace_ui' && (
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                        <Building2 className="w-5 h-5 text-blue-600" /> Interactive Workplace Cockpit Preview
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Live interactive test of the modular tabs, background workflows, and Google Workspace integrations.
+                      </p>
+                    </div>
+                    <span className="text-[11px] px-2.5 py-1 bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 font-bold rounded-lg border border-blue-200 dark:border-blue-800 w-fit">
+                      Live Widget Sandbox
+                    </span>
+                  </div>
+
+                  {/* Workplace Tabs Navigation */}
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { id: 'orchestrator', label: 'Logic Orchestrator', icon: Play },
+                      { id: 'gmail', label: 'Gmail Drafts', icon: Mail },
+                      { id: 'drive', label: 'Drive Explorer', icon: HardDrive },
+                      { id: 'sheets', label: 'Sheets Automation', icon: FileSpreadsheet },
+                      { id: 'tasks', label: 'Tasks & Sync', icon: CheckSquare }
+                    ].map((tab) => {
+                      const Icon = tab.icon;
+                      const isActive = workplaceActiveTab === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setWorkplaceActiveTab(tab.id as any)}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                            isActive
+                              ? 'bg-blue-600 text-white shadow-sm'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                          }`}
+                        >
+                          <Icon className="w-3.5 h-3.5" />
+                          <span>{tab.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Tab 1: Orchestrator */}
+                  {workplaceActiveTab === 'orchestrator' && (
+                    <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                          Autonomous Workflows
                         </span>
-                        <div className="flex-1 space-y-0.5">
-                          <div className="font-bold text-slate-800 dark:text-slate-200 font-mono text-[11px]">{trace.action}</div>
-                          <div className="text-slate-600 dark:text-slate-400">{trace.details}</div>
+                        <span className="text-[11px] text-slate-500">Click to execute live</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        {[
+                          'Daily Executive Market Briefing',
+                          'Synthesize Q3 Drive Documents',
+                          'Scan Urgent Inbound Invoices'
+                        ].map((wf) => (
+                          <button
+                            key={wf}
+                            type="button"
+                            onClick={() => handleRunWorkplaceWorkflow(wf)}
+                            disabled={!!workplaceWorkflowRunning}
+                            className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-left hover:border-blue-500 transition cursor-pointer disabled:opacity-50 space-y-1 shadow-xs"
+                          >
+                            <div className="font-bold text-xs text-slate-800 dark:text-slate-200">{wf}</div>
+                            <div className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold flex items-center gap-1">
+                              {workplaceWorkflowRunning === wf ? (
+                                <>
+                                  <Loader2 className="w-3 h-3 animate-spin" /> Running...
+                                </>
+                              ) : (
+                                <>
+                                  <Play className="w-3 h-3" /> Execute Workflow
+                                </>
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Execution Log */}
+                      <div className="space-y-1.5">
+                        <span className="text-[11px] font-bold text-slate-500 uppercase">Workflow Execution Logs</span>
+                        <div className="p-3 bg-slate-900 rounded-xl font-mono text-[11px] text-slate-300 max-h-36 overflow-y-auto space-y-1">
+                          {workplaceLogs.map((log, idx) => (
+                            <div key={idx} className="leading-tight">{log}</div>
+                          ))}
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
+
+                  {/* Tab 2: Gmail Drafts */}
+                  {workplaceActiveTab === 'gmail' && (
+                    <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-800 dark:text-slate-200">AI-Prepared Gmail Drafts (2)</span>
+                        <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">Google Workspace Synced</span>
+                      </div>
+                      <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+                        <div className="flex justify-between text-xs">
+                          <span className="font-bold text-slate-900 dark:text-slate-100">To: legal@apexhealth.com</span>
+                          <span className="text-slate-400 text-[10px]">Today, 10:14 AM</span>
+                        </div>
+                        <div className="text-xs font-semibold text-slate-700 dark:text-slate-300">Subject: Vantage AI Enterprise Licensing Agreement & Domain Validation</div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          Dear Counsel, attached is the watermarked distribution package for the Vantage 2nd Brain and Workplace Cockpit...
+                        </p>
+                        <div className="pt-2 flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => alert('Draft approved! Sent to Gmail drafts folder.')}
+                            className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-500 cursor-pointer"
+                          >
+                            Approve & Push to Gmail
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tab 3: Drive Explorer */}
+                  {workplaceActiveTab === 'drive' && (
+                    <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-800 dark:text-slate-200">Connected Drive Documents</span>
+                        <span className="text-[11px] text-blue-600 font-semibold">3 Documents Grounded</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        {[
+                          { name: 'Vantage_Q3_Strategic_Deck.gdoc', size: '2.4 MB', status: 'Vector Indexed' },
+                          { name: 'Apex_Health_License_Agreement.pdf', size: '480 KB', status: 'Watermarked' },
+                          { name: 'Annual_Financial_Projections.gsheet', size: '1.8 MB', status: 'Live Synced' }
+                        ].map((doc) => (
+                          <div key={doc.name} className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
+                            <div className="font-bold text-xs text-slate-800 dark:text-slate-200 truncate">{doc.name}</div>
+                            <div className="text-[10px] text-slate-400">{doc.size} • <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{doc.status}</span></div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tab 4: Sheets Automation */}
+                  {workplaceActiveTab === 'sheets' && (
+                    <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-800 dark:text-slate-200">Sheets Automation Grid</span>
+                        <span className="text-[10px] font-mono bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 px-2 py-0.5 rounded-md">
+                          Auto-Recalculate Active
+                        </span>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs text-left">
+                          <thead className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                            <tr>
+                              <th className="p-2">Metric</th>
+                              <th className="p-2">Q1 Actual</th>
+                              <th className="p-2">Q2 Projected</th>
+                              <th className="p-2">Variance</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                            <tr>
+                              <td className="p-2 font-medium">Enterprise ARR</td>
+                              <td className="p-2 font-mono">$1,240,000</td>
+                              <td className="p-2 font-mono">$1,850,000</td>
+                              <td className="p-2 font-mono text-emerald-600 font-bold">+49.1%</td>
+                            </tr>
+                            <tr>
+                              <td className="p-2 font-medium">Gross Margin</td>
+                              <td className="p-2 font-mono">84.2%</td>
+                              <td className="p-2 font-mono">87.5%</td>
+                              <td className="p-2 font-mono text-emerald-600 font-bold">+3.3%</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tab 5: Tasks & Sync */}
+                  {workplaceActiveTab === 'tasks' && (
+                    <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-800 dark:text-slate-200">Interactive Tasks</span>
+                        <span className="text-[11px] text-slate-500">{workplaceTasks.filter(t => t.done).length} of {workplaceTasks.length} Done</span>
+                      </div>
+                      <div className="space-y-2">
+                        {workplaceTasks.map((t) => (
+                          <div
+                            key={t.id}
+                            onClick={() => {
+                              setWorkplaceTasks(workplaceTasks.map(x => x.id === t.id ? { ...x, done: !x.done } : x));
+                            }}
+                            className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs cursor-pointer hover:border-blue-400"
+                          >
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={t.done}
+                                onChange={() => {}}
+                                className="w-4 h-4 text-blue-600 rounded"
+                              />
+                              <span className={t.done ? 'line-through text-slate-400' : 'text-slate-800 dark:text-slate-200 font-medium'}>
+                                {t.title}
+                              </span>
+                            </div>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                              {t.priority}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Final Synthesis Result */}
-              {sandboxResult && (
-                <div className="p-4 bg-purple-50/50 dark:bg-purple-950/30 rounded-xl border border-purple-200 dark:border-purple-800/60 space-y-2 text-xs text-slate-800 dark:text-slate-200">
-                  <div className="font-bold text-purple-700 dark:text-purple-300 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4" /> Agent Synthesis Completed
+              {/* 3. VOICE PLUGIN SANDBOX */}
+              {selectedArchetype === 'voice_plugin' && (
+                <div className="space-y-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                        <Mic className="w-5 h-5 text-purple-600" /> Interactive Voice Assistant Sandbox
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Test speech-to-action macro dispatching, hotword recognition, and real-time audio waveforms.
+                      </p>
+                    </div>
+                    <span className="text-[11px] px-2.5 py-1 bg-purple-50 dark:bg-purple-950/80 text-purple-600 dark:text-purple-400 font-bold rounded-lg border border-purple-200 dark:border-purple-800 w-fit">
+                      Live Voice Engine
+                    </span>
                   </div>
-                  <pre className="whitespace-pre-wrap font-sans text-xs leading-relaxed">{sandboxResult}</pre>
+
+                  {/* Audio Visualizer Stage */}
+                  <div className="p-6 bg-gradient-to-b from-slate-900 to-purple-950 rounded-2xl border border-purple-900/50 text-white flex flex-col items-center justify-center text-center space-y-4 shadow-inner">
+                    <button
+                      type="button"
+                      onClick={() => handleSimulateVoiceCommand('Hey Copilot, run enterprise briefing')}
+                      className={`w-20 h-20 rounded-full flex items-center justify-center cursor-pointer transition-all shadow-xl ${
+                        isVoiceListening
+                          ? 'bg-red-600 text-white animate-pulse ring-8 ring-red-500/30'
+                          : 'bg-purple-600 hover:bg-purple-500 text-white ring-4 ring-purple-400/20'
+                      }`}
+                      title="Click to toggle listening / simulate voice input"
+                    >
+                      <Mic className="w-8 h-8" />
+                    </button>
+
+                    {/* Animated Waveform Equalizer Bars */}
+                    <div className="flex items-center gap-1.5 h-10">
+                      {[16, 24, 40, 28, 36, 48, 20, 32, 44, 26, 18, 38, 22].map((height, i) => (
+                        <div
+                          key={i}
+                          className={`w-1 rounded-full transition-all duration-300 ${
+                            isVoiceListening ? 'bg-purple-400' : 'bg-slate-600'
+                          }`}
+                          style={{
+                            height: isVoiceListening ? `${Math.max(12, (height * (1 + Math.sin(i + Date.now() / 200))) % 40)}px` : '8px'
+                          }}
+                        />
+                      ))}
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="text-xs font-bold text-purple-200">
+                        {isVoiceListening ? '● Listening & Analyzing Audio Waveform...' : 'Microphone Idle (Click mic or a voice trigger below)'}
+                      </div>
+                      <div className="text-[11px] text-slate-300 font-mono italic">
+                        "{voiceTranscript}"
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Voice Trigger Hotword Simulator Buttons */}
+                  <div className="space-y-2">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                      Simulate Spoken Hotword Commands
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {[
+                        'Hey Copilot, summarize my morning priorities',
+                        'Scan inbox for urgent client requests',
+                        'Export latest report to Drive'
+                      ].map((cmd) => (
+                        <button
+                          key={cmd}
+                          type="button"
+                          onClick={() => handleSimulateVoiceCommand(cmd)}
+                          disabled={isVoiceListening}
+                          className="p-3 bg-slate-50 dark:bg-slate-800 hover:bg-purple-50 dark:hover:bg-purple-950/40 text-left rounded-xl border border-slate-200 dark:border-slate-700 hover:border-purple-400 text-xs text-slate-800 dark:text-slate-200 transition cursor-pointer disabled:opacity-50 space-y-1"
+                        >
+                          <div className="font-semibold text-[11px] flex items-center gap-1 text-purple-600 dark:text-purple-400">
+                            <Radio className="w-3 h-3" /> Voice Macro:
+                          </div>
+                          <div className="line-clamp-2">"{cmd}"</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Voice Assistant Response */}
+                  {voiceResponse && (
+                    <div className="p-4 bg-purple-50/70 dark:bg-purple-950/40 rounded-2xl border border-purple-200 dark:border-purple-800 text-xs space-y-1.5">
+                      <div className="font-bold text-purple-700 dark:text-purple-300 flex items-center gap-1.5">
+                        <Volume2 className="w-4 h-4" /> Spoken Audio Response (TTS Synthesizer)
+                      </div>
+                      <p className="text-slate-700 dark:text-slate-300 leading-relaxed font-sans">
+                        {voiceResponse}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -951,9 +1552,21 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
                   <span className="font-mono text-slate-300 font-semibold">
                     {activeView === 'prompt' && `${config.pluginName.toLowerCase()}-llm-prompt.md`}
                     {activeView === 'react_widget' && `${config.pluginName}.tsx`}
-                    {activeView === 'backend_router' && `vantageHarnessRouter.ts`}
-                    {activeView === 'dsh_cli' && `dsh-profile.yaml`}
-                    {activeView === 'html_embed' && `embed-snippet.html`}
+                    {activeView === 'backend_router' && (
+                      selectedArchetype === 'voice_plugin' 
+                        ? 'vantageVoiceRouter.ts' 
+                        : selectedArchetype === 'workplace_ui' 
+                        ? 'vantageWorkplaceRouter.ts' 
+                        : 'vantageHarnessRouter.ts'
+                    )}
+                    {activeView === 'dsh_cli' && (
+                      selectedArchetype === 'voice_plugin'
+                        ? 'voice-manifest.json'
+                        : selectedArchetype === 'workplace_ui'
+                        ? 'workplace-manifest.json'
+                        : 'dsh-profile.yaml'
+                    )}
+                    {activeView === 'html_embed' && `${config.pluginName.toLowerCase()}-embed.html`}
                   </span>
                   <span className="text-[10px] text-slate-400">({activeContent.length} chars)</span>
                 </div>

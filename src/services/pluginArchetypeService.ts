@@ -1,5 +1,33 @@
 import { GuardrailSettings, UserMemory } from '../types';
 import { compileGuardrailPromptDirectives } from './guardrailService';
+import {
+  generateWorkplaceUIPrompt,
+  generateWorkplaceUIReactCode,
+  generateWorkplaceUIHookCode,
+  generateWorkplaceUIBackendCode,
+  generateWorkplaceUIScriptEmbed
+} from './workplacePluginService';
+import {
+  generateVoicePluginPrompt,
+  generateVoicePluginReactCode,
+  generateVoicePluginHookCode,
+  generateVoicePluginBackendCode,
+  generateVoicePluginScriptEmbed
+} from './voicePluginService';
+
+export type PluginArchetypeId = 'second_brain' | 'workplace_ui' | 'voice_plugin';
+
+export interface PluginArchetypeMeta {
+  id: PluginArchetypeId;
+  name: string;
+  componentName: string;
+  badge: string;
+  tagline: string;
+  description: string;
+  icon: 'brain' | 'layout' | 'mic';
+  licensePrefix: string;
+  defaultConfig: PluginPackagingConfig;
+}
 
 export interface PluginPackagingConfig {
   pluginName: string;
@@ -30,6 +58,241 @@ export const DEFAULT_PACKAGING_CONFIG: PluginPackagingConfig = {
   defaultModelEngine: 'hybrid',
   apiBasePath: '/api/vantage'
 };
+
+export const VANTAGE_PLUGIN_ARCHETYPES: PluginArchetypeMeta[] = [
+  {
+    id: 'second_brain',
+    name: 'Vantage AI Studio-2nd Brain Plugin Module',
+    componentName: 'VantageBrainHarnessPlugin',
+    badge: 'Cognitive Core & Agent',
+    tagline: 'Autonomous DeepSeek & Gemini Harness with Multi-Step Web Search, Cron Triggers & Permanent Vector Memory',
+    description: 'Autonomous 2nd brain memory store, multi-step search (dsh-tool-web), cron scheduler (dsh-cron), and real-time guardrails.',
+    icon: 'brain',
+    licensePrefix: 'VNTG-2NDBRAIN',
+    defaultConfig: {
+      ...DEFAULT_PACKAGING_CONFIG,
+      pluginName: 'VantageBrainHarnessPlugin',
+      apiBasePath: '/api/vantage'
+    }
+  },
+  {
+    id: 'workplace_ui',
+    name: 'Vantage AI Studio-Workspace UI Plugin Module',
+    componentName: 'VantageWorkplaceUIPlugin',
+    badge: 'Multi-App Cockpit',
+    tagline: 'Embeddable Modular Workspace Suite with Google Workspace & Workflow Orchestrator Tabs',
+    description: 'Embeddable workspace dashboard featuring interactive tabs (Studio, Logic Orchestrator, Gmail Drafts, Drive Explorer, Sheets, Tasks, Calendar, Contacts) with workflow triggers and connected cloud accounts.',
+    icon: 'layout',
+    licensePrefix: 'VNTG-WORKPLACE',
+    defaultConfig: {
+      ...DEFAULT_PACKAGING_CONFIG,
+      pluginName: 'VantageWorkplaceUIPlugin',
+      apiBasePath: '/api/vantage-workplace'
+    }
+  },
+  {
+    id: 'voice_plugin',
+    name: 'Vantage AI Studio-Voice Orchestrator Plugin Module',
+    componentName: 'VantageVoiceAssistantPlugin',
+    badge: 'Real-Time Voice Assistant',
+    tagline: 'Speech-to-Action Voice Macro Engine with Live Audio Visualizer & Background Dispatch',
+    description: 'Voice-controlled AI assistant widget with custom trigger phrases ("Hey Copilot", "Good morning briefing"), real-time audio waveform animation, speech-to-text transcription, and macro workflow dispatching.',
+    icon: 'mic',
+    licensePrefix: 'VNTG-VOICE',
+    defaultConfig: {
+      ...DEFAULT_PACKAGING_CONFIG,
+      pluginName: 'VantageVoiceAssistantPlugin',
+      apiBasePath: '/api/vantage-voice'
+    }
+  }
+];
+
+export function getArchetypeMeta(id: PluginArchetypeId): PluginArchetypeMeta {
+  return VANTAGE_PLUGIN_ARCHETYPES.find(a => a.id === id) || VANTAGE_PLUGIN_ARCHETYPES[0];
+}
+
+/**
+ * Dispatcher: Generates the LLM Build Prompt based on the selected plugin archetype
+ */
+export function generatePluginBuildPrompt(
+  archetypeId: PluginArchetypeId,
+  config: PluginPackagingConfig,
+  currentGuardrails?: GuardrailSettings,
+  sampleMemories?: UserMemory[]
+): string {
+  if (archetypeId === 'workplace_ui') {
+    return generateWorkplaceUIPrompt(config);
+  }
+  if (archetypeId === 'voice_plugin') {
+    return generateVoicePluginPrompt(config);
+  }
+  return generateLLMBuildModePrompt(config, currentGuardrails, sampleMemories);
+}
+
+/**
+ * Dispatcher: Generates the Standalone React Widget code for the selected plugin archetype
+ */
+export function generatePluginReactCode(
+  archetypeId: PluginArchetypeId,
+  config: PluginPackagingConfig
+): string {
+  if (archetypeId === 'workplace_ui') {
+    return generateWorkplaceUIReactCode(config);
+  }
+  if (archetypeId === 'voice_plugin') {
+    return generateVoicePluginReactCode(config);
+  }
+  return generateStandaloneReactWidgetCode(config);
+}
+
+/**
+ * Generates the Headless React Hook for the 2nd Brain Harness archetype
+ */
+export function generateHeadlessHookCode(config: PluginPackagingConfig): string {
+  return `import { useState, useCallback, useEffect } from 'react';
+
+export interface BrainMemoryItem {
+  id: string;
+  category: string;
+  key: string;
+  value: string;
+  importance: number;
+}
+
+export interface BrainHarnessStep {
+  step: number;
+  action: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  details: string;
+}
+
+export interface UseVantageBrainOptions {
+  apiBasePath?: string;
+  autoSync?: boolean;
+}
+
+export function useVantageBrainHarness(options: UseVantageBrainOptions = {}) {
+  const { apiBasePath = '/api/vantage-harness', autoSync = true } = options;
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [executionTrace, setExecutionTrace] = useState<BrainHarnessStep[]>([]);
+  const [memories, setMemories] = useState<BrainMemoryItem[]>([]);
+  const [lastResponse, setLastResponse] = useState<string | null>(null);
+
+  const executeTask = useCallback(async (prompt: string, context?: Record<string, any>) => {
+    setIsExecuting(true);
+    setExecutionTrace([{ step: 1, action: 'Recall relevant memories', status: 'running', details: 'Querying vector memory...' }]);
+    try {
+      const res = await fetch(\`\${apiBasePath}/execute\`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, context, includeMemory: ${config.includeSecondBrainMemory} })
+      });
+      const data = await res.json();
+      setExecutionTrace(data.trace || [{ step: 2, action: 'Agent Completion', status: 'completed', details: 'Task successfully processed.' }]);
+      setLastResponse(data.result || data.text || 'Success');
+      return data;
+    } catch (err: any) {
+      setExecutionTrace(prev => [...prev, { step: prev.length + 1, action: 'Execution Error', status: 'failed', details: err.message }]);
+      throw err;
+    } finally {
+      setIsExecuting(false);
+    }
+  }, [apiBasePath]);
+
+  return {
+    isExecuting,
+    executionTrace,
+    memories,
+    lastResponse,
+    executeTask
+  };
+}
+`;
+}
+
+/**
+ * Dispatcher: Generates the Headless Hook code for the selected plugin archetype
+ */
+export function generatePluginHookCode(
+  archetypeId: PluginArchetypeId,
+  config: PluginPackagingConfig
+): string {
+  if (archetypeId === 'workplace_ui') {
+    return generateWorkplaceUIHookCode(config);
+  }
+  if (archetypeId === 'voice_plugin') {
+    return generateVoicePluginHookCode(config);
+  }
+  return generateHeadlessHookCode(config);
+}
+
+/**
+ * Dispatcher: Generates the Backend Router code for the selected plugin archetype
+ */
+export function generatePluginBackendCode(
+  archetypeId: PluginArchetypeId,
+  config: PluginPackagingConfig
+): string {
+  if (archetypeId === 'workplace_ui') {
+    return generateWorkplaceUIBackendCode(config);
+  }
+  if (archetypeId === 'voice_plugin') {
+    return generateVoicePluginBackendCode(config);
+  }
+  return generateBackendRouterCode(config);
+}
+
+/**
+ * Dispatcher: Generates CLI or Module Config
+ */
+export function generatePluginCliOrConfig(
+  archetypeId: PluginArchetypeId,
+  config: PluginPackagingConfig
+): string {
+  if (archetypeId === 'workplace_ui') {
+    return `# Vantage AI Workplace UI Module Specification
+name: "${config.pluginName}"
+version: "2.5.0"
+category: "workplace-cockpit"
+apiBasePath: "${config.apiBasePath}"
+tabs:
+  - "orchestrator"
+  - "drafts"
+  - "drive"
+  - "sheets"
+  - "tasks"
+`;
+  }
+  if (archetypeId === 'voice_plugin') {
+    return `# Vantage AI Voice & Audio Macros Specification
+name: "${config.pluginName}"
+version: "2.5.0"
+category: "voice-assistant"
+apiBasePath: "${config.apiBasePath}"
+hotwords:
+  - "Hey Copilot"
+  - "Good morning briefing"
+  - "Execute workflow"
+`;
+  }
+  return generateDshCliConfig(config);
+}
+
+/**
+ * Dispatcher: Generates Universal Script Embed code
+ */
+export function generatePluginScriptEmbed(
+  archetypeId: PluginArchetypeId,
+  config: PluginPackagingConfig
+): string {
+  if (archetypeId === 'workplace_ui') {
+    return generateWorkplaceUIScriptEmbed(config);
+  }
+  if (archetypeId === 'voice_plugin') {
+    return generateVoicePluginScriptEmbed(config);
+  }
+  return generateUniversalScriptEmbed(config);
+}
 
 /**
  * Generates the master Copy-Pasteable LLM Chat Prompt for Build Mode injection into
@@ -781,23 +1044,27 @@ const inMemoryMemories: Array<{ id: string; title: string; content: string; tags
   }
 ];
 
-// 1. AI 2nd Brain Memory Recall Endpoint
+// 1. AI 2nd Brain Memory Recall Endpoint (Supports BYOK custom keys via headers or body)
 vantageHarnessRouter.post('/recall', async (req, res) => {
   try {
     const { query, engine = '${config.defaultModelEngine}', history = [] } = req.body;
     if (!query) return res.status(400).json({ error: 'Query is required' });
 
+    // BYOK Key Resolution (checks client header, body, or server env)
+    const effectiveDeepSeekKey = (req.headers['x-deepseek-key'] as string) || req.body.deepseekApiKey || process.env.DEEPSEEK_API_KEY;
+    const effectiveGeminiKey = (req.headers['x-gemini-key'] as string) || req.body.geminiApiKey || process.env.GEMINI_API_KEY;
+
     let answer = '';
     let engineUsed = engine;
 
     // Check DeepSeek first if configured
-    if ((engine === 'deepseek' || engine === 'hybrid') && process.env.DEEPSEEK_API_KEY) {
+    if ((engine === 'deepseek' || engine === 'hybrid') && effectiveDeepSeekKey) {
       try {
         const dsRes = await fetch('https://api.deepseek.com/chat/completions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': \`Bearer \${process.env.DEEPSEEK_API_KEY}\`
+            'Authorization': \`Bearer \${effectiveDeepSeekKey}\`
           },
           body: JSON.stringify({
             model: 'deepseek-chat',
@@ -819,12 +1086,13 @@ vantageHarnessRouter.post('/recall', async (req, res) => {
     }
 
     if (!answer) {
-      const resp = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+      const activeAi = effectiveGeminiKey ? new GoogleGenAI({ apiKey: effectiveGeminiKey }) : ai;
+      const resp = await activeAi.models.generateContent({
+        model: 'gemini-2.5-flash',
         contents: query
       });
       answer = resp.text || 'No response returned.';
-      engineUsed = 'gemini-3.8-flash';
+      engineUsed = 'gemini-2.5-flash';
     }
 
     res.json({ answer, engineUsed, memoriesSearched: inMemoryMemories.length });

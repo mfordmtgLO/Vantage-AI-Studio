@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   MessageSquare, Send, Phone, User, Shield, CheckCircle2, Clock, 
   Trash2, Bell, Sparkles, Smartphone, Mail, ChevronRight, Search, 
-  Filter, CheckSquare, RefreshCw, Eye, Building2, ExternalLink
+  Filter, CheckSquare, RefreshCw, Eye, Building2, ExternalLink,
+  Copy, Check
 } from 'lucide-react';
 import { useAccountPathway } from '../context/AccountPathwayContext';
 
@@ -15,8 +16,12 @@ interface VisitorNote {
   userEmail?: string;
 }
 
-export const MobileAdminDashboard: React.FC<{ onOpenDesktopView?: () => void }> = ({ onOpenDesktopView }) => {
+export const MobileAdminDashboard: React.FC<{ 
+  onOpenDesktopView?: () => void;
+  onOpenPluginVault?: () => void;
+}> = ({ onOpenDesktopView, onOpenPluginVault }) => {
   const [activeTab, setActiveTab] = useState<'notes' | 'customers' | 'quick-sms' | 'workspace' | 'settings'>('notes');
+  const [copiedUrlType, setCopiedUrlType] = useState<string | null>(null);
   const {
     pathway,
     setPathway,
@@ -98,15 +103,27 @@ export const MobileAdminDashboard: React.FC<{ onOpenDesktopView?: () => void }> 
               <p className="text-[11px] text-slate-400">Mobile Command Center</p>
             </div>
           </div>
-          {onOpenDesktopView && (
-            <button
-              onClick={onOpenDesktopView}
-              className="text-[11px] font-semibold text-slate-400 hover:text-white bg-slate-800/80 px-2.5 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1 cursor-pointer"
-            >
-              <Eye className="w-3.5 h-3.5" />
-              Desktop View
-            </button>
-          )}
+          <div className="flex items-center gap-1.5">
+            {onOpenPluginVault && (
+              <button
+                onClick={onOpenPluginVault}
+                className="text-[11px] font-semibold text-purple-300 hover:text-white bg-purple-950/70 px-2.5 py-1.5 rounded-lg border border-purple-800/80 transition flex items-center gap-1 cursor-pointer"
+                title="Open Plugin Archetypes Generator"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                Plugins
+              </button>
+            )}
+            {onOpenDesktopView && (
+              <button
+                onClick={onOpenDesktopView}
+                className="text-[11px] font-semibold text-slate-400 hover:text-white bg-slate-800/80 px-2.5 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1 cursor-pointer"
+              >
+                <Eye className="w-3.5 h-3.5" />
+                Desktop
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Mobile Sub-Nav Pills */}
@@ -420,15 +437,110 @@ export const MobileAdminDashboard: React.FC<{ onOpenDesktopView?: () => void }> 
         )}
 
         {activeTab === 'settings' && (
-          <div className="space-y-3">
+          <div className="space-y-4">
+            {/* Direct Secret Admin URLs Card */}
+            <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5 text-blue-400" />
+                  Mike Ford Direct Admin URLs (Bookmarks)
+                </h4>
+                <span className="text-[10px] bg-blue-950 text-blue-300 font-bold px-2 py-0.5 rounded-full border border-blue-800">
+                  Direct Links Only
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                As requested, the Admin Vault button has been removed from the public website. Use these direct URLs to bookmark or access your back-end dashboard:
+              </p>
+
+              <div className="space-y-2.5 pt-1">
+                {[
+                  {
+                    id: 'mobile_admin',
+                    title: 'Dedicated iPhone Mobile Admin View',
+                    desc: 'Clean mobile-first command center for iPhone Safari / Home Screen.',
+                    param: '?mobile_admin=true'
+                  },
+                  {
+                    id: 'admin_plugins',
+                    title: 'Standalone Plugin Archetypes Vault',
+                    desc: '2nd Brain, Workplace UI, and Voice Plugin generators & distribution.',
+                    param: '?tab=admin_plugins'
+                  },
+                  {
+                    id: 'admin_general',
+                    title: 'Direct Admin Dashboard Access',
+                    desc: 'Standard secured admin bypass to the back-end workspace.',
+                    param: '?admin=true'
+                  }
+                ].map((item) => {
+                  const fullUrl = typeof window !== 'undefined' ? `${window.location.origin}${item.param}` : item.param;
+                  const isCopied = copiedUrlType === item.id;
+                  return (
+                    <div key={item.id} className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="text-xs font-bold text-slate-200">{item.title}</div>
+                          <div className="text-[10px] text-slate-400">{item.desc}</div>
+                        </div>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 text-blue-400 font-semibold shrink-0">
+                          {item.param}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-1">
+                        <input
+                          type="text"
+                          readOnly
+                          value={fullUrl}
+                          className="flex-1 text-[11px] font-mono px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 select-all outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(fullUrl);
+                            setCopiedUrlType(item.id);
+                            setTimeout(() => setCopiedUrlType(null), 2500);
+                          }}
+                          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shrink-0"
+                        >
+                          {isCopied ? <Check className="w-3 h-3 text-emerald-300" /> : <Copy className="w-3 h-3" />}
+                          <span>{isCopied ? 'Copied' : 'Copy'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* iPhone Home Screen Instructions */}
             <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 space-y-2">
               <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
                 <Smartphone className="w-4 h-4 text-blue-400" />
-                Add to iPhone Home Screen
+                Add Dedicated Mobile Admin to iPhone Home Screen
               </h4>
               <p className="text-[11px] text-slate-400 leading-relaxed">
-                Tap the Safari <strong>Share button (square with arrow)</strong> at the bottom of your screen, then select <strong>Add to Home Screen</strong>. This will install your direct Mike Ford Admin app icon!
+                1. Open your dedicated iPhone URL (<span className="text-blue-400 font-mono font-semibold">?mobile_admin=true</span>) in Safari.<br />
+                2. Tap the Safari <strong>Share button (square with arrow icon)</strong> at the bottom bar.<br />
+                3. Scroll down and tap <strong>Add to Home Screen</strong>.<br />
+                4. Name it <strong>Vantage Admin</strong> and tap <strong>Add</strong>.
               </p>
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const mobileUrl = `${window.location.origin}/?mobile_admin=true`;
+                    navigator.clipboard.writeText(mobileUrl);
+                    setCopiedUrlType('mobile_admin_main');
+                    setTimeout(() => setCopiedUrlType(null), 2500);
+                  }}
+                  className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 border border-slate-700 transition cursor-pointer"
+                >
+                  {copiedUrlType === 'mobile_admin_main' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedUrlType === 'mobile_admin_main' ? 'Mobile Admin URL Copied!' : 'Copy iPhone Mobile Admin URL'}</span>
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -45,7 +45,11 @@ export const ConnectWorkspaceModal: React.FC = () => {
       await connectWorkspace();
       setIsWorkspaceModalOpen(false);
     } catch (err: any) {
-      setError(err?.message || 'Could not connect to Google Workspace. You can continue using Google Apps mode freely.');
+      if (err?.code === 'auth/unauthorized-domain' || (err?.message && err.message.includes('unauthorized-domain'))) {
+        setError(`Domain not authorized: Please add "${window.location.hostname}" to Authorized Domains in your Firebase Console (Authentication > Settings > Authorized domains).`);
+      } else {
+        setError(err?.message || 'Could not connect to Google Workspace. You can continue using Google Apps mode freely.');
+      }
     } finally {
       setLoading(false);
     }

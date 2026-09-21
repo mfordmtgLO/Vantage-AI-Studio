@@ -24,6 +24,13 @@ import { RememberKnowledgeBaseModal } from './components/RememberKnowledgeBaseMo
 import { AgentMemoryExplorerModal } from './components/AgentMemoryExplorerModal';
 import { GuardrailsModal } from './components/GuardrailsModal';
 import { MemoryScenariosModal } from './components/MemoryScenariosModal';
+import { PluginIntegrationWizardModal } from './components/PluginIntegrationWizardModal';
+import { PluginSalesAssistantModal } from './components/PluginSalesAssistantModal';
+import { FullWebsiteScaffoldingModal } from './components/FullWebsiteScaffoldingModal';
+import { CommercialLicenseProtectionStudio } from './components/CommercialLicenseProtectionStudio';
+import { CommercialPitchDeckModal } from './components/CommercialPitchDeckModal';
+import { ByokCredentialsModal } from './components/ByokCredentialsModal';
+import { ByokChecklistGuideModal } from './components/ByokChecklistGuideModal';
 import { safeAtob } from './utils/base64';
 
 export default function App() {
@@ -31,8 +38,28 @@ export default function App() {
   const [needsAuth, setNeedsAuth] = useState<boolean>(true);
   const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>('studio');
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get('tab');
+      const isAdminQuery = urlParams.get('admin') === 'true' || urlParams.get('admin_vault') === 'true';
+      if (isAdminQuery || tabParam === 'admin' || tabParam === 'admin_plugins') {
+        return 'admin_plugins';
+      }
+      if (tabParam && ['studio', 'brain', 'real_estate', 'orchestrator', 'scheduler', 'drafts', 'gmail', 'calendar', 'drive', 'sheets', 'tasks', 'contacts', 'voice-macros', 'admin_plugins'].includes(tabParam)) {
+        return tabParam as WorkspaceTab;
+      }
+    } catch {}
+    return 'studio';
+  });
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState<boolean>(false);
+  const [isWizardOpen, setIsWizardOpen] = useState<boolean>(false);
+  const [isSalesAssistantOpen, setIsSalesAssistantOpen] = useState<boolean>(false);
+  const [isScaffoldingOpen, setIsScaffoldingOpen] = useState<boolean>(false);
+  const [isLicenseStudioOpen, setIsLicenseStudioOpen] = useState<boolean>(false);
+  const [isPitchDeckOpen, setIsPitchDeckOpen] = useState<boolean>(false);
+  const [isByokDrawerOpen, setIsByokDrawerOpen] = useState<boolean>(false);
+  const [isByokChecklistOpen, setIsByokChecklistOpen] = useState<boolean>(false);
   const [isMobileAdminMode, setIsMobileAdminMode] = useState<boolean>(() => {
     return new URLSearchParams(window.location.search).get('mobile_admin') === 'true';
   });
@@ -44,6 +71,26 @@ export default function App() {
 
   // Shared workflow import state from URL query
   const [pendingImportWorkflow, setPendingImportWorkflow] = useState<ShareableWorkflowData | null>(null);
+
+  const createGuestUser = (): User => ({
+    uid: 'guest_user_vantage',
+    displayName: 'Guest Explorer',
+    email: 'guest@vantage.workspace',
+    photoURL: null,
+    emailVerified: true,
+    isAnonymous: true,
+    metadata: {},
+    providerData: [],
+    refreshToken: '',
+    tenantId: null,
+    delete: async () => {},
+    getIdToken: async () => '',
+    getIdTokenResult: async () => ({} as any),
+    reload: async () => {},
+    toJSON: () => ({}),
+    phoneNumber: null,
+    providerId: 'guest',
+  } as unknown as User);
 
   useEffect(() => {
     // Check if a shared workflow query is present in the URL
@@ -71,6 +118,17 @@ export default function App() {
     let isMounted = true;
 
     async function initializeAuth() {
+      // Check if user previously logged in via guest mode
+      try {
+        if (localStorage.getItem('vantage_guest_mode') === 'true') {
+          if (isMounted) {
+            setUser(createGuestUser());
+            setNeedsAuth(false);
+          }
+          return;
+        }
+      } catch {}
+
       try {
         const redirectResult = await checkRedirectSignIn();
         if (redirectResult && isMounted) {
@@ -81,7 +139,11 @@ export default function App() {
       } catch (err: any) {
         console.warn('Redirect sign-in inspection:', err);
         if (isMounted) {
-          setAuthError(err?.message || 'Error processing Google sign-in redirect.');
+          if (err?.code === 'auth/unauthorized-domain' || (err?.message && err.message.includes('unauthorized-domain'))) {
+            setAuthError('auth/unauthorized-domain');
+          } else {
+            setAuthError(err?.message || 'Error processing Google sign-in redirect.');
+          }
         }
       }
 
@@ -127,7 +189,9 @@ export default function App() {
     } catch (err: any) {
       console.error('Login failed:', err);
       let message = err?.message || 'Google sign-in could not be completed.';
-      if (err?.code === 'auth/popup-timeout') {
+      if (err?.code === 'auth/unauthorized-domain' || (err?.message && err.message.includes('unauthorized-domain'))) {
+        message = 'auth/unauthorized-domain';
+      } else if (err?.code === 'auth/popup-timeout') {
         message = 'Safari or your browser took too long to open the sign-in pop-up. Tap "Continue with Direct Sign-In" below to sign in directly.';
       } else if (err?.code === 'auth/popup-blocked') {
         message = 'Safari blocked the sign-in pop-up window. Tap "Continue with Direct Sign-In" below to sign in without pop-ups.';
@@ -142,12 +206,24 @@ export default function App() {
     }
   };
 
+  const handleGuestLogin = () => {
+    try {
+      localStorage.setItem('vantage_guest_mode', 'true');
+    } catch {}
+    setUser(createGuestUser());
+    setNeedsAuth(false);
+    setAuthError(null);
+  };
+
   const handleCancelLogin = () => {
     setIsLoggingIn(false);
     setAuthError(null);
   };
 
   const handleLogout = async () => {
+    try {
+      localStorage.removeItem('vantage_guest_mode');
+    } catch {}
     await logout();
     setUser(null);
     setNeedsAuth(true);
@@ -175,6 +251,12 @@ export default function App() {
               const newUrl = window.location.pathname;
               window.history.replaceState({}, document.title, newUrl);
               setIsMobileAdminMode(false);
+            }}
+            onOpenPluginVault={() => {
+              const newUrl = window.location.pathname + '?tab=admin_plugins';
+              window.history.replaceState({}, document.title, newUrl);
+              setActiveTab('admin_plugins');
+              setIsMobileAdminMode(false);
             }} 
           />
           <ConnectWorkspaceModal />
@@ -188,6 +270,7 @@ export default function App() {
       <ThemeProvider>
         <AuthCard
           onLogin={handleLogin}
+          onGuestLogin={handleGuestLogin}
           onCancelLogin={handleCancelLogin}
           isLoggingIn={isLoggingIn}
           error={authError}
@@ -208,6 +291,13 @@ export default function App() {
               user={user}
               onLogout={handleLogout}
               onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
+              onOpenWizard={() => setIsWizardOpen(true)}
+              onOpenSalesAssistant={() => setIsSalesAssistantOpen(true)}
+              onOpenScaffolding={() => setIsScaffoldingOpen(true)}
+              onOpenLicenseStudio={() => setIsLicenseStudioOpen(true)}
+              onOpenPitchDeck={() => setIsPitchDeckOpen(true)}
+              onOpenByokDrawer={() => setIsByokDrawerOpen(true)}
+              onOpenByokChecklist={() => setIsByokChecklistOpen(true)}
             />
             <main>
               <WorkspaceHub
@@ -219,8 +309,30 @@ export default function App() {
                 onExecuteVoiceWorkflow={handleExecuteVoiceWorkflow}
                 importedWorkflow={pendingImportWorkflow}
                 onClearImport={() => setPendingImportWorkflow(null)}
+                onOpenPitchDeck={() => setIsPitchDeckOpen(true)}
+                onOpenByokDrawer={() => setIsByokDrawerOpen(true)}
               />
             </main>
+
+            {/* BYOK (Bring Your Own Key) In-App Drawer Modal */}
+            <ByokCredentialsModal
+              isOpen={isByokDrawerOpen}
+              onClose={() => setIsByokDrawerOpen(false)}
+              onOpenChecklistGuide={() => {
+                setIsByokDrawerOpen(false);
+                setIsByokChecklistOpen(true);
+              }}
+            />
+
+            {/* 3-Minute BYOK Customer Checklist / Etsy Onboarding Modal */}
+            <ByokChecklistGuideModal
+              isOpen={isByokChecklistOpen}
+              onClose={() => setIsByokChecklistOpen(false)}
+              onOpenByokDrawer={() => {
+                setIsByokChecklistOpen(false);
+                setIsByokDrawerOpen(true);
+              }}
+            />
 
             <GlobalVoiceRecorderModal
               isOpen={isVoiceModalOpen}
@@ -229,6 +341,40 @@ export default function App() {
                 handleExecuteVoiceWorkflow(workflowName);
               }}
             />
+
+            <PluginIntegrationWizardModal
+              isOpen={isWizardOpen}
+              onClose={() => setIsWizardOpen(false)}
+            />
+
+            <PluginSalesAssistantModal
+              isOpen={isSalesAssistantOpen}
+              onClose={() => setIsSalesAssistantOpen(false)}
+              onOpenPitchDeck={() => setIsPitchDeckOpen(true)}
+            />
+
+            <CommercialPitchDeckModal
+              isOpen={isPitchDeckOpen}
+              onClose={() => setIsPitchDeckOpen(false)}
+              onOpenLicenseStudio={() => setIsLicenseStudioOpen(true)}
+              onOpenSalesAssistant={() => setIsSalesAssistantOpen(true)}
+            />
+
+            <FullWebsiteScaffoldingModal
+              isOpen={isScaffoldingOpen}
+              onClose={() => setIsScaffoldingOpen(false)}
+            />
+
+            {isLicenseStudioOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+                <div className="w-full max-w-3xl">
+                  <CommercialLicenseProtectionStudio 
+                    onClose={() => setIsLicenseStudioOpen(false)}
+                    onOpenPitchDeck={() => setIsPitchDeckOpen(true)}
+                  />
+                </div>
+              </div>
+            )}
 
             <ConnectWorkspaceModal />
             <RememberThisModal />

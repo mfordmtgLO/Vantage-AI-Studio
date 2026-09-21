@@ -1,6 +1,6 @@
 {
-  "name": "Vantage AI Workspace",
-  "description": "Prompt engineer tasks and automate workflows across Google Workspace products (Gmail, Calendar, Drive, Docs, Sheets, Tasks, and Contacts) with Gemini.",
+  "name": "Vantage AI Workspace V2",
+  "description": "Comprehensive Autonomous Multi-Module AI Workspace featuring Vantage AI Studio-Workspace UI, Vantage AI Studio-2nd Brain, Voice Orchestrator, Real Estate GeoMap, and Vantage AI Studio-Suite Combo Pack.",
   "requestFramePermissions": ["microphone"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -6,6 +6,7 @@ import { GuardrailsAndBoundariesStudio } from './GuardrailsAndBoundariesStudio';
 import { StandalonePluginArchetypeGenerator } from './StandalonePluginArchetypeGenerator';
 import { MemoryScenariosPanel } from './MemoryScenariosPanel';
 import { isMikeFordAdmin, ADMIN_PRIMARY_EMAIL, ADMIN_PRIMARY_NAME } from '../utils/adminAuth';
+import { getByokHttpHeaders } from '../utils/byokStorage';
 import { auth } from '../services/firebase';
 
 interface BrainChatMessage {
@@ -73,9 +74,10 @@ export const SecondBrainView: React.FC = () => {
     setIsRecalling(true);
 
     try {
+      const headers = getByokHttpHeaders({ 'Content-Type': 'application/json' });
       const res = await fetch('/api/vantage/recall', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           query: promptText,
           engine,
@@ -275,8 +277,8 @@ export const SecondBrainView: React.FC = () => {
           </span>
         </button>
 
-        {/* Secured Admin-Only Plugin Distribution Vault */}
-        {isMikeFordAdmin(auth.currentUser) ? (
+        {/* Secured Admin-Only Plugin Distribution Vault (Visible ONLY if Mike Ford Admin is signed in) */}
+        {isMikeFordAdmin(auth.currentUser) && (
           <button
             onClick={() => setActiveTab('plugin_generator')}
             className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
@@ -287,16 +289,6 @@ export const SecondBrainView: React.FC = () => {
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">
               Mike Ford
             </span>
-          </button>
-        ) : (
-          <button
-            onClick={() => setActiveTab('plugin_generator')}
-            className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold border-b-2 transition shrink-0 opacity-60 hover:opacity-100 cursor-pointer ${
-              activeTab === 'plugin_generator' ? 'border-amber-600 text-amber-600 font-bold' : 'border-transparent text-slate-400 hover:text-slate-700'
-            }`}
-            title="Secured Admin Portal - Mike Ford credentials required"
-          >
-            <Lock className="w-3.5 h-3.5" /> Admin Vault
           </button>
         )}
       </div>

@@ -1,0 +1,141 @@
+import React, { useState } from 'react';
+import { FirstTimeHomebuyerGeoPlugin } from './FirstTimeHomebuyerGeoPlugin';
+import { 
+  Home, 
+  MapPin, 
+  Sliders, 
+  Shield, 
+  TrendingUp, 
+  Sparkles, 
+  Code, 
+  Copy, 
+  Check, 
+  ExternalLink,
+  DollarSign,
+  Layers,
+  Database,
+  Building2
+} from 'lucide-react';
+import { SAMPLE_RENTCAST_LISTINGS } from '../services/geomapMortgageEngine';
+import { isMikeFordAdmin } from '../utils/adminAuth';
+import { auth } from '../services/firebase';
+
+interface RealEstateMortgageViewProps {
+  onOpenPluginVault?: () => void;
+  onOpenByokDrawer?: () => void;
+}
+
+export const RealEstateMortgageView: React.FC<RealEstateMortgageViewProps> = ({
+  onOpenPluginVault,
+  onOpenByokDrawer
+}) => {
+  const [copiedEmbed, setCopiedEmbed] = useState(false);
+  const isAdmin = isMikeFordAdmin(auth.currentUser);
+
+  const embedSnippet = `<script src="https://vantage-ai.workspace/plugins/vantage-homebuyer-geomap.js" data-license="VAN-RE-8F2A1C04-9E3B" async></script>
+<div id="vantage-homebuyer-container" data-theme="adaptive" data-fips-enabled="true"></div>`;
+
+  const handleCopyEmbed = () => {
+    navigator.clipboard.writeText(embedSnippet);
+    setCopiedEmbed(true);
+    setTimeout(() => setCopiedEmbed(false), 3000);
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      {/* Top Metrics Row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-1">
+          <div className="text-[11px] font-bold text-slate-500 uppercase flex items-center gap-1.5">
+            <Home className="w-3.5 h-3.5 text-blue-600" /> Active Priority MLS
+          </div>
+          <div className="text-xl font-black text-slate-900 dark:text-slate-100 font-mono">
+            {SAMPLE_RENTCAST_LISTINGS.length} Properties
+          </div>
+          <div className="text-[10px] text-emerald-600 font-medium flex items-center gap-1">
+            <TrendingUp className="w-3 h-3" /> Average -4.8% Price Cuts
+          </div>
+        </div>
+
+        <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-1">
+          <div className="text-[11px] font-bold text-slate-500 uppercase flex items-center gap-1.5">
+            <Shield className="w-3.5 h-3.5 text-emerald-600" /> USDA 100% Eligible
+          </div>
+          <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
+            {SAMPLE_RENTCAST_LISTINGS.filter(l => l.specialPrograms.usdaRuralEligible).length} Homes
+          </div>
+          <div className="text-[10px] text-slate-500 font-medium">
+            Zero Down Payment Verified
+          </div>
+        </div>
+
+        <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-1">
+          <div className="text-[11px] font-bold text-slate-500 uppercase flex items-center gap-1.5">
+            <DollarSign className="w-3.5 h-3.5 text-purple-600" /> CRA LMI Grants
+          </div>
+          <div className="text-xl font-black text-purple-600 dark:text-purple-400 font-mono">
+            $10,000 / tract
+          </div>
+          <div className="text-[10px] text-purple-600 dark:text-purple-400 font-medium">
+            Non-Repayable Down Payment
+          </div>
+        </div>
+
+        <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-1">
+          <div className="text-[11px] font-bold text-slate-500 uppercase flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-indigo-600" /> Avg RentCast Score
+          </div>
+          <div className="text-xl font-black text-indigo-600 dark:text-indigo-400 font-mono">
+            93.5 / 100
+          </div>
+          <div className="text-[10px] text-slate-500 font-medium">
+            Top 5% Rental Yield & Equity
+          </div>
+        </div>
+      </div>
+
+      {/* Main Homebuyer & GeoMap Engine Component */}
+      <FirstTimeHomebuyerGeoPlugin onOpenByokDrawer={onOpenByokDrawer} />
+
+      {/* Turnkey Commercial Distribution Bar */}
+      <div className="p-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl border border-slate-800 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-500/20 text-blue-300 border border-blue-500/30">
+              Commercial License Ready
+            </span>
+            <span className="text-xs font-bold text-slate-300">
+              By Mike Ford (fordmj@gmail.com)
+            </span>
+          </div>
+          <h4 className="text-sm font-black tracking-tight text-white">
+            Embed the Real Estate & Mortgage GeoMap Engine in Any External Site
+          </h4>
+          <p className="text-xs text-slate-400">
+            Export standalone React component, REST OpenAPI endpoints, or 1-line universal HTML script embed with domain-locking.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3 shrink-0">
+          <button
+            onClick={handleCopyEmbed}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition border border-slate-700 cursor-pointer"
+          >
+            {copiedEmbed ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            <span>{copiedEmbed ? 'Embed Copied!' : 'Copy Script Tag'}</span>
+          </button>
+
+          {onOpenPluginVault && (
+            <button
+              onClick={onOpenPluginVault}
+              className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-md shadow-indigo-600/30 cursor-pointer"
+            >
+              <Code className="w-3.5 h-3.5" />
+              <span>Open Plugin Vault</span>
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};

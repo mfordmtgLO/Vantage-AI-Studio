@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Shield, Cpu, Zap, AlertCircle, RefreshCw, Smartphone, ExternalLink, X } from 'lucide-react';
+import { 
+  Sparkles, Shield, Cpu, Zap, AlertCircle, RefreshCw, Smartphone, 
+  ExternalLink, X, Globe, Copy, Check, UserCircle2, ArrowRight
+} from 'lucide-react';
 import { isMobileOrSafariDevice } from '../services/firebase';
+import firebaseConfig from '../../firebase-applet-config.json';
 
 interface AuthCardProps {
   onLogin: (method?: 'auto' | 'popup' | 'redirect') => void;
+  onGuestLogin?: () => void;
   onCancelLogin: () => void;
   isLoggingIn: boolean;
   error: string | null;
@@ -12,13 +17,18 @@ interface AuthCardProps {
 
 export const AuthCard: React.FC<AuthCardProps> = ({
   onLogin,
+  onGuestLogin,
   onCancelLogin,
   isLoggingIn,
   error,
   onClearError
 }) => {
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
+  const [hasCopiedDomain, setHasCopiedDomain] = useState<boolean>(false);
   const isMobile = isMobileOrSafariDevice();
+  const currentHostname = typeof window !== 'undefined' ? window.location.hostname : '';
+  const isUnauthorizedDomain = error === 'auth/unauthorized-domain' || (error && error.includes('unauthorized-domain'));
+  const firebaseSettingsUrl = `https://console.firebase.google.com/project/${firebaseConfig.projectId}/authentication/settings`;
 
   useEffect(() => {
     let timer: any;
@@ -32,6 +42,19 @@ export const AuthCard: React.FC<AuthCardProps> = ({
     }
     return () => clearInterval(timer);
   }, [isLoggingIn]);
+
+  const handleCopyDomain = async () => {
+    if (!currentHostname) return;
+    try {
+      await navigator.clipboard.writeText(currentHostname);
+      setHasCopiedDomain(true);
+      setTimeout(() => setHasCopiedDomain(false), 2500);
+    } catch {
+      // Fallback
+      setHasCopiedDomain(true);
+      setTimeout(() => setHasCopiedDomain(false), 2500);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center p-4">
@@ -64,30 +87,119 @@ export const AuthCard: React.FC<AuthCardProps> = ({
 
         {/* Error Alert Box */}
         {error && (
-          <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 rounded-xl p-3.5 text-left space-y-2.5 animate-in fade-in duration-200">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                <p className="text-xs text-amber-800 dark:text-amber-300 leading-snug font-medium">
-                  {error}
-                </p>
+          isUnauthorizedDomain ? (
+            <div className="bg-amber-50/90 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-700/80 rounded-xl p-4 text-left space-y-3 animate-in fade-in duration-200 shadow-sm">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start gap-2.5">
+                  <Globe className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                      Firebase Domain Authorization Required
+                    </h4>
+                    <p className="text-[11px] text-amber-800 dark:text-amber-300 mt-0.5 leading-snug">
+                      Firebase Auth restricts logins to authorized domains. This app is running on a domain that hasn't been added yet.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={onClearError}
+                  className="text-amber-500 hover:text-amber-700 dark:hover:text-amber-200 p-0.5"
+                  title="Dismiss message"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Current Domain with Copy button */}
+              <div className="bg-amber-100/60 dark:bg-amber-900/40 rounded-lg p-2.5 border border-amber-200 dark:border-amber-800 space-y-1.5">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                  Domain to Authorize:
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <code className="text-[11px] font-mono font-medium text-slate-800 dark:text-slate-200 break-all select-all">
+                    {currentHostname || 'localhost'}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={handleCopyDomain}
+                    className="shrink-0 flex items-center gap-1 px-2 py-1 rounded bg-white dark:bg-slate-800 hover:bg-amber-50 text-[11px] font-medium text-slate-700 dark:text-slate-200 border border-amber-300 dark:border-amber-700 transition cursor-pointer"
+                  >
+                    {hasCopiedDomain ? (
+                      <>
+                        <Check className="w-3 h-3 text-emerald-600" />
+                        <span>Copied</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3" />
+                        <span>Copy</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* 3 Step Instructions */}
+              <div className="text-[11px] text-amber-800 dark:text-amber-300/90 space-y-1 bg-white/60 dark:bg-slate-900/40 p-2.5 rounded-lg border border-amber-200/60 dark:border-amber-900/60">
+                <p className="font-semibold text-amber-900 dark:text-amber-200">How to fix in 30 seconds:</p>
+                <ol className="list-decimal pl-4 space-y-0.5 text-[11px]">
+                  <li>Open the Firebase Authentication Settings tab.</li>
+                  <li>Scroll to <strong>Authorized domains</strong> and click <strong>Add domain</strong>.</li>
+                  <li>Paste the domain above and click <strong>Save</strong>.</li>
+                </ol>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-2 pt-1">
+                <a
+                  href={firebaseSettingsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer text-center"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Open Firebase Authorized Domains Settings</span>
+                </a>
+
+                {onGuestLogin && (
+                  <button
+                    type="button"
+                    onClick={onGuestLogin}
+                    className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer"
+                  >
+                    <UserCircle2 className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Continue in Guest Mode (Explore Now)</span>
+                    <ArrowRight className="w-3 h-3 text-slate-400" />
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 rounded-xl p-3.5 text-left space-y-2.5 animate-in fade-in duration-200">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-800 dark:text-amber-300 leading-snug font-medium">
+                    {error}
+                  </p>
+                </div>
+                <button
+                  onClick={onClearError}
+                  className="text-amber-500 hover:text-amber-700 dark:hover:text-amber-200 p-0.5"
+                  title="Dismiss message"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
               </div>
               <button
-                onClick={onClearError}
-                className="text-amber-500 hover:text-amber-700 dark:hover:text-amber-200 p-0.5"
-                title="Dismiss message"
+                onClick={() => onLogin('redirect')}
+                className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer"
               >
-                <X className="w-3.5 h-3.5" />
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Continue with Direct Sign-In (No Popups)</span>
               </button>
             </div>
-            <button
-              onClick={() => onLogin('redirect')}
-              className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-              <span>Continue with Direct Sign-In (No Popups)</span>
-            </button>
-          </div>
+          )
         )}
 
         {/* Main Sign-In Controls */}
@@ -159,6 +271,20 @@ export const AuthCard: React.FC<AuthCardProps> = ({
               </button>
             </div>
           )}
+
+          {/* Guest / Demo Mode option */}
+          {!isLoggingIn && onGuestLogin && (
+            <div className="pt-1 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={onGuestLogin}
+                className="w-full text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 py-2 px-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <UserCircle2 className="w-3.5 h-3.5 text-slate-500" />
+                <span>Explore in Demo / Guest Mode</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {isMobile && (
@@ -178,4 +304,5 @@ export const AuthCard: React.FC<AuthCardProps> = ({
     </div>
   );
 };
+
 

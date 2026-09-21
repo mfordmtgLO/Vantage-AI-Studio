@@ -9,6 +9,8 @@ export interface PluginDistributionRecord {
   targetDomain: string;
   licenseKey: string;
   distributionType: 'full_hybrid' | 'react_widget' | 'headless_hook' | 'llm_prompt_spec';
+  archetypeId?: 'second_brain' | 'workplace_ui' | 'voice_plugin';
+  pluginTitle?: string;
   distributedAt: string;
   notes?: string;
   status: 'active' | 'revoked';
@@ -89,11 +91,12 @@ export function deletePluginDistribution(id: string): void {
 export function generateDistributionWatermarkHeader(
   clientName: string = 'Authorized Client',
   domain: string = 'authorized-domain.com',
-  licenseKey: string = 'VNTG-PROPRIETARY-2026'
+  licenseKey: string = 'VNTG-PROPRIETARY-2026',
+  pluginTitle: string = 'VANTAGE PROPRIETARY PLUGIN MODULE'
 ): string {
   return `/**
  * ============================================================================
- * VANTAGE HYBRID 2ND BRAIN & HARNESS AGENT PROPRIETARY PLUGIN MODULE
+ * ${pluginTitle.toUpperCase()}
  * ============================================================================
  * Copyright (c) ${new Date().getFullYear()} Vantage AI Workspace. All Rights Reserved.
  * Authored & Distributed Exclusively by: ${ADMIN_PRIMARY_NAME} (${ADMIN_PRIMARY_EMAIL})
