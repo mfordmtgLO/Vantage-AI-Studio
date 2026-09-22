@@ -36,6 +36,8 @@ steps:
       - '--allow-unauthenticated'
       - '--port'
       - '3000'
+      - '--clear-base-image-annotations'
+      - '--remove-annotations=run.googleapis.com/sources,run.googleapis.com/base-images'
 
 images:
   - 'gcr.io/$PROJECT_ID/vantage-ai-workspace:$COMMIT_SHA'
