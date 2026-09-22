@@ -12,6 +12,7 @@ import { TrainMyBrainQuickInput } from './TrainMyBrainQuickInput';
 import { CommercialVersionReleaseStudio } from './CommercialVersionReleaseStudio';
 import { IndustrySpecialtyBrainStudio } from './IndustrySpecialtyBrainStudio';
 import { ProfileCardsAdminPortal } from './ProfileCardsAdminPortal';
+import { GitHubCloudRunSyncStatusCard } from './GitHubCloudRunSyncStatusCard';
 import { IndustryCareerTemplate } from '../data/industryCareerTemplates';
 
 interface VisitorNote {
@@ -30,7 +31,7 @@ export const MobileAdminDashboard: React.FC<{
   onOpenPublicWebsite?: () => void;
   onLogout?: () => void;
 }> = ({ onOpenDesktopView, onOpenPluginVault, onOpenShareLinksModal, onOpenPublicWebsite, onLogout }) => {
-  const [activeTab, setActiveTab] = useState<'notes' | 'customers' | 'profile-cards' | 'quick-sms' | 'workspace' | 'morph-suite' | 'commercial-releases' | 'settings'>('notes');
+  const [activeTab, setActiveTab] = useState<'notes' | 'customers' | 'profile-cards' | 'quick-sms' | 'workspace' | 'morph-suite' | 'commercial-releases' | 'settings' | 'cicd-status'>('notes');
   const [brainSubView, setBrainSubView] = useState<'morph' | 'train'>('morph');
   const [activeTemplate, setActiveTemplate] = useState<IndustryCareerTemplate | null>(null);
   const [copiedUrlType, setCopiedUrlType] = useState<string | null>(null);
@@ -234,6 +235,15 @@ export const MobileAdminDashboard: React.FC<{
             Upgraded Releases
           </button>
           <button
+            onClick={() => setActiveTab('cicd-status')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
+              activeTab === 'cicd-status' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-800/70 text-slate-400'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            Cloud Run & Git Sync
+          </button>
+          <button
             onClick={() => setActiveTab('settings')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
               activeTab === 'settings' ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-800/70 text-slate-400'
@@ -274,6 +284,14 @@ export const MobileAdminDashboard: React.FC<{
 
       {/* Main Content Area */}
       <main className="flex-1 p-4 pb-24 overflow-y-auto space-y-4">
+        {/* Compact Persistent Status Bar for Cloud Run & Git Sync */}
+        {activeTab !== 'cicd-status' && (
+          <GitHubCloudRunSyncStatusCard compact={true} />
+        )}
+
+        {activeTab === 'cicd-status' && (
+          <GitHubCloudRunSyncStatusCard compact={false} />
+        )}
         {activeTab === 'notes' && (
           <div className="space-y-4">
             {/* Search filter */}
