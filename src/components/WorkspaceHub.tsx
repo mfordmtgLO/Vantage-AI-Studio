@@ -12,6 +12,7 @@ import { DriveExplorerView } from './DriveExplorerView';
 import { VoiceMacroManagerView } from './VoiceMacroManagerView';
 import { StandalonePluginArchetypeGenerator } from './StandalonePluginArchetypeGenerator';
 import { RealEstateMortgageView } from './RealEstateMortgageView';
+import { SuiteMasterUnifiedView } from './SuiteMasterUnifiedView';
 import { AppAIPromptAndTemplateManager } from './AppAIPromptAndTemplateManager';
 import { LeadDatabaseCleanupTool } from './LeadDatabaseCleanupTool';
 import { PushNotificationManager } from './PushNotificationManager';
@@ -45,6 +46,7 @@ interface WorkspaceHubProps {
   onClearImport?: () => void;
   onOpenPitchDeck?: () => void;
   onOpenByokDrawer?: () => void;
+  onOpenByokChecklist?: () => void;
   onOpenShareLinksModal?: () => void;
 }
 
@@ -59,6 +61,7 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
   onClearImport,
   onOpenPitchDeck,
   onOpenByokDrawer,
+  onOpenByokChecklist,
   onOpenShareLinksModal,
 }) => {
   const {
@@ -795,6 +798,16 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
           </div>
           <button onClick={() => setActionSuccessMsg(null)} className="text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-300 font-bold text-sm">×</button>
         </div>
+      )}
+
+      {/* VANTAGE AI STUDIO-SUITE (4-IN-1 MASTER COMBO) TAB */}
+      {activeTab === 'suite' && (
+        <SuiteMasterUnifiedView
+          onOpenShareLinksModal={onOpenShareLinksModal}
+          onOpenPitchDeck={onOpenPitchDeck}
+          onOpenByokDrawer={onOpenByokDrawer}
+          onOpenByokChecklist={onOpenByokChecklist}
+        />
       )}
 
       {/* PROMPT STUDIO TAB */}

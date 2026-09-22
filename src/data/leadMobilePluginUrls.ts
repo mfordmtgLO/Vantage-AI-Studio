@@ -30,6 +30,31 @@ export const DEV_BASE_URL = 'https://ais-dev-ytqtpwssj6gdvjvqbsrbyo-427099073161
 
 export const LEAD_MOBILE_PLUGIN_MODULES: LeadPluginModuleUrlInfo[] = [
   {
+    id: 'plugin_suite_combo',
+    pluginParam: 'suite',
+    tabTarget: 'suite',
+    name: 'Vantage AI Studio-Suite Plugin Module Combo Pack',
+    shortName: 'Vantage AI Studio-Suite',
+    badge: '4-in-1 Master Hub • Turnkey Pack',
+    iconName: 'Sparkles',
+    tagline: 'Complete 4-in-1 Autonomous Commercial AI Platform & Mobile PWA Suite',
+    description: 'The master all-in-one suite unifying Workspace UI, 2nd Brain, Real Estate GeoMap, and Voice Orchestrator into a turnkey production cockpit with live cross-module data flow, zero-shot scaffolding, and 1-tap mobile installation.',
+    targetAudience: 'Enterprise Clients, Commercial License Buyers, Agency Teams, SaaS Builders, Real Estate Firms',
+    highlights: [
+      '💎 All 4 Commercial Plugin Modules Live & Connected in One Master Hub',
+      '📱 1-Click Mobile PWA "Add to Home Screen" on iOS & Android',
+      '⚡ Real-Time Cross-Module Synergies (Voice ↔ 2nd Brain ↔ GeoMap ↔ Google Workspace)',
+      '🚀 Zero-Shot Full Website Scaffolding Generator',
+      '🛡️ Cryptographic SHA256-MF Anti-Tamper Perpetual Licensing',
+      '👥 Managed Master Hub Sync for Lead Contacts (Zero BYOK)'
+    ],
+    smsPitchTemplate: 'Hey! Here is the live link to the complete Vantage AI Studio-Suite (4-in-1 Combo Pack). All 4 autonomous AI modules are live connected together. Open on your phone or laptop and tap "Add to Home Screen" to install it: {URL}',
+    emailPitchTemplate: {
+      subject: 'Live Access: Vantage AI Studio-Suite 4-in-1 Commercial Platform',
+      body: 'Hi [Name],\n\nI am pleased to share the live Vantage AI Studio-Suite 4-in-1 Combo Pack with you:\n{URL}\n\nThis unified platform integrates all 4 commercial modules live connected together:\n1. Vantage AI Studio-Real Estate GeoMap & DPA Plugin Module\n2. Vantage AI Studio-2nd Brain Cognitive Vector Memory\n3. Vantage AI Studio-Voice Orchestrator Plugin Module\n4. Vantage AI Studio-Workspace UI Plugin Module\n\nYou can access it on any desktop browser or open it on your mobile phone and tap "Add to Home Screen" to install it as a full standalone app.\n\nBest regards,\nMike Ford | fordmj@gmail.com'
+    }
+  },
+  {
     id: 'plugin_real_estate',
     pluginParam: 'geomap',
     tabTarget: 'real_estate',
@@ -127,31 +152,6 @@ export const LEAD_MOBILE_PLUGIN_MODULES: LeadPluginModuleUrlInfo[] = [
     emailPitchTemplate: {
       subject: 'Live Demo: Vantage AI Studio-Voice Orchestrator Plugin Module',
       body: 'Hi [Name],\n\nHere is your live link to test the Vantage Voice Orchestrator Plugin Module:\n{URL}\n\nExperience hands-free voice automation with built-in verbal safety airgaps and multi-step Google Workspace execution.\n\nInstall it to your mobile Home Screen for instant 1-tap voice workflows while on the go!\n\nBest,\nMike Ford'
-    }
-  },
-  {
-    id: 'plugin_suite_combo',
-    pluginParam: 'suite',
-    tabTarget: 'studio',
-    name: 'Vantage AI Studio-Suite Plugin Module Combo Pack',
-    shortName: 'Master Suite',
-    badge: '4-in-1 Master Hub • Turnkey Pack',
-    iconName: 'Sparkles',
-    tagline: 'Complete 4-in-1 Autonomous Commercial AI Platform & Mobile PWA Suite',
-    description: 'The master all-in-one suite unifying Workspace UI, 2nd Brain, Real Estate GeoMap, and Voice Orchestrator into a turnkey production cockpit with 1-click zero-shot scaffolding and administrative controls.',
-    targetAudience: 'Enterprise Clients, Commercial License Buyers, Agency Teams, SaaS Builders',
-    highlights: [
-      '💎 All 4 Commercial Plugin Modules in One Master Hub',
-      '📱 1-Click Mobile PWA "Add to Home Screen" on iOS & Android',
-      '🚀 Zero-Shot Full Website Scaffolding Generator',
-      '🛡️ Cryptographic SHA256-MF Anti-Tamper Licensing',
-      '👥 Managed Master Hub Sync for Lead Contacts (Zero BYOK)',
-      '🌐 Cross-Module Synergies (Voice ↔ Memory ↔ Workspace ↔ GeoMap)'
-    ],
-    smsPitchTemplate: 'Hey! Here is the complete Vantage AI Studio-Suite 4-in-1 Combo Pack. You can test all 4 autonomous modules in real-time on desktop or install it as a mobile app on your phone: {URL}',
-    emailPitchTemplate: {
-      subject: 'Live Access: Vantage AI Studio-Suite 4-in-1 Commercial Platform',
-      body: 'Hi [Name],\n\nI am pleased to share the live Vantage AI Studio-Suite 4-in-1 Combo Pack with you:\n{URL}\n\nThis unified platform integrates:\n1. Vantage AI Studio-Workspace UI Plugin Module\n2. Vantage AI Studio-2nd Brain Plugin Module\n3. Vantage AI Studio-Voice Orchestrator Plugin Module\n4. Vantage AI Studio-Real Estate GeoMap & DPA Plugin Module\n\nYou can access it on any desktop browser or open it on your mobile device and tap "Add to Home Screen" to install it as a full-featured mobile app.\n\nBest regards,\nMike Ford | fordmj@gmail.com'
     }
   }
 ];

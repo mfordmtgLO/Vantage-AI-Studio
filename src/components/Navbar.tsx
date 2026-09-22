@@ -2,7 +2,7 @@ import React from 'react';
 import { WorkspaceTab } from '../types';
 import { 
   Sparkles, Mail, Calendar, FileText, Table, CheckSquare, Users, LogOut, 
-  Bot, Brain, Send, Cpu, Clock, Mic, Moon, Sun, Building2, RefreshCw, CheckCircle2,
+  Bot, Brain, Send, Cpu, Clock, Mic, Moon, Sun, Monitor, Building2, RefreshCw, CheckCircle2,
   Database, Shield, Lock, Home, Code, FileCode, Layers, TrendingUp, Megaphone, Key,
   Smartphone, Share2
 } from 'lucide-react';
@@ -43,7 +43,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenByokChecklist,
   onOpenShareLinksModal
 }) => {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme, toggleTheme, resolvedTheme } = useTheme();
   const {
     pathway,
     isWorkspaceConnected,
@@ -66,6 +66,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const isAdmin = isMikeFordAdmin(user) || isMikeFordAdmin({ email: connectedWorkspaceEmail });
 
   const tabs = [
+    { id: 'suite' as WorkspaceTab, label: '💎 Vantage Suite', icon: Sparkles },
     { id: 'studio' as WorkspaceTab, label: 'Prompt Studio', icon: Bot },
     { id: 'brain' as WorkspaceTab, label: '2nd Brain & Memory', icon: Brain },
     { id: 'real_estate' as WorkspaceTab, label: 'Real Estate GeoMap', icon: Home },
@@ -179,25 +180,64 @@ export const Navbar: React.FC<NavbarProps> = ({
               </span>
             </button>
 
-            {/* Global Theme Toggle */}
-            <button
-              id="theme-toggle-btn"
-              onClick={toggleTheme}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border transition cursor-pointer text-xs font-semibold shadow-xs bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700"
-              title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
+            {/* Dynamic Theme Mode Switcher (Light / Dark / System) */}
+            <div
+              id="theme-toggle-group"
+              className="flex items-center p-0.5 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs"
+              role="radiogroup"
+              aria-label="Color theme selector"
             >
-              {theme === 'light' ? (
-                <>
-                  <Moon className="w-4 h-4 text-slate-700" />
-                  <span className="hidden xl:inline">Dark</span>
-                </>
-              ) : (
-                <>
-                  <Sun className="w-4 h-4 text-amber-400" />
-                  <span className="hidden xl:inline">Light</span>
-                </>
-              )}
-            </button>
+              <button
+                id="theme-btn-light"
+                type="button"
+                onClick={() => setTheme('light')}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  theme === 'light'
+                    ? 'bg-white text-amber-600 shadow-xs dark:bg-slate-700 dark:text-amber-400 font-bold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+                title="Light Theme"
+                role="radio"
+                aria-checked={theme === 'light'}
+              >
+                <Sun className={`w-3.5 h-3.5 ${theme === 'light' ? 'text-amber-500' : 'text-slate-400 dark:text-slate-500'}`} />
+                <span className="hidden xl:inline">Light</span>
+              </button>
+
+              <button
+                id="theme-btn-dark"
+                type="button"
+                onClick={() => setTheme('dark')}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  theme === 'dark'
+                    ? 'bg-white text-indigo-600 shadow-xs dark:bg-slate-700 dark:text-indigo-400 font-bold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+                title="Dark Theme"
+                role="radio"
+                aria-checked={theme === 'dark'}
+              >
+                <Moon className={`w-3.5 h-3.5 ${theme === 'dark' ? 'text-indigo-500 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'}`} />
+                <span className="hidden xl:inline">Dark</span>
+              </button>
+
+              <button
+                id="theme-btn-system"
+                type="button"
+                onClick={() => setTheme('system')}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  theme === 'system'
+                    ? 'bg-white text-blue-600 shadow-xs dark:bg-slate-700 dark:text-blue-400 font-bold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+                title={`System Theme (Matches OS: ${resolvedTheme})`}
+                role="radio"
+                aria-checked={theme === 'system'}
+              >
+                <Monitor className={`w-3.5 h-3.5 ${theme === 'system' ? 'text-blue-500 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'}`} />
+                <span className="hidden xl:inline">Auto</span>
+              </button>
+            </div>
 
             {/* In-App BYOK (Bring Your Own Key) Settings Drawer */}
             {onOpenByokDrawer && (
@@ -332,7 +372,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                 }`}
               >
                 <Icon className={`w-4 h-4 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
-                {tab.label}
+                <span>{tab.label}</span>
+                {tab.id === 'suite' && (
+                  <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 uppercase tracking-wider shadow-xs">
+                    4-in-1
+                  </span>
+                )}
               </button>
             );
           })}

@@ -44,17 +44,18 @@ export default function App() {
     try {
       const urlParams = new URLSearchParams(window.location.search);
       const pluginParam = urlParams.get('plugin');
+      if (pluginParam === 'suite' || pluginParam === 'all' || urlParams.get('suite') === '1') return 'suite';
       if (pluginParam === 'geomap' || pluginParam === 'real_estate') return 'real_estate';
       if (pluginParam === 'brain') return 'brain';
       if (pluginParam === 'voice' || pluginParam === 'orchestrator') return 'orchestrator';
-      if (pluginParam === 'workspace' || pluginParam === 'suite') return 'studio';
+      if (pluginParam === 'workspace') return 'studio';
 
       const tabParam = urlParams.get('tab');
       const isAdminQuery = urlParams.get('admin') === 'true' || urlParams.get('admin_vault') === 'true';
       if (isAdminQuery || tabParam === 'admin' || tabParam === 'admin_plugins') {
         return 'admin_plugins';
       }
-      if (tabParam && ['studio', 'brain', 'real_estate', 'orchestrator', 'scheduler', 'drafts', 'gmail', 'calendar', 'drive', 'sheets', 'tasks', 'contacts', 'voice-macros', 'admin_plugins'].includes(tabParam)) {
+      if (tabParam && ['suite', 'studio', 'brain', 'real_estate', 'orchestrator', 'scheduler', 'drafts', 'gmail', 'calendar', 'drive', 'sheets', 'tasks', 'contacts', 'voice-macros', 'admin_plugins'].includes(tabParam)) {
         return tabParam as WorkspaceTab;
       }
     } catch {}
@@ -297,6 +298,8 @@ export default function App() {
 
   const getCurrentPluginTitle = (): string => {
     switch (activeTab) {
+      case 'suite':
+        return 'Vantage AI Studio-Suite (4-in-1 Master Platform)';
       case 'real_estate':
         return 'Vantage AI Studio-Real Estate GeoMap & DPA';
       case 'brain':
@@ -350,6 +353,7 @@ export default function App() {
                 onClearImport={() => setPendingImportWorkflow(null)}
                 onOpenPitchDeck={() => setIsPitchDeckOpen(true)}
                 onOpenByokDrawer={() => setIsByokDrawerOpen(true)}
+                onOpenByokChecklist={() => setIsByokChecklistOpen(true)}
                 onOpenShareLinksModal={() => setIsShareLinksModalOpen(true)}
               />
             </main>

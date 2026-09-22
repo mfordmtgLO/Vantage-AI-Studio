@@ -9,7 +9,7 @@ interface VoiceMacro {
   enabled: boolean;
 }
 
-export const VoiceMacroManagerView: React.FC<{ onExecuteWorkflow: (name: string) => void }> = ({ onExecuteWorkflow }) => {
+export const VoiceMacroManagerView: React.FC<{ onExecuteWorkflow?: (name: string) => void }> = ({ onExecuteWorkflow }) => {
   const [macros, setMacros] = useState<VoiceMacro[]>(() => {
     try {
       const stored = localStorage.getItem('vantage_voice_macros');
@@ -203,7 +203,7 @@ export const VoiceMacroManagerView: React.FC<{ onExecuteWorkflow: (name: string)
 
             <div className="flex items-center justify-between pt-4 border-t border-slate-100">
               <button
-                onClick={() => onExecuteWorkflow(macro.workflowName)}
+                onClick={() => onExecuteWorkflow?.(macro.workflowName)}
                 className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-semibold transition cursor-pointer"
               >
                 <Play className="w-3.5 h-3.5" /> Test Macro

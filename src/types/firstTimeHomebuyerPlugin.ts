@@ -106,6 +106,7 @@ export interface FirstTimeHomebuyerGeoPluginProps {
   className?: string;
   isStandalone?: boolean;
   onOpenByokDrawer?: () => void;
+  onOpenByokChecklist?: () => void;
 }
 
 // Backwards compatibility interfaces for existing codebase consumers
