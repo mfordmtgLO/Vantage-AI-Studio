@@ -4,7 +4,7 @@
 # Copyright (c) 2026 Mike Ford <fordmj@gmail.com>
 
 steps:
-  # Deploy directly to Cloud Run in us-west1 (Oregon) using source build
+  # Deploy directly to Cloud Run in us-west1 (Oregon) using native source build
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -20,9 +20,11 @@ steps:
       - '--allow-unauthenticated'
       - '--port'
       - '3000'
+      - '--clear-annotations=run.googleapis.com/sources,run.googleapis.com/base-images'
 
 options:
   logging: CLOUD_LOGGING_ONLY
 
 timeout: '1200s'
+
 
