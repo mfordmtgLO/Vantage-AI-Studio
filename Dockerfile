@@ -10,7 +10,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install all dependencies (including dev tools like vite, esbuild, tailwindcss)
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 # Copy application source code
 COPY . .
@@ -28,7 +28,7 @@ ENV PORT=3000
 
 # Copy package manifests and install only production dependencies
 COPY package*.json ./
-RUN npm install --omit=dev
+RUN npm install --omit=dev --legacy-peer-deps
 
 # Copy compiled assets from builder
 COPY --from=builder /app/dist ./dist
