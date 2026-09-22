@@ -20,12 +20,12 @@ steps:
       - '--allow-unauthenticated'
       - '--port'
       - '3000'
-      - '--remove-annotations=run.googleapis.com/sources,run.googleapis.com/base-images'
 
 options:
   logging: CLOUD_LOGGING_ONLY
 
 timeout: '1200s'
+
 
 
 
