@@ -541,10 +541,116 @@ export const INDUSTRY_CAREER_TEMPLATES: IndustryGroup[] = [
   }
 ];
 
+export function getCustomIndustryGroups(): IndustryGroup[] {
+  try {
+    const saved = localStorage.getItem('vantage_custom_industry_groups');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {
+    console.warn('Could not read custom industry groups:', e);
+  }
+  return [];
+}
+
+export function getAllIndustryGroups(): IndustryGroup[] {
+  const custom = getCustomIndustryGroups();
+  if (!custom.length) return INDUSTRY_CAREER_TEMPLATES;
+  
+  // Merge custom groups with built-ins (or append new custom ones)
+  const merged = [...INDUSTRY_CAREER_TEMPLATES];
+  for (const cGroup of custom) {
+    const existingIndex = merged.findIndex(g => g.id === cGroup.id);
+    if (existingIndex >= 0) {
+      // Merge careers
+      const existingCareers = [...merged[existingIndex].careers];
+      for (const career of cGroup.careers) {
+        const cIndex = existingCareers.findIndex(c => c.id === career.id);
+        if (cIndex >= 0) {
+          existingCareers[cIndex] = career;
+        } else {
+          existingCareers.push(career);
+        }
+      }
+      merged[existingIndex] = {
+        ...merged[existingIndex],
+        ...cGroup,
+        careers: existingCareers
+      };
+    } else {
+      merged.push(cGroup);
+    }
+  }
+  return merged;
+}
+
+export function saveCustomIndustryGroup(group: IndustryGroup): void {
+  try {
+    const current = getCustomIndustryGroups();
+    const index = current.findIndex(g => g.id === group.id);
+    let updated: IndustryGroup[];
+    if (index >= 0) {
+      updated = [...current];
+      updated[index] = group;
+    } else {
+      updated = [group, ...current];
+    }
+    localStorage.setItem('vantage_custom_industry_groups', JSON.stringify(updated));
+  } catch (e) {
+    console.warn('Could not save custom industry group:', e);
+  }
+}
+
+export function saveCustomCareerTemplate(groupId: string, template: IndustryCareerTemplate): void {
+  try {
+    const all = getAllIndustryGroups();
+    let targetGroup = all.find(g => g.id === groupId);
+    if (!targetGroup) {
+      targetGroup = {
+        id: groupId,
+        name: template.industryName || 'Custom Industry',
+        icon: template.industryIcon || 'Sparkles',
+        description: 'Custom industry sector defined by Mike Ford.',
+        careers: [template]
+      };
+      saveCustomIndustryGroup(targetGroup);
+      return;
+    }
+    
+    const careers = [...targetGroup.careers];
+    const cIndex = careers.findIndex(c => c.id === template.id);
+    if (cIndex >= 0) {
+      careers[cIndex] = template;
+    } else {
+      careers.push(template);
+    }
+    
+    saveCustomIndustryGroup({
+      ...targetGroup,
+      careers
+    });
+  } catch (e) {
+    console.warn('Could not save custom career template:', e);
+  }
+}
+
+export function deleteCustomIndustryGroup(groupId: string): void {
+  try {
+    const current = getCustomIndustryGroups();
+    const filtered = current.filter(g => g.id !== groupId);
+    localStorage.setItem('vantage_custom_industry_groups', JSON.stringify(filtered));
+  } catch (e) {
+    console.warn('Could not delete custom industry group:', e);
+  }
+}
+
 export function getTemplateById(templateId: string): IndustryCareerTemplate | undefined {
-  for (const group of INDUSTRY_CAREER_TEMPLATES) {
+  const allGroups = getAllIndustryGroups();
+  for (const group of allGroups) {
     const found = group.careers.find(c => c.id === templateId);
     if (found) return found;
   }
   return undefined;
 }
+

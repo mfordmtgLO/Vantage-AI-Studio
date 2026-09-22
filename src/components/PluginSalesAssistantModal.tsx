@@ -81,7 +81,7 @@ export const PluginSalesAssistantModal: React.FC<PluginSalesAssistantModalProps>
     }
 
     if (selectedPlugin === 'second_brain') {
-      return `# 🧠 Vantage AI Studio-2nd Brain Plugin Module & Memory Harness
+      return `# 🧠 Vantage AI 2nd Brain Plugin Module & Memory Harness
 
 ### Give Any LLM Unforgettable Memory, Guardrails, and Autonomous Cron Execution.
 **Created by Mike Ford** (\`${ADMIN_PRIMARY_EMAIL}\`)
@@ -93,6 +93,51 @@ export const PluginSalesAssistantModal: React.FC<PluginSalesAssistantModalProps>
 - **Guardrails & Boundaries Studio**: Airgapped validation ensuring AI never executes destructive actions without verbal or visual approval.
 - **Memory Scenarios Testing**: Built-in test sandbox to verify memory recall accuracy before production deployment.
 - **Dual Interface**: Standalone React Widget + Headless TypeScript Hook (\`useVantageBrainHarness\`).
+
+**Suggested Price**: $${suggestedPrice} One-Time Commercial License.
+`;
+    }
+
+    if (selectedPlugin === 'workplace_ui') {
+      return `# 📂 Vantage AI Workspace UI: Turn Google Workspace into an Autonomous AI OS
+
+### Dual-Pathway Auth, Live Gmail Draft Studios, 15-Minute HIPAA Calendar Buffers & Relational Sheets SQL Engine.
+**Created by Mike Ford** (\`${ADMIN_PRIMARY_EMAIL}\`)
+
+---
+
+## ⚡ WHAT YOU GET:
+- **Dual-Pathway Google Authentication**: Instant 1-click personal Google Identity Services (Pathway A) & enterprise domain OAuth 2.0 (Pathway B).
+- **Live Gmail Draft Studio**: Reads email threads, pulls historical client context from 2nd Brain memory, and formats executive drafts directly in Gmail with zero prompt boilerplate.
+- **15-Minute Calendar Focus & HIPAA Buffer Engine**: Automatically reserves 15-minute transitional recovery buffers around confidential meetings to eliminate burnout.
+- **Google Sheets Relational Database & Purge Filter**: Query sheets like SQL with atomic writes, plus a 1-click Targeted String/Domain Purge Filter that removes competitor emails and spam rows.
+- **Multi-File CSV/XLSX Consolidation Pipeline**: Upload multiple disparate lead lists to either merge them into 1 unified master database or output separate cleaned files.
+- **Zero Browser API Key Exposure**: All requests securely proxied server-side.
+
+---
+
+## 🎯 PERFECT FOR:
+- Busy Executives, Solopreneurs & Consultants who want to eliminate tab fatigue.
+- Producing Real Estate & Mortgage Teams needing automated lead workflows.
+- SaaS Founders wanting to embed Google Workspace automation into their apps.
+
+**Suggested Price**: $${suggestedPrice} One-Time Commercial License.
+`;
+    }
+
+    if (selectedPlugin === 'voice_plugin') {
+      return `# 🎙️ Vantage Voice Orchestrator Plugin Module
+
+### Talk to Your AI Like a Senior Chief of Staff. Compound Voice Commands, Speech-to-Intent Routing & Safety Airgaps.
+**Created by Mike Ford** (\`${ADMIN_PRIMARY_EMAIL}\`)
+
+---
+
+## ⚡ KEY FEATURES:
+- **Speech-to-Intent Decomposition**: Automatically breaks compound verbal sentences ("check my emails, reply to Sarah, and schedule a call") into sequential tool calls.
+- **Spoken Verbal Confirmation Airgap**: Requires explicit verbal confirmation before executing external dispatches (sending emails, deleting records).
+- **Execution Snackbar with Quick-Undo**: Real-time visual progress indicator with 10-second instant rollback.
+- **Multi-Modal Engine**: Supports Web Speech API for zero-cost browser execution or server-side Whisper/Gemini models.
 
 **Suggested Price**: $${suggestedPrice} One-Time Commercial License.
 `;

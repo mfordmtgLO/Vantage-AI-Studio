@@ -9,6 +9,7 @@ import { IndustryCareerTemplateSelector } from './IndustryCareerTemplateSelector
 import { TrainMyBrainQuickInput } from './TrainMyBrainQuickInput';
 import { AdminCommercialAccessGate } from './AdminCommercialAccessGate';
 import { CommercialVersionReleaseStudio } from './CommercialVersionReleaseStudio';
+import { IndustrySpecialtyBrainStudio } from './IndustrySpecialtyBrainStudio';
 import { INDUSTRY_CAREER_TEMPLATES, IndustryCareerTemplate } from '../data/industryCareerTemplates';
 import { isMikeFordAdmin, ADMIN_PRIMARY_EMAIL, ADMIN_PRIMARY_NAME } from '../utils/adminAuth';
 import { getByokHttpHeaders } from '../utils/byokStorage';
@@ -706,7 +707,17 @@ export const SecondBrainView: React.FC = () => {
 
       {/* Tab: Commercial Version Releases (Admin Only) */}
       {activeTab === 'releases' && isMikeFordAdmin(auth.currentUser) && (
-        <CommercialVersionReleaseStudio />
+        <div className="space-y-6">
+          <IndustrySpecialtyBrainStudio 
+            onApplyTemplateToLiveSession={(template) => {
+              setActiveTemplate(template);
+              setActiveTab('recall');
+            }}
+          />
+          <div className="pt-6 border-t border-slate-200 dark:border-slate-800">
+            <CommercialVersionReleaseStudio />
+          </div>
+        </div>
       )}
 
       {/* Tab 2: Ingest Docs & Media */}

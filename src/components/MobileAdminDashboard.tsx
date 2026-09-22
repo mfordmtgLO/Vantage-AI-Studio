@@ -9,6 +9,7 @@ import { useAccountPathway } from '../context/AccountPathwayContext';
 import { IndustryCareerTemplateSelector } from './IndustryCareerTemplateSelector';
 import { TrainMyBrainQuickInput } from './TrainMyBrainQuickInput';
 import { CommercialVersionReleaseStudio } from './CommercialVersionReleaseStudio';
+import { IndustrySpecialtyBrainStudio } from './IndustrySpecialtyBrainStudio';
 import { IndustryCareerTemplate } from '../data/industryCareerTemplates';
 
 interface VisitorNote {
@@ -630,8 +631,13 @@ export const MobileAdminDashboard: React.FC<{
 
         {/* Tab 7: Commercial Version Releases (Admin Mobile) */}
         {activeTab === 'commercial-releases' && (
-          <div className="space-y-4">
-            <CommercialVersionReleaseStudio />
+          <div className="space-y-6">
+            <IndustrySpecialtyBrainStudio 
+              onOpenDesktopView={onOpenDesktopView}
+            />
+            <div className="pt-6 border-t border-slate-800">
+              <CommercialVersionReleaseStudio />
+            </div>
           </div>
         )}
       </main>
