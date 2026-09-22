@@ -4,7 +4,7 @@ import {
   Trash2, Bell, Sparkles, Smartphone, Mail, ChevronRight, Search, 
   Filter, CheckSquare, RefreshCw, Eye, Building2, ExternalLink,
   Copy, Check, Briefcase, Package, Layers, Sliders, Brain, Users,
-  Share2
+  Share2, LogOut, Globe
 } from 'lucide-react';
 import { useAccountPathway } from '../context/AccountPathwayContext';
 import { IndustryCareerTemplateSelector } from './IndustryCareerTemplateSelector';
@@ -27,7 +27,9 @@ export const MobileAdminDashboard: React.FC<{
   onOpenDesktopView?: () => void;
   onOpenPluginVault?: () => void;
   onOpenShareLinksModal?: () => void;
-}> = ({ onOpenDesktopView, onOpenPluginVault, onOpenShareLinksModal }) => {
+  onOpenPublicWebsite?: () => void;
+  onLogout?: () => void;
+}> = ({ onOpenDesktopView, onOpenPluginVault, onOpenShareLinksModal, onOpenPublicWebsite, onLogout }) => {
   const [activeTab, setActiveTab] = useState<'notes' | 'customers' | 'profile-cards' | 'quick-sms' | 'workspace' | 'morph-suite' | 'commercial-releases' | 'settings'>('notes');
   const [brainSubView, setBrainSubView] = useState<'morph' | 'train'>('morph');
   const [activeTemplate, setActiveTemplate] = useState<IndustryCareerTemplate | null>(null);
@@ -114,6 +116,16 @@ export const MobileAdminDashboard: React.FC<{
             </div>
           </div>
           <div className="flex items-center gap-1.5">
+            {onOpenPublicWebsite && (
+              <button
+                onClick={onOpenPublicWebsite}
+                className="text-[11px] font-semibold text-blue-300 hover:text-white bg-blue-950/70 hover:bg-blue-900/80 px-2 py-1.5 rounded-lg border border-blue-800/80 transition flex items-center gap-1 cursor-pointer"
+                title="View Live Public Customer Facing Website"
+              >
+                <Globe className="w-3.5 h-3.5 text-blue-400" />
+                <span className="hidden xs:inline">Public Site</span>
+              </button>
+            )}
             {onOpenPluginVault && (
               <button
                 onClick={onOpenPluginVault}
@@ -141,6 +153,16 @@ export const MobileAdminDashboard: React.FC<{
               >
                 <Eye className="w-3.5 h-3.5" />
                 Desktop
+              </button>
+            )}
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                className="text-[11px] font-semibold text-rose-300 hover:text-white bg-rose-950/70 hover:bg-rose-900/80 px-2 py-1.5 rounded-lg border border-rose-800/80 transition flex items-center gap-1 cursor-pointer"
+                title="Sign Out of Dashboard"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden xs:inline">Logout</span>
               </button>
             )}
           </div>
@@ -617,6 +639,39 @@ export const MobileAdminDashboard: React.FC<{
                   {copiedUrlType === 'mobile_admin_main' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                   <span>{copiedUrlType === 'mobile_admin_main' ? 'Mobile Admin URL Copied!' : 'Copy iPhone Mobile Admin URL'}</span>
                 </button>
+              </div>
+            </div>
+
+            {/* Session & Public Website Switching Card */}
+            <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 space-y-3">
+              <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                <Shield className="w-4 h-4 text-emerald-400" />
+                Session & Portal Navigation
+              </h4>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Seamlessly jump to the public-facing customer portal to test lead experiences or sign out of your administrator session:
+              </p>
+              <div className="space-y-2 pt-1">
+                {onOpenPublicWebsite && (
+                  <button
+                    type="button"
+                    onClick={onOpenPublicWebsite}
+                    className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer"
+                  >
+                    <Globe className="w-4 h-4" />
+                    <span>View Public Customer Website</span>
+                  </button>
+                )}
+                {onLogout && (
+                  <button
+                    type="button"
+                    onClick={onLogout}
+                    className="w-full py-2.5 bg-rose-950/80 hover:bg-rose-900 text-rose-200 border border-rose-800 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Sign Out of Admin Dashboard</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>

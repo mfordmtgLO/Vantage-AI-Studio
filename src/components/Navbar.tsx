@@ -4,7 +4,7 @@ import {
   Sparkles, Mail, Calendar, FileText, Table, CheckSquare, Users, LogOut, 
   Bot, Brain, Send, Cpu, Clock, Mic, Moon, Sun, Monitor, Building2, RefreshCw, CheckCircle2,
   Database, Shield, Lock, Home, Code, FileCode, Layers, TrendingUp, Megaphone, Key,
-  Smartphone, Share2
+  Smartphone, Share2, Globe
 } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { useTheme } from '../context/ThemeContext';
@@ -26,6 +26,7 @@ interface NavbarProps {
   onOpenByokDrawer?: () => void;
   onOpenByokChecklist?: () => void;
   onOpenShareLinksModal?: () => void;
+  onOpenPublicWebsite?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ 
@@ -41,7 +42,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenPitchDeck,
   onOpenByokDrawer,
   onOpenByokChecklist,
-  onOpenShareLinksModal
+  onOpenShareLinksModal,
+  onOpenPublicWebsite
 }) => {
   const { theme, setTheme, toggleTheme, resolvedTheme } = useTheme();
   const {
@@ -342,6 +344,18 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             )}
 
+            {onOpenPublicWebsite && (
+              <button
+                onClick={onOpenPublicWebsite}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800 text-xs font-bold rounded-xl transition cursor-pointer"
+                title="View Live Public Customer-Facing Website & Lead Experience"
+              >
+                <Globe className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                <span className="hidden sm:inline">Public Website</span>
+                <span className="sm:hidden">Public</span>
+              </button>
+            )}
+
             {user && (
               <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-full border border-slate-200 dark:border-slate-700">
                 <img
@@ -354,10 +368,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
             <button
               onClick={onLogout}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
-              title="Sign Out"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:text-white hover:bg-rose-600 dark:hover:bg-rose-700 rounded-xl border border-rose-200 dark:border-rose-900/50 transition cursor-pointer shadow-xs"
+              title="Sign Out of Dashboard"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Sign Out</span>
             </button>
           </div>

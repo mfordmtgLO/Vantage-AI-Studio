@@ -34,6 +34,7 @@ import { ByokCredentialsModal } from './components/ByokCredentialsModal';
 import { ByokChecklistGuideModal } from './components/ByokChecklistGuideModal';
 import { MobileAddToHomeScreenBanner } from './components/MobileAddToHomeScreenBanner';
 import { LeadMobileShareLinksModal } from './components/LeadMobileShareLinksModal';
+import { PublicFacingWebsiteView } from './components/PublicFacingWebsiteView';
 import { safeAtob } from './utils/base64';
 
 export default function App() {
@@ -41,6 +42,29 @@ export default function App() {
   const [needsAuth, setNeedsAuth] = useState<boolean>(true);
   const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
   const [authError, setAuthError] = useState<string | null>(null);
+
+  // Dedicated view separation between Public Consumer Website and Back-End Dashboard
+  const [viewMode, setViewMode] = useState<'public' | 'dashboard' | 'auth'>(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('auth') === '1' || urlParams.get('signin') === '1') return 'auth';
+      if (urlParams.get('mode') === 'public' || urlParams.get('view') === 'public' || urlParams.get('public') === '1') return 'public';
+      if (
+        urlParams.get('mobile_admin') === 'true' || 
+        urlParams.get('admin') === 'true' || 
+        urlParams.get('tab') || 
+        urlParams.get('plugin') || 
+        urlParams.get('view') === 'dashboard' || 
+        urlParams.get('mode') === 'dashboard' ||
+        urlParams.get('lead') === '1'
+      ) {
+        return 'dashboard';
+      }
+      const savedMode = localStorage.getItem('vantage_view_mode');
+      if (savedMode === 'public' || savedMode === 'dashboard') return savedMode as any;
+    } catch {}
+    return 'public';
+  });
   const [activeTab, setActiveTab] = useState<WorkspaceTab>(() => {
     try {
       const urlParams = new URLSearchParams(window.location.search);
@@ -117,6 +141,11 @@ export default function App() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Ensure website always starts snapped to the very top on initial load and tab navigation
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [activeTab]);
 
   useEffect(() => {
     // Check if a shared workflow query is present in the URL
@@ -241,24 +270,33 @@ export default function App() {
   const handleGuestLogin = () => {
     try {
       localStorage.setItem('vantage_guest_mode', 'true');
+      localStorage.setItem('vantage_view_mode', 'dashboard');
     } catch {}
     setUser(createGuestUser());
     setNeedsAuth(false);
+    setViewMode('dashboard');
     setAuthError(null);
   };
 
   const handleCancelLogin = () => {
     setIsLoggingIn(false);
     setAuthError(null);
+    setViewMode('public');
   };
 
   const handleLogout = async () => {
     try {
       localStorage.removeItem('vantage_guest_mode');
+      localStorage.removeItem('vantage_view_mode');
     } catch {}
     await logout();
     setUser(null);
     setNeedsAuth(true);
+    setViewMode('public');
+    setIsMobileAdminMode(false);
+    try {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } catch {}
   };
 
   const handleExecuteVoiceWorkflow = (workflowName: string) => {
@@ -294,6 +332,7 @@ export default function App() {
     }
   };
 
+  // 1. Mobile Admin Dashboard Mode
   if (isMobileAdminMode) {
     return (
       <ThemeProvider>
@@ -303,14 +342,25 @@ export default function App() {
               const newUrl = window.location.pathname;
               window.history.replaceState({}, document.title, newUrl);
               setIsMobileAdminMode(false);
+              setViewMode('dashboard');
             }}
             onOpenPluginVault={() => {
               const newUrl = window.location.pathname + '?tab=admin_plugins';
               window.history.replaceState({}, document.title, newUrl);
               setActiveTab('admin_plugins');
               setIsMobileAdminMode(false);
+              setViewMode('dashboard');
             }} 
             onOpenShareLinksModal={() => setIsShareLinksModalOpen(true)}
+            onOpenPublicWebsite={() => {
+              setIsMobileAdminMode(false);
+              setViewMode('public');
+              try {
+                localStorage.setItem('vantage_view_mode', 'public');
+                window.history.replaceState({}, document.title, window.location.pathname + '?view=public');
+              } catch {}
+            }}
+            onLogout={handleLogout}
           />
           <ConnectWorkspaceModal />
           <LeadMobileShareLinksModal
@@ -322,17 +372,49 @@ export default function App() {
     );
   }
 
-  if (needsAuth) {
+  // 2. Authentication View
+  if (viewMode === 'auth' || (viewMode === 'dashboard' && needsAuth && !user)) {
     return (
       <ThemeProvider>
         <AuthCard
           onLogin={handleLogin}
           onGuestLogin={handleGuestLogin}
           onCancelLogin={handleCancelLogin}
+          onBackToPublic={() => setViewMode('public')}
           isLoggingIn={isLoggingIn}
           error={authError}
           onClearError={() => setAuthError(null)}
         />
+      </ThemeProvider>
+    );
+  }
+
+  // 3. Public-Facing Consumer Website Mode
+  if (viewMode === 'public') {
+    return (
+      <ThemeProvider>
+        <AccountPathwayProvider>
+          <PublicFacingWebsiteView
+            onEnterGuestDemo={handleGuestLogin}
+            onOpenSignIn={() => setViewMode('auth')}
+            onOpenDashboard={() => {
+              setViewMode('dashboard');
+              try {
+                localStorage.setItem('vantage_view_mode', 'dashboard');
+                window.history.replaceState({}, document.title, window.location.pathname + '?view=dashboard');
+              } catch {}
+            }}
+            onLogout={handleLogout}
+            currentUser={user}
+            onOpenPitchDeck={() => setIsPitchDeckOpen(true)}
+          />
+          <CommercialPitchDeckModal
+            isOpen={isPitchDeckOpen}
+            onClose={() => setIsPitchDeckOpen(false)}
+            onOpenLicenseStudio={() => setIsLicenseStudioOpen(true)}
+            onOpenSalesAssistant={() => setIsSalesAssistantOpen(true)}
+          />
+        </AccountPathwayProvider>
       </ThemeProvider>
     );
   }
@@ -381,6 +463,13 @@ export default function App() {
               onOpenByokDrawer={() => setIsByokDrawerOpen(true)}
               onOpenByokChecklist={() => setIsByokChecklistOpen(true)}
               onOpenShareLinksModal={() => setIsShareLinksModalOpen(true)}
+              onOpenPublicWebsite={() => {
+                setViewMode('public');
+                try {
+                  localStorage.setItem('vantage_view_mode', 'public');
+                  window.history.replaceState({}, document.title, window.location.pathname + '?view=public');
+                } catch {}
+              }}
             />
             <main>
               <WorkspaceHub

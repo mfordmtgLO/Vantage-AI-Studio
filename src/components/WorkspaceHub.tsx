@@ -160,19 +160,25 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const promptInputRef = useRef<HTMLTextAreaElement>(null);
+  const isInitialMount = useRef<boolean>(true);
 
   const scrollToBottom = (smooth = true) => {
-    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
+    // Prevent scrolling during initial load or tab switches to ensure page starts snapped to top
+    if (isInitialMount.current) return;
+    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'nearest' });
   };
 
   useEffect(() => {
-    if (activeTab === 'studio') {
-      scrollToBottom(false);
-    }
-  }, [activeTab]);
+    // Mark initial load complete after initial render
+    const timer = setTimeout(() => {
+      isInitialMount.current = false;
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
-    if (activeTab === 'studio') {
+    // Only scroll to new messages if user actively added a new chat interaction and not on initial render
+    if (activeTab === 'studio' && !isInitialMount.current) {
       scrollToBottom(true);
     }
   }, [chatHistory.length, isPrompting]);
