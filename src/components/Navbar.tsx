@@ -253,12 +253,16 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
 
             <button
+              id="global-voice-studio-btn"
               onClick={onOpenVoiceModal}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900/60 text-xs font-semibold rounded-xl transition shadow-xs cursor-pointer"
-              title="Open Global Voice-to-Text Studio"
+              title="Open Global Voice-to-Text Studio (Cmd/Ctrl + K)"
             >
               <Mic className="w-3.5 h-3.5 text-red-600 dark:text-red-400 animate-pulse" />
               <span>Voice Studio</span>
+              <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold bg-red-100 dark:bg-red-900/70 text-red-700 dark:text-red-200 rounded-md border border-red-200 dark:border-red-800">
+                ⌘K
+              </kbd>
             </button>
 
             {isAdmin && onOpenWizard && (

@@ -18,6 +18,7 @@ import { User } from 'firebase/auth';
 import { ThemeProvider } from './context/ThemeContext';
 import { AccountPathwayProvider } from './context/AccountPathwayContext';
 import { MemoryProvider } from './context/MemoryContext';
+import { VoiceIntentPayload } from './types/voiceMacro';
 import { ConnectWorkspaceModal } from './components/ConnectWorkspaceModal';
 import { RememberThisModal } from './components/RememberThisModal';
 import { RememberKnowledgeBaseModal } from './components/RememberKnowledgeBaseModal';
@@ -78,6 +79,7 @@ export default function App() {
   const [activeVoiceWorkflow, setActiveVoiceWorkflow] = useState<string | null>(null);
   const [snackbarWorkflow, setSnackbarWorkflow] = useState<string | null>(null);
   const [revertedWorkflow, setRevertedWorkflow] = useState<string | null>(null);
+  const [executedVoiceIntent, setExecutedVoiceIntent] = useState<VoiceIntentPayload | null>(null);
 
   // Shared workflow import state from URL query
   const [pendingImportWorkflow, setPendingImportWorkflow] = useState<ShareableWorkflowData | null>(null);
@@ -101,6 +103,20 @@ export default function App() {
     phoneNumber: null,
     providerId: 'guest',
   } as unknown as User);
+
+  // Global Keyboard Shortcut: Cmd/Ctrl + K to trigger GlobalVoiceRecorderModal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Cmd + K (Mac) or Ctrl + K (Windows/Linux)
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        setIsVoiceModalOpen((prev) => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     // Check if a shared workflow query is present in the URL
@@ -248,13 +264,33 @@ export default function App() {
   const handleExecuteVoiceWorkflow = (workflowName: string) => {
     setActiveVoiceWorkflow(workflowName);
     setSnackbarWorkflow(workflowName);
+    setExecutedVoiceIntent(null);
     setActiveTab('orchestrator');
+  };
+
+  const handleExecuteVoiceIntent = (intent: VoiceIntentPayload) => {
+    setExecutedVoiceIntent(intent);
+    const primaryLabel = intent.matchedMacroName || (intent.steps.length > 1 ? `${intent.steps.length}-Step Compound Voice Macro` : intent.steps[0]?.label) || 'Voice Macro Directive';
+    setActiveVoiceWorkflow(primaryLabel);
+    setSnackbarWorkflow(primaryLabel);
+
+    // Contextual intelligent tab routing
+    if (intent.steps.some(s => s.category === 'real_estate_filter' || s.category === 'real_estate_prequal')) {
+      setActiveTab('real_estate');
+    } else if (intent.steps.some(s => s.category === 'memory_ingest')) {
+      setActiveTab('brain');
+    } else if (intent.matchedMacroName || intent.steps.some(s => s.category === 'workflow_macro')) {
+      setActiveTab('orchestrator');
+    } else if (intent.steps.some(s => s.category === 'workspace_gmail' || s.category === 'workspace_calendar')) {
+      setActiveTab('studio');
+    }
   };
 
   const handleQuickUndo = () => {
     if (snackbarWorkflow) {
       setRevertedWorkflow(snackbarWorkflow);
       setSnackbarWorkflow(null);
+      setExecutedVoiceIntent(null);
     }
   };
 
@@ -390,6 +426,7 @@ export default function App() {
               onRunWorkflowCommand={(workflowName) => {
                 handleExecuteVoiceWorkflow(workflowName);
               }}
+              onExecuteVoiceIntent={handleExecuteVoiceIntent}
             />
 
             <PluginIntegrationWizardModal
@@ -436,8 +473,16 @@ export default function App() {
             {snackbarWorkflow && (
               <VoiceExecutionSnackbar
                 workflowName={snackbarWorkflow}
+                steps={executedVoiceIntent?.steps}
+                totalSteps={executedVoiceIntent?.steps?.length || 1}
+                currentStepLabel={executedVoiceIntent?.steps?.[0]?.label || snackbarWorkflow}
+                status={executedVoiceIntent ? 'undo_window' : 'undo_window'}
+                duration={10000}
                 onUndo={handleQuickUndo}
-                onDismiss={() => setSnackbarWorkflow(null)}
+                onDismiss={() => {
+                  setSnackbarWorkflow(null);
+                  setExecutedVoiceIntent(null);
+                }}
               />
             )}
 

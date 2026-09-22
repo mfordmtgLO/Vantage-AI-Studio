@@ -5,8 +5,9 @@ import { PluginPackagingConfig } from './pluginArchetypeService';
  */
 export function generateVoicePluginPrompt(config: PluginPackagingConfig): string {
   return `<!-- ========================================================================= -->
-<!-- 🎙️ VANTAGE AI STUDIO-VOICE ORCHESTRATOR PLUGIN MODULE -->
-<!-- Transferable Speech-to-Action Voice Macro Engine Architecture -->
+<!-- 🎙️ VANTAGE AI STUDIO-VOICE ORCHESTRATOR & INTENT ROUTER PLUGIN MODULE -->
+<!-- Transferable Speech-to-Action Compound Voice Macro Architecture -->
+<!-- Author & Commercial Copyright: Mike Ford <fordmj@gmail.com> -->
 <!-- Inject this prompt into Claude / ChatGPT / Gemini / DeepSeek / Cursor -->
 <!-- ========================================================================= -->
 
@@ -14,22 +15,29 @@ export function generateVoicePluginPrompt(config: PluginPackagingConfig): string
 You are an expert voice AI and audio systems architect. You must build, containerize, and integrate
 the complete "${config.pluginName}" transferable plugin archetype into the target website or application.
 
-This plugin delivers a plug-and-play **Speech-to-Action Voice Assistant & Macro Engine** featuring:
-1. Speech-to-Action Macro Matcher: Trigger phrases ("Hey Copilot, run weekly status update", "Good morning briefing") matched to automated workflows.
-2. Embeddable Floating Voice Widget (\`<${config.pluginName} />\`) with animated audio waveform visualizer and reactive listening feedback.
-3. Headless Voice Hook (\`useVantageVoice\`) with browser Web Speech API & MediaRecorder streaming with Gemini audio fallback.
-4. Voice Macro Management Studio for users to create, test, and toggle custom trigger phrases and target workflows.
-5. Backend Audio Processing Router (\`${config.apiBasePath}\`) for Whisper transcription and Gemini multimodal voice synthesis.
+Author & Commercial Attribution: Mike Ford (<fordmj@gmail.com>)
+
+This plugin delivers a plug-and-play **Speech-to-Action Voice Assistant & Compound Intent Router** featuring:
+1. Compound Intent Decomposition: Splits spoken instructions on conjunctions ("and then", "after that", "also", "next") into sequential tool steps.
+2. Verbal Safety Airgap & Spoken Confirmation: Synthesizes spoken verification prompts via SpeechSynthesis and awaits affirmative verbal confirmation ("Yes", "Proceed", "Confirm") before mutating state.
+3. 2nd Brain Cognitive Bridge: Enforces operational guardrails and provides instant hands-free knowledge ingestion ("Remember that...").
+4. Embeddable Floating Voice Widget with 10-second Quick-Undo Rollback window and real-time step progress tracking.
+5. Conversational Real Estate & GeoMap Pre-Qualification: Recognizes mortgage criteria and adjusts interactive map filters.
+6. Dual Execution Engine: Zero-cost browser Web Speech API default with server-side Gemini BYOK studio fallback.
 </instructions_for_ai_builder>
 
 <plugin_configuration_metadata>
 {
   "pluginName": "${config.pluginName}",
+  "author": "Mike Ford (fordmj@gmail.com)",
   "apiBasePath": "${config.apiBasePath}",
   "targetFramework": "${config.targetFramework}",
   "persistenceAdapter": "${config.persistenceAdapter}",
-  "hotwords": ["Hey Copilot", "Good morning briefing", "Execute workflow"],
+  "hotwords": ["Hey Copilot", "Good morning briefing", "Remember that", "Show me USDA homes"],
   "audioVisualizer": true,
+  "verbalSafetyAirgap": true,
+  "undoWindowSeconds": 10,
+  "compoundIntentDecomposition": true,
   "ttsFeedback": true
 }
 </plugin_configuration_metadata>

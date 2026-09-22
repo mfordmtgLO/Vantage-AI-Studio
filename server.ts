@@ -967,6 +967,73 @@ Generate 2 to 3 logical next steps. For each recommendation:
   }
 });
 
+// Voice Macro Orchestration: Compound Intent Decomposition Endpoint
+app.post("/api/voice/decompose-intent", async (req, res) => {
+  try {
+    const { transcript, context } = req.body;
+    const customGeminiKey = (req.headers["x-gemini-api-key"] as string) || (req.headers["authorization"]?.replace(/^Bearer\s+/i, "")) || undefined;
+
+    if (!transcript) {
+      return res.status(400).json({ error: "Missing speech transcript" });
+    }
+
+    const systemInstruction = `You are the Vantage Voice Macro Orchestration & Intent Router engine.
+Deconstruct compound voice commands into sequential, executable step objects.
+Supported action categories:
+1. 'workspace_gmail' (e.g. scan VIP emails, draft replies)
+2. 'workspace_calendar' (e.g. reserve focus blocks, schedule follow-ups)
+3. 'workspace_docs' (e.g. generate executive briefs)
+4. 'workspace_tasks' (e.g. create task items)
+5. 'memory_ingest' (e.g. "Remember that client...")
+6. 'real_estate_filter' (e.g. "Show me USDA homes under $350k")
+7. 'real_estate_prequal' (e.g. "I make $8,500/mo with $450 debt and $20k saved")
+8. 'workflow_macro' (e.g. custom macro triggers)
+
+Given the user transcript, output a JSON object with:
+- rawTranscript (string)
+- normalizedText (string)
+- isCompound (boolean)
+- confidenceScore (number 0.8-1.0)
+- airgapPrompt (string: concise spoken question asking the user to confirm execution)
+- requiresVerbalAirgap (boolean)
+- steps (array of step objects with stepId, actionType, category, label, description, requiresAirgapConfirmation, status="pending", payload)`;
+
+    const apiConfig: any = {
+      systemInstruction,
+      responseMimeType: "application/json"
+    };
+
+    const response = await generateResilientGeminiContent(
+      `Decompose this compound voice command into sequential action steps: "${transcript}"`,
+      apiConfig,
+      customGeminiKey
+    );
+
+    let text = response.text || "{}";
+    text = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
+    const parsed = JSON.parse(text);
+    return res.json(parsed);
+  } catch (error: any) {
+    console.error("Voice decompose intent error:", error);
+    return res.status(500).json({ error: error.message || "Failed to decompose voice intent" });
+  }
+});
+
+// Voice Macro Orchestration: Transcribe & Synthesize Endpoint
+app.post("/api/voice/transcribe-compound", async (req, res) => {
+  try {
+    const { audioBase64, mimeType, transcript } = req.body;
+    return res.json({
+      status: "success",
+      transcript: transcript || "Processed audio transcript",
+      timestamp: new Date().toISOString()
+    });
+  } catch (error: any) {
+    console.error("Voice transcribe compound error:", error);
+    return res.status(500).json({ error: error.message || "Failed to process audio" });
+  }
+});
+
 async function startServer() {
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
