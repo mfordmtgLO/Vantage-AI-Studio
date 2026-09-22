@@ -86,6 +86,50 @@
         "updatedAt": { "type": "string" }
       },
       "required": ["id", "userId", "personalityPreset", "censorshipMode", "actionExecutionBoundary"]
+    },
+    "LoanOfficerProfile": {
+      "title": "LoanOfficerProfile",
+      "description": "Saved Loan Officer Profile Card imported from first-time homebuyer secure Google login backend dashboard.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "nmlsNumber": { "type": "string" },
+        "company": { "type": "string" },
+        "title": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "specialties": { "type": "array" },
+        "primaryState": { "type": "string" },
+        "syncedFrom": { "type": "string" },
+        "pairedAgentIds": { "type": "array" },
+        "pairedAgents": { "type": "array" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "name", "nmlsNumber", "email"]
+    },
+    "RealtorAgentProfile": {
+      "title": "RealtorAgentProfile",
+      "description": "Saved Realtor/Agent Profile Card imported from first-time homebuyer secure Google login backend dashboard.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "licenseNumber": { "type": "string" },
+        "brokerage": { "type": "string" },
+        "title": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "targetMarkets": { "type": "array" },
+        "primaryState": { "type": "string" },
+        "syncedFrom": { "type": "string" },
+        "pairedLoIds": { "type": "array" },
+        "pairedLoanOfficers": { "type": "array" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "name", "email"]
     }
   },
   "firestore": {
@@ -96,6 +140,14 @@
     "/users/{userId}/guardrails/{guardrailId}": {
       "schema": "GuardrailSettings",
       "description": "User controlled 2nd brain content censorship boundaries, guardrails, and behavioral parameters."
+    },
+    "/loan_officers/{loId}": {
+      "schema": "LoanOfficerProfile",
+      "description": "Synced Loan Officer profile cards."
+    },
+    "/realtor_agents/{agentId}": {
+      "schema": "RealtorAgentProfile",
+      "description": "Synced Real Estate Agent profile cards."
     }
   }
 }

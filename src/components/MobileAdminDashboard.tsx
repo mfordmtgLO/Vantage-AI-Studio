@@ -3,13 +3,14 @@ import {
   MessageSquare, Send, Phone, User, Shield, CheckCircle2, Clock, 
   Trash2, Bell, Sparkles, Smartphone, Mail, ChevronRight, Search, 
   Filter, CheckSquare, RefreshCw, Eye, Building2, ExternalLink,
-  Copy, Check, Briefcase, Package, Layers, Sliders, Brain
+  Copy, Check, Briefcase, Package, Layers, Sliders, Brain, Users
 } from 'lucide-react';
 import { useAccountPathway } from '../context/AccountPathwayContext';
 import { IndustryCareerTemplateSelector } from './IndustryCareerTemplateSelector';
 import { TrainMyBrainQuickInput } from './TrainMyBrainQuickInput';
 import { CommercialVersionReleaseStudio } from './CommercialVersionReleaseStudio';
 import { IndustrySpecialtyBrainStudio } from './IndustrySpecialtyBrainStudio';
+import { ProfileCardsAdminPortal } from './ProfileCardsAdminPortal';
 import { IndustryCareerTemplate } from '../data/industryCareerTemplates';
 
 interface VisitorNote {
@@ -25,7 +26,7 @@ export const MobileAdminDashboard: React.FC<{
   onOpenDesktopView?: () => void;
   onOpenPluginVault?: () => void;
 }> = ({ onOpenDesktopView, onOpenPluginVault }) => {
-  const [activeTab, setActiveTab] = useState<'notes' | 'customers' | 'quick-sms' | 'workspace' | 'morph-suite' | 'commercial-releases' | 'settings'>('notes');
+  const [activeTab, setActiveTab] = useState<'notes' | 'customers' | 'profile-cards' | 'quick-sms' | 'workspace' | 'morph-suite' | 'commercial-releases' | 'settings'>('notes');
   const [brainSubView, setBrainSubView] = useState<'morph' | 'train'>('morph');
   const [activeTemplate, setActiveTemplate] = useState<IndustryCareerTemplate | null>(null);
   const [copiedUrlType, setCopiedUrlType] = useState<string | null>(null);
@@ -152,6 +153,15 @@ export const MobileAdminDashboard: React.FC<{
           >
             <User className="w-3.5 h-3.5" />
             Connected Leads
+          </button>
+          <button
+            onClick={() => setActiveTab('profile-cards')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
+              activeTab === 'profile-cards' ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-800/70 text-slate-400'
+            }`}
+          >
+            <Users className="w-3.5 h-3.5 text-blue-400" />
+            Profile Cards
           </button>
           <button
             onClick={() => setActiveTab('quick-sms')}
@@ -320,6 +330,10 @@ export const MobileAdminDashboard: React.FC<{
               </div>
             </div>
           </div>
+        )}
+
+        {activeTab === 'profile-cards' && (
+          <ProfileCardsAdminPortal />
         )}
 
         {activeTab === 'quick-sms' && (

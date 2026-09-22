@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { usePwaInstallPrompt } from '../hooks/usePwaInstallPrompt';
 import { IosInstallGuideModal } from './IosInstallGuideModal';
+import { ListingChatBotNotesPanel } from './ListingChatBotNotesPanel';
 import {
   BuyerDtiProfile,
   FirstTimeHomebuyerGeoPluginProps,
@@ -755,11 +756,17 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                 );
               })()}
 
-              {/* Two-Way Notes Box */}
-              <div className="text-xs text-stone-300 bg-stone-900/60 p-2.5 rounded-xl border border-stone-800 whitespace-pre-wrap font-sans">
-                <span className="text-[10px] text-stone-400 font-bold uppercase block mb-1">Two-Way Listing Notes:</span>
-                {selectedProperty.propertyNotes}
-              </div>
+              {/* Two-Way Communication Notes & Interactive Chat Bot */}
+              <ListingChatBotNotesPanel
+                property={selectedProperty}
+                buyerProfile={buyerProfile}
+                prequalResult={prequalResult}
+                onUpdatePropertyNotes={(propId, updatedNotes) => {
+                  setProperties((prev) =>
+                    prev.map((p) => (p.id === propId ? { ...p, propertyNotes: updatedNotes } : p))
+                  );
+                }}
+              />
             </div>
           )}
         </div>

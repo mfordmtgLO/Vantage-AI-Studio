@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMemory } from '../context/MemoryContext';
-import { Brain, Upload, Search, Sparkles, FileText, Database, Shield, Cpu, Tag, CheckCircle2, Loader2, ArrowRight, User, RotateCcw, Trash2, CloudCheck, ExternalLink, Cloud, Code, Box, Lock, BookOpen, Briefcase, Zap, Sliders, Activity, Share2, ShieldCheck, EyeOff, Radio } from 'lucide-react';
+import { Brain, Upload, Search, Sparkles, FileText, Database, Shield, Cpu, Tag, CheckCircle2, Loader2, ArrowRight, User, RotateCcw, Trash2, CloudCheck, ExternalLink, Cloud, Code, Box, Lock, BookOpen, Briefcase, Zap, Sliders, Activity, Share2, ShieldCheck, EyeOff, Radio, Users } from 'lucide-react';
 import { AgentMemoryExplorer } from './AgentMemoryExplorer';
 import { GuardrailsAndBoundariesStudio } from './GuardrailsAndBoundariesStudio';
 import { StandalonePluginArchetypeGenerator } from './StandalonePluginArchetypeGenerator';
@@ -10,6 +10,7 @@ import { TrainMyBrainQuickInput } from './TrainMyBrainQuickInput';
 import { AdminCommercialAccessGate } from './AdminCommercialAccessGate';
 import { CommercialVersionReleaseStudio } from './CommercialVersionReleaseStudio';
 import { IndustrySpecialtyBrainStudio } from './IndustrySpecialtyBrainStudio';
+import { ProfileCardsAdminPortal } from './ProfileCardsAdminPortal';
 import { TemporalMemoryDecayStudio } from './TemporalMemoryDecayStudio';
 import { KnowledgeGraphExplorer } from './KnowledgeGraphExplorer';
 import { ContinuousIngestionDaemonStudio } from './ContinuousIngestionDaemonStudio';
@@ -43,7 +44,7 @@ export const SecondBrainView: React.FC = () => {
     setIsGuardrailsModalOpen
   } = useMemory();
 
-  const [activeTab, setActiveTab] = useState<'recall' | 'temporal' | 'graph' | 'daemons' | 'pii_airgap' | 'templates' | 'train' | 'releases' | 'ingest' | 'explorer' | 'guardrails' | 'scenarios' | 'plugin_generator'>('recall');
+  const [activeTab, setActiveTab] = useState<'recall' | 'temporal' | 'graph' | 'daemons' | 'pii_airgap' | 'templates' | 'train' | 'releases' | 'profile_cards' | 'ingest' | 'explorer' | 'guardrails' | 'scenarios' | 'plugin_generator'>('recall');
   const [activeTemplate, setActiveTemplate] = useState<IndustryCareerTemplate | null>(INDUSTRY_CAREER_TEMPLATES[0].careers[0]);
   const [query, setQuery] = useState<string>('');
   const [engine, setEngine] = useState<'hybrid' | 'deepseek' | 'gemini'>('hybrid');
@@ -382,6 +383,17 @@ export const SecondBrainView: React.FC = () => {
               <Lock className="w-4 h-4 text-indigo-600" /> Admin Plugin Vault
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">
                 Mike Ford
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('profile_cards')}
+              className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
+                activeTab === 'profile_cards' ? 'border-blue-600 text-blue-600 font-bold' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+            >
+              <Users className="w-4 h-4 text-blue-600" /> Profile Cards Portal
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
+                Sync LOs & Agents
               </span>
             </button>
           </>
@@ -962,6 +974,11 @@ export const SecondBrainView: React.FC = () => {
       {/* Tab 5: Standalone Plugin Archetype & LLM Prompt Generator */}
       {activeTab === 'plugin_generator' && (
         <StandalonePluginArchetypeGenerator />
+      )}
+
+      {/* Admin Tab: Profile Cards Sync Portal */}
+      {activeTab === 'profile_cards' && (
+        <ProfileCardsAdminPortal />
       )}
     </div>
   );
