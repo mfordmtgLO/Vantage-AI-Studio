@@ -6,17 +6,16 @@ FROM node:22-slim AS builder
 
 WORKDIR /app
 
-# Copy dependency definitions
+# Copy package manifests
 COPY package*.json ./
-COPY bun.lock* ./
 
-# Install all dependencies (including devDependencies needed for build)
-RUN npm ci || npm install
+# Install all dependencies (including dev tools like vite, esbuild, tailwindcss)
+RUN npm install
 
-# Copy source code and config files
+# Copy application source code
 COPY . .
 
-# Build client SPA and bundled CommonJS server
+# Build client bundle (Vite) and server bundle (esbuild)
 RUN npm run build
 
 # Production runtime container
@@ -27,16 +26,15 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Copy package files and install only production dependencies
+# Copy package manifests and install only production dependencies
 COPY package*.json ./
-RUN npm ci --only=production || npm install --production
+RUN npm install --omit=dev
 
-# Copy built application assets and server bundle
+# Copy compiled assets from builder
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/public ./public
 
-# Expose Cloud Run default port
+# Expose default HTTP port
 EXPOSE 3000
 
-# Start compiled CommonJS server
+# Launch compiled CommonJS Express server
 CMD ["node", "dist/server.cjs"]
