@@ -3,9 +3,13 @@ import {
   MessageSquare, Send, Phone, User, Shield, CheckCircle2, Clock, 
   Trash2, Bell, Sparkles, Smartphone, Mail, ChevronRight, Search, 
   Filter, CheckSquare, RefreshCw, Eye, Building2, ExternalLink,
-  Copy, Check
+  Copy, Check, Briefcase, Package, Layers, Sliders, Brain
 } from 'lucide-react';
 import { useAccountPathway } from '../context/AccountPathwayContext';
+import { IndustryCareerTemplateSelector } from './IndustryCareerTemplateSelector';
+import { TrainMyBrainQuickInput } from './TrainMyBrainQuickInput';
+import { CommercialVersionReleaseStudio } from './CommercialVersionReleaseStudio';
+import { IndustryCareerTemplate } from '../data/industryCareerTemplates';
 
 interface VisitorNote {
   id: string;
@@ -20,7 +24,9 @@ export const MobileAdminDashboard: React.FC<{
   onOpenDesktopView?: () => void;
   onOpenPluginVault?: () => void;
 }> = ({ onOpenDesktopView, onOpenPluginVault }) => {
-  const [activeTab, setActiveTab] = useState<'notes' | 'customers' | 'quick-sms' | 'workspace' | 'settings'>('notes');
+  const [activeTab, setActiveTab] = useState<'notes' | 'customers' | 'quick-sms' | 'workspace' | 'morph-suite' | 'commercial-releases' | 'settings'>('notes');
+  const [brainSubView, setBrainSubView] = useState<'morph' | 'train'>('morph');
+  const [activeTemplate, setActiveTemplate] = useState<IndustryCareerTemplate | null>(null);
   const [copiedUrlType, setCopiedUrlType] = useState<string | null>(null);
   const {
     pathway,
@@ -163,6 +169,24 @@ export const MobileAdminDashboard: React.FC<{
           >
             <Building2 className="w-3.5 h-3.5" />
             Google Apps & Workspace
+          </button>
+          <button
+            onClick={() => setActiveTab('morph-suite')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
+              activeTab === 'morph-suite' ? 'bg-purple-600 text-white shadow-sm' : 'bg-slate-800/70 text-slate-400'
+            }`}
+          >
+            <Brain className="w-3.5 h-3.5" />
+            2nd Brain Morph & Train
+          </button>
+          <button
+            onClick={() => setActiveTab('commercial-releases')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
+              activeTab === 'commercial-releases' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-800/70 text-slate-400'
+            }`}
+          >
+            <Package className="w-3.5 h-3.5" />
+            Upgraded Releases
           </button>
           <button
             onClick={() => setActiveTab('settings')}
@@ -542,6 +566,72 @@ export const MobileAdminDashboard: React.FC<{
                 </button>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Tab 6: 2nd Brain Cognitive Morph & Training Suite (Admin Mobile) */}
+        {activeTab === 'morph-suite' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between bg-slate-900 p-3 rounded-2xl border border-slate-800">
+              <div className="flex items-center gap-2">
+                <Brain className="w-4 h-4 text-purple-400" />
+                <span className="text-xs font-bold text-white">2nd Brain Architecture</span>
+              </div>
+              <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => setBrainSubView('morph')}
+                  className={`px-3 py-1 rounded-lg font-semibold transition cursor-pointer ${
+                    brainSubView === 'morph' ? 'bg-purple-600 text-white' : 'text-slate-400'
+                  }`}
+                >
+                  Industry Morph
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBrainSubView('train')}
+                  className={`px-3 py-1 rounded-lg font-semibold transition cursor-pointer ${
+                    brainSubView === 'train' ? 'bg-purple-600 text-white' : 'text-slate-400'
+                  }`}
+                >
+                  Train Brain (AI)
+                </button>
+              </div>
+            </div>
+
+            {brainSubView === 'morph' ? (
+              <div className="bg-slate-900 p-3 sm:p-5 rounded-3xl border border-slate-800">
+                <IndustryCareerTemplateSelector
+                  onTemplateApplied={(template) => {
+                    setActiveTemplate(template);
+                    setBrainSubView('train');
+                  }}
+                  onOpenRecallWithQuestion={() => {
+                    if (onOpenDesktopView) onOpenDesktopView();
+                  }}
+                  onOpenTrainWindow={() => {
+                    setBrainSubView('train');
+                  }}
+                  onOpenIngestDocs={() => {
+                    if (onOpenDesktopView) onOpenDesktopView();
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="bg-slate-900 p-3 sm:p-5 rounded-3xl border border-slate-800">
+                <TrainMyBrainQuickInput
+                  activeTemplate={activeTemplate}
+                  onTrainingComplete={() => {}}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab 7: Commercial Version Releases (Admin Mobile) */}
+        {activeTab === 'commercial-releases' && (
+          <div className="space-y-4">
+            <CommercialVersionReleaseStudio />
           </div>
         )}
       </main>

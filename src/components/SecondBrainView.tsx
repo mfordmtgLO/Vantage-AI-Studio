@@ -1,10 +1,15 @@
 import React, { useState } from 'react';
 import { useMemory } from '../context/MemoryContext';
-import { Brain, Upload, Search, Sparkles, FileText, Database, Shield, Cpu, Tag, CheckCircle2, Loader2, ArrowRight, User, RotateCcw, Trash2, CloudCheck, ExternalLink, Cloud, Code, Box, Lock, BookOpen } from 'lucide-react';
+import { Brain, Upload, Search, Sparkles, FileText, Database, Shield, Cpu, Tag, CheckCircle2, Loader2, ArrowRight, User, RotateCcw, Trash2, CloudCheck, ExternalLink, Cloud, Code, Box, Lock, BookOpen, Briefcase, Zap, Sliders } from 'lucide-react';
 import { AgentMemoryExplorer } from './AgentMemoryExplorer';
 import { GuardrailsAndBoundariesStudio } from './GuardrailsAndBoundariesStudio';
 import { StandalonePluginArchetypeGenerator } from './StandalonePluginArchetypeGenerator';
 import { MemoryScenariosPanel } from './MemoryScenariosPanel';
+import { IndustryCareerTemplateSelector } from './IndustryCareerTemplateSelector';
+import { TrainMyBrainQuickInput } from './TrainMyBrainQuickInput';
+import { AdminCommercialAccessGate } from './AdminCommercialAccessGate';
+import { CommercialVersionReleaseStudio } from './CommercialVersionReleaseStudio';
+import { INDUSTRY_CAREER_TEMPLATES, IndustryCareerTemplate } from '../data/industryCareerTemplates';
 import { isMikeFordAdmin, ADMIN_PRIMARY_EMAIL, ADMIN_PRIMARY_NAME } from '../utils/adminAuth';
 import { getByokHttpHeaders } from '../utils/byokStorage';
 import { auth } from '../services/firebase';
@@ -33,7 +38,8 @@ export const SecondBrainView: React.FC = () => {
     setIsGuardrailsModalOpen
   } = useMemory();
 
-  const [activeTab, setActiveTab] = useState<'recall' | 'ingest' | 'explorer' | 'guardrails' | 'scenarios' | 'plugin_generator'>('recall');
+  const [activeTab, setActiveTab] = useState<'recall' | 'templates' | 'train' | 'releases' | 'ingest' | 'explorer' | 'guardrails' | 'scenarios' | 'plugin_generator'>('recall');
+  const [activeTemplate, setActiveTemplate] = useState<IndustryCareerTemplate | null>(INDUSTRY_CAREER_TEMPLATES[0].careers[0]);
   const [query, setQuery] = useState<string>('');
   const [engine, setEngine] = useState<'hybrid' | 'deepseek' | 'gemini'>('hybrid');
   const [enableDeepThink, setEnableDeepThink] = useState<boolean>(true);
@@ -229,35 +235,65 @@ export const SecondBrainView: React.FC = () => {
       </div>
 
       {/* Navigation sub-tabs */}
-      <div className="flex border-b border-slate-200 overflow-x-auto">
+      <div className="flex border-b border-slate-200 dark:border-slate-800 overflow-x-auto">
         <button
           onClick={() => setActiveTab('recall')}
-          className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
-            activeTab === 'recall' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-900'
+          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
+            activeTab === 'recall' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
           <Search className="w-4 h-4" /> AI Memory Recall
         </button>
         <button
+          onClick={() => setActiveTab('templates')}
+          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
+            activeTab === 'templates' ? 'border-indigo-600 text-indigo-600 font-bold' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+          }`}
+        >
+          <Briefcase className="w-4 h-4 text-indigo-600" /> Industry & Career Morph
+          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+            isMikeFordAdmin(auth.currentUser)
+              ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300'
+              : 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 flex items-center gap-1'
+          }`}>
+            {isMikeFordAdmin(auth.currentUser) ? (activeTemplate ? activeTemplate.careerTitle.split(' ')[0] : '10+') : '🔒 Admin'}
+          </span>
+        </button>
+        <button
+          onClick={() => setActiveTab('train')}
+          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
+            activeTab === 'train' ? 'border-purple-600 text-purple-600 font-bold' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+          }`}
+        >
+          <Sparkles className="w-4 h-4 text-purple-600" /> Train My Brain (AI)
+          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+            isMikeFordAdmin(auth.currentUser)
+              ? 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300'
+              : 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 flex items-center gap-1'
+          }`}>
+            {isMikeFordAdmin(auth.currentUser) ? 'Rapid Ingest' : '🔒 Admin'}
+          </span>
+        </button>
+        <button
           onClick={() => setActiveTab('ingest')}
-          className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
-            activeTab === 'ingest' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-900'
+          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
+            activeTab === 'ingest' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
           <Upload className="w-4 h-4" /> Ingest Docs & Media
         </button>
         <button
           onClick={() => setActiveTab('explorer')}
-          className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
-            activeTab === 'explorer' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-900'
+          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
+            activeTab === 'explorer' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
           <Database className="w-4 h-4" /> Agent Memory Explorer ({memories.length})
         </button>
         <button
           onClick={() => setActiveTab('guardrails')}
-          className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
-            activeTab === 'guardrails' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-900'
+          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
+            activeTab === 'guardrails' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
           <Shield className="w-4 h-4 text-emerald-600" /> Boundaries & Guardrails
@@ -267,36 +303,91 @@ export const SecondBrainView: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('scenarios')}
-          className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
-            activeTab === 'scenarios' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-900'
+          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
+            activeTab === 'scenarios' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
           <BookOpen className="w-4 h-4 text-blue-600" /> Memory Scenarios
-          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-blue-100 text-blue-800">
-            3 Categories
-          </span>
         </button>
 
-        {/* Secured Admin-Only Plugin Distribution Vault (Visible ONLY if Mike Ford Admin is signed in) */}
+        {/* Secured Admin-Only Commercial Releases & Distribution Vault */}
         {isMikeFordAdmin(auth.currentUser) && (
-          <button
-            onClick={() => setActiveTab('plugin_generator')}
-            className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
-              activeTab === 'plugin_generator' ? 'border-indigo-600 text-indigo-600 font-bold' : 'border-transparent text-slate-500 hover:text-slate-900'
-            }`}
-          >
-            <Lock className="w-4 h-4 text-indigo-600" /> Admin Plugin Vault
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">
-              Mike Ford
-            </span>
-          </button>
+          <>
+            <button
+              onClick={() => setActiveTab('releases')}
+              className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
+                activeTab === 'releases' ? 'border-indigo-600 text-indigo-600 font-bold' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+            >
+              <Shield className="w-4 h-4 text-indigo-600" /> Commercial Upgrades
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">
+                Sales & Licenses
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('plugin_generator')}
+              className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
+                activeTab === 'plugin_generator' ? 'border-indigo-600 text-indigo-600 font-bold' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+            >
+              <Lock className="w-4 h-4 text-indigo-600" /> Admin Plugin Vault
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">
+                Mike Ford
+              </span>
+            </button>
+          </>
         )}
       </div>
 
       {/* Tab 1: AI Memory Recall */}
       {activeTab === 'recall' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+        <div className="space-y-4">
+          {/* Quick Active Morph & Train Top Banner */}
+          <div className="bg-gradient-to-r from-indigo-50 via-blue-50 to-purple-50 p-4 rounded-2xl border border-indigo-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-indigo-600 text-white shadow-xs">
+                <Briefcase className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-indigo-600">
+                    Active 2nd Brain Persona:
+                  </span>
+                  <span className="text-xs font-bold text-slate-900">
+                    {activeTemplate ? activeTemplate.careerTitle : 'Mortgage Loan Officer'}
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-white text-slate-600 font-semibold border border-indigo-200">
+                    {activeTemplate ? activeTemplate.industryName : 'Real Estate & Lending'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+                  {guardrails.customPersonaDirective || activeTemplate?.morphedPersonaDirective || 'Adaptive reasoning with persistent knowledge grounding.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setActiveTab('templates')}
+                className="px-3 py-1.5 bg-white hover:bg-indigo-50 text-indigo-700 text-xs font-bold rounded-xl border border-indigo-200 transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
+              >
+                <Sliders className="w-3.5 h-3.5" />
+                <span>Change Morph</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('train')}
+                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-xs"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Train Brain</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
             <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-blue-600" /> Query 2nd Brain
             </h3>
@@ -450,6 +541,26 @@ export const SecondBrainView: React.FC = () => {
                     Ask any prompt engineering question, exploratory learning topic, deep research inquiry, or query your ingested documents.
                   </p>
                 </div>
+                {activeTemplate && activeTemplate.suggestedPromptQuestions.length > 0 && (
+                  <div className="w-full max-w-lg pt-4 space-y-2">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block text-left">
+                      Suggested Prompts for {activeTemplate.careerTitle}:
+                    </span>
+                    {activeTemplate.suggestedPromptQuestions.slice(0, 2).map((sq, sidx) => (
+                      <button
+                        key={sidx}
+                        type="button"
+                        onClick={() => {
+                          setQuery(sq);
+                        }}
+                        className="w-full text-left p-2.5 bg-slate-50 hover:bg-indigo-50/70 rounded-xl border border-slate-200 text-xs text-slate-700 transition cursor-pointer flex items-center justify-between gap-2"
+                      >
+                        <span className="line-clamp-1">{sq}</span>
+                        <ArrowRight className="w-3 h-3 text-indigo-500 shrink-0" />
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex-1 space-y-4 overflow-y-auto max-h-[600px] pr-2">
@@ -537,7 +648,65 @@ export const SecondBrainView: React.FC = () => {
               </div>
             )}
           </div>
+          </div>
         </div>
+      )}
+
+      {/* Tab: Industry & Career Morph Selector (Secured for Mike Ford Admin) */}
+      {activeTab === 'templates' && (
+        isMikeFordAdmin(auth.currentUser) ? (
+          <IndustryCareerTemplateSelector
+            onTemplateApplied={(template) => {
+              setActiveTemplate(template);
+            }}
+            onOpenRecallWithQuestion={(question) => {
+              setQuery(question);
+              setActiveTab('recall');
+            }}
+            onOpenTrainWindow={() => {
+              setActiveTab('train');
+            }}
+            onOpenIngestDocs={() => {
+              setActiveTab('ingest');
+            }}
+          />
+        ) : (
+          <AdminCommercialAccessGate
+            title="Industry & Career Cognitive Morphing Engine"
+            featureDescription="The multi-industry persona morphing and guardrail adaptation system is an administrative capability reserved for Mike Ford (fordmj@gmail.com) to engineer, calibrate, and package specialized commercial version releases."
+            onUnlocked={() => {
+              setActiveTab('templates');
+            }}
+          />
+        )
+      )}
+
+      {/* Tab: Train My Brain (AI) (Secured for Mike Ford Admin) */}
+      {activeTab === 'train' && (
+        isMikeFordAdmin(auth.currentUser) ? (
+          <div className="space-y-6">
+            <TrainMyBrainQuickInput
+              activeTemplate={activeTemplate}
+              onTrainingComplete={(count) => {
+                setToastMessage(`Successfully learned ${count} rules into 2nd Brain!`);
+                setTimeout(() => setToastMessage(null), 4000);
+              }}
+            />
+          </div>
+        ) : (
+          <AdminCommercialAccessGate
+            title="Train My Brain (AI) Deep Ingestion Engine"
+            featureDescription="The comma-separated high-speed rule ingestion and behavioral alignment engine is reserved for Mike Ford (fordmj@gmail.com) to train and customize 2nd Brain plugin models for enterprise clients and periodic upgraded version releases."
+            onUnlocked={() => {
+              setActiveTab('train');
+            }}
+          />
+        )
+      )}
+
+      {/* Tab: Commercial Version Releases (Admin Only) */}
+      {activeTab === 'releases' && isMikeFordAdmin(auth.currentUser) && (
+        <CommercialVersionReleaseStudio />
       )}
 
       {/* Tab 2: Ingest Docs & Media */}
