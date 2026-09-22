@@ -4,6 +4,7 @@ import { getAccessToken } from '../services/firebase';
 import { safeBtoa } from '../utils/base64';
 import { getByokHttpHeaders } from '../utils/byokStorage';
 import { ActionConfirmationModal } from './ActionConfirmationModal';
+import { RotatingSuggestedWorkspaceActions } from './RotatingSuggestedWorkspaceActions';
 import { SecondBrainView } from './SecondBrainView';
 import { GmailDraftsView } from './GmailDraftsView';
 import { LogicOrchestratorView } from './LogicOrchestratorView';
@@ -651,6 +652,51 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
           });
           setActionSuccessMsg(`Document "${title}" created successfully!`);
           triggerPushAlert('Document Created', `"${title}" added to your files.`);
+        } else if (action.type === 'drive_create') {
+          const { name, mimeType } = action.payload;
+          const newFile: DriveFile = {
+            id: 'drive_' + Date.now(),
+            name: name || 'Project_Asset_Folder',
+            mimeType: mimeType || 'application/vnd.google-apps.folder',
+            webViewLink: 'https://drive.google.com'
+          };
+          setFiles(prev => {
+            const updated = [newFile, ...prev];
+            try { localStorage.setItem('vantage_google_apps_files', JSON.stringify(updated)); } catch {}
+            return updated;
+          });
+          setActionSuccessMsg(`Google Drive asset "${name}" created successfully!`);
+          triggerPushAlert('Drive Asset Created', `"${name}" added to Google Drive.`);
+        } else if (action.type === 'sheets_create' || action.type === 'sheets_append') {
+          const { title } = action.payload;
+          const newFile: DriveFile = {
+            id: 'sheet_' + Date.now(),
+            name: `${title || 'Spreadsheet'}.xlsx`,
+            mimeType: 'application/vnd.google-apps.spreadsheet',
+            webViewLink: 'https://sheets.google.com'
+          };
+          setFiles(prev => {
+            const updated = [newFile, ...prev];
+            try { localStorage.setItem('vantage_google_apps_files', JSON.stringify(updated)); } catch {}
+            return updated;
+          });
+          setActionSuccessMsg(`Google Sheet "${title}" created successfully!`);
+          triggerPushAlert('Spreadsheet Created', `"${title}" generated in Google Sheets.`);
+        } else if (action.type === 'contacts_create') {
+          const { name, email, phone } = action.payload;
+          const newContact: GoogleContact = {
+            resourceName: 'people/c_' + Date.now(),
+            name: name || 'New Contact',
+            email: email || 'contact@example.com',
+            phone: phone || ''
+          };
+          setContacts(prev => {
+            const updated = [newContact, ...prev];
+            try { localStorage.setItem('vantage_google_apps_contacts', JSON.stringify(updated)); } catch {}
+            return updated;
+          });
+          setActionSuccessMsg(`Contact "${name}" added to Google Contacts!`);
+          triggerPushAlert('Contact Added', `"${name}" saved to Google Contacts.`);
         }
         setPendingAction(null);
         return;
@@ -732,6 +778,54 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
         if (!res.ok) throw new Error('Failed to create Google Doc');
         setActionSuccessMsg('Google Doc successfully created!');
         triggerPushAlert('Google Doc Created', `Document "${title}" generated successfully.`);
+      } else if (action.type === 'drive_create') {
+        const { name, mimeType } = action.payload;
+        const res = await fetch('https://www.googleapis.com/drive/v3/files', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: name || 'New Drive Asset',
+            mimeType: mimeType || 'application/vnd.google-apps.folder'
+          }),
+        });
+        if (!res.ok) throw new Error('Failed to create Drive asset');
+        setActionSuccessMsg('Drive asset successfully created!');
+        triggerPushAlert('Drive Asset Created', `"${name}" added to Google Drive.`);
+      } else if (action.type === 'sheets_create') {
+        const { title } = action.payload;
+        const res = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            properties: { title: title || 'New Spreadsheet' }
+          }),
+        });
+        if (!res.ok) throw new Error('Failed to create Google Sheet');
+        setActionSuccessMsg('Google Sheet successfully created!');
+        triggerPushAlert('Spreadsheet Created', `"${title}" created in Google Sheets.`);
+      } else if (action.type === 'contacts_create') {
+        const { name, email, phone } = action.payload;
+        const res = await fetch('https://people.googleapis.com/v1/people:createContact', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            names: [{ givenName: name }],
+            emailAddresses: email ? [{ value: email }] : [],
+            phoneNumbers: phone ? [{ value: phone }] : []
+          }),
+        });
+        if (!res.ok) throw new Error('Failed to create contact in Google Contacts');
+        setActionSuccessMsg('Contact successfully created in Google Contacts!');
+        triggerPushAlert('Contact Created', `"${name}" added to Google Contacts.`);
       }
 
       setPendingAction(null);
@@ -1088,40 +1182,51 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
                     {turn.text}
                   </div>
 
-                  {/* Interactive Suggested Actions */}
-                  {turn.suggestedActions && turn.suggestedActions.length > 0 && (
-                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                          Suggested Workspace Actions ({turn.suggestedActions.length})
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {turn.suggestedActions.map((action) => (
-                          <div
-                            key={action.id}
-                            className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/70 p-3.5 rounded-xl space-y-2.5 flex flex-col justify-between"
-                          >
-                            <div className="space-y-1">
-                              <span className="inline-block px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 rounded">
-                                {action.type.replace('_', ' ')}
-                              </span>
-                              <h5 className="text-xs font-bold text-slate-900 dark:text-slate-100">{action.title}</h5>
-                              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">{action.description}</p>
-                            </div>
-                            <button
-                              onClick={() => setPendingAction(action)}
-                              className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer"
+                  {/* Interactive Suggested Actions - 1 Per Free Google App Rotating Every 30 Seconds */}
+                  {turn.id.startsWith('welcome') || turn.id.startsWith('fresh') ? (
+                    <RotatingSuggestedWorkspaceActions
+                      onExecuteAction={(action) => setPendingAction(action)}
+                    />
+                  ) : turn.suggestedActions && turn.suggestedActions.length > 0 ? (
+                    <div className="space-y-4">
+                      <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                            Synthesized Query Actions ({turn.suggestedActions.length})
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {turn.suggestedActions.map((action) => (
+                            <div
+                              key={action.id}
+                              className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/70 p-3.5 rounded-xl space-y-2.5 flex flex-col justify-between"
                             >
-                              <span>Review & Execute Action</span>
-                              <ArrowRight className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        ))}
+                              <div className="space-y-1">
+                                <span className="inline-block px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 rounded">
+                                  {action.type.replace('_', ' ')}
+                                </span>
+                                <h5 className="text-xs font-bold text-slate-900 dark:text-slate-100">{action.title}</h5>
+                                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">{action.description}</p>
+                              </div>
+                              <button
+                                onClick={() => setPendingAction(action)}
+                                className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer"
+                              >
+                                <span>Review & Execute Action</span>
+                                <ArrowRight className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
                       </div>
+
+                      {/* Rotating 7-App Actions Palette for ongoing workflows */}
+                      <RotatingSuggestedWorkspaceActions
+                        onExecuteAction={(action) => setPendingAction(action)}
+                      />
                     </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
             ))}

@@ -25,6 +25,7 @@ import {
   PlusCircle,
   X,
   Shield,
+  ShieldCheck,
   Key,
   Smartphone,
   Share2
@@ -347,14 +348,17 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
             <Layers className="w-6 h-6" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-base font-bold text-white tracking-wide">First-Time Homebuyer GeoMap & DPA Engine</h2>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-950 text-emerald-300 border border-emerald-800">
                 Managed Master Feed Sync
               </span>
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold inline-flex items-center gap-1 shadow-sm">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Verified Pair
+              </span>
             </div>
-            <p className="text-xs text-stone-400">
-              Curated by Mike Ford • USDA 100% RD Rural • LMI Census Tract Grants • 50% Max DTI Envelope
+            <p className="text-xs text-stone-400 mt-0.5">
+              Curated by Mike Ford ({mergedConfig.assignedLoanOfficerName} & {mergedConfig.assignedAgentName}) • USDA 100% RD Rural • LMI Census Grants
             </p>
           </div>
         </div>

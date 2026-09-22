@@ -58,17 +58,26 @@ export const IndustryAppsAdaptabilityBar: React.FC<IndustryAppsAdaptabilityBarPr
   const [isIndustryDropdownOpen, setIsIndustryDropdownOpen] = useState(false);
   const [activeNotification, setActiveNotification] = useState<string | null>(null);
 
-  // Detect current active industry from guardrails personality or custom persona
-  const activeIndustryId = INDUSTRY_CAREER_TEMPLATES.find(g => 
-    guardrails.customPersonaDirective?.toLowerCase().includes(g.id) ||
-    guardrails.customPersonaDirective?.toLowerCase().includes(g.name.toLowerCase()) ||
-    g.careers.some(c => c.morphedPersonaTitle === guardrails.personalityPreset)
-  )?.id || 'mortgage_real_estate';
+  // Detect current active industry from localStorage, guardrails personality or custom persona
+  const activeIndustryId = (() => {
+    try {
+      const saved = localStorage.getItem('vantage_active_industry_id');
+      if (saved) return saved;
+    } catch {}
+    return INDUSTRY_CAREER_TEMPLATES.find(g => 
+      guardrails.customPersonaDirective?.toLowerCase().includes(g.id) ||
+      guardrails.customPersonaDirective?.toLowerCase().includes(g.name.toLowerCase()) ||
+      g.careers.some(c => c.morphedPersonaTitle === guardrails.personalityPreset)
+    )?.id || 'mortgage_real_estate';
+  })();
 
   const currentProfile = getProfileForIndustry(activeIndustryId);
 
   const handleSwitchIndustry = async (newIndustryGroup: typeof INDUSTRY_CAREER_TEMPLATES[0]) => {
     setIsIndustryDropdownOpen(false);
+    try {
+      localStorage.setItem('vantage_active_industry_id', newIndustryGroup.id);
+    } catch {}
     const primaryCareer = newIndustryGroup.careers[0];
 
     try {

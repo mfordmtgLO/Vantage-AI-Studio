@@ -45,10 +45,11 @@ export interface GoogleContact {
 
 export interface SuggestedAction {
   id: string;
-  type: 'gmail_send' | 'calendar_create' | 'docs_create' | 'sheets_append' | 'tasks_create';
+  type: 'gmail_send' | 'calendar_create' | 'docs_create' | 'sheets_append' | 'sheets_create' | 'tasks_create' | 'drive_create' | 'contacts_create';
   title: string;
   description: string;
   payload: any;
+  appName?: 'Gmail' | 'Calendar' | 'Drive' | 'Docs' | 'Sheets' | 'Tasks' | 'Contacts';
 }
 
 export interface CopilotResponse {

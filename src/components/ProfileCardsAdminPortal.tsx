@@ -19,6 +19,8 @@ import {
   Mail,
   Award,
   CheckCircle2,
+  ShieldCheck,
+  Link2,
   ExternalLink,
   Sparkles,
   Database,
@@ -37,7 +39,7 @@ import ProfileCardSyncService, {
 import { useAccountPathway } from '../context/AccountPathwayContext';
 
 export const ProfileCardsAdminPortal: React.FC = () => {
-  const [activeSubTab, setActiveSubTab] = useState<'los' | 'agents' | 'sync_spec'>('los');
+  const [activeSubTab, setActiveSubTab] = useState<'los' | 'agents' | 'pairs' | 'sync_spec'>('los');
   const [loanOfficers, setLoanOfficers] = useState<LoanOfficerProfileCard[]>([]);
   const [agents, setAgents] = useState<AgentProfileCard[]>([]);
   const [isSyncingLos, setIsSyncingLos] = useState(false);
@@ -56,6 +58,10 @@ export const ProfileCardsAdminPortal: React.FC = () => {
   const [newCardPhone, setNewCardPhone] = useState('');
   const [newCardState, setNewCardState] = useState('OR');
 
+  // Pair Management State
+  const [pairLoId, setPairLoId] = useState('');
+  const [pairAgentId, setPairAgentId] = useState('');
+
   const { pathway, connectedWorkspaceEmail } = useAccountPathway();
 
   useEffect(() => {
@@ -65,6 +71,28 @@ export const ProfileCardsAdminPortal: React.FC = () => {
   const loadData = () => {
     setLoanOfficers(ProfileCardSyncService.getLoanOfficers());
     setAgents(ProfileCardSyncService.getAgents());
+  };
+
+  const handleCreatePair = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pairLoId || !pairAgentId) return;
+    const { updatedLos, updatedAgents } = ProfileCardSyncService.pairLoAndAgent(pairLoId, pairAgentId);
+    setLoanOfficers(updatedLos);
+    setAgents(updatedAgents);
+    setSyncNotice(`✓ Verified Pair connection successfully created in database!`);
+    setPairLoId('');
+    setPairAgentId('');
+    setTimeout(() => setSyncNotice(null), 4000);
+  };
+
+  const handleUnpairConnection = (loId: string, agentId: string) => {
+    if (confirm('Are you sure you want to unpair this LO and Agent connection?')) {
+      const { updatedLos, updatedAgents } = ProfileCardSyncService.unpairLoAndAgent(loId, agentId);
+      setLoanOfficers(updatedLos);
+      setAgents(updatedAgents);
+      setSyncNotice(`✓ Verified Pair connection removed.`);
+      setTimeout(() => setSyncNotice(null), 4000);
+    }
   };
 
   const handleSyncLos = async () => {
@@ -270,6 +298,19 @@ export const ProfileCardsAdminPortal: React.FC = () => {
 
           <button
             type="button"
+            onClick={() => setActiveSubTab('pairs')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+              activeSubTab === 'pairs'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-white'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-indigo-300" />
+            <span>Verified LO+Agent Pairs</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveSubTab('sync_spec')}
             className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
               activeSubTab === 'sync_spec'
@@ -319,13 +360,21 @@ export const ProfileCardsAdminPortal: React.FC = () => {
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteLo(lo.id)}
-                    className="p-1.5 rounded-lg bg-slate-950 hover:bg-rose-950 text-slate-500 hover:text-rose-400 border border-slate-800 transition"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {lo.pairedAgents && lo.pairedAgents.length > 0 && (
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold flex items-center gap-1 shadow-sm animate-pulse">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Verified Pair</span>
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteLo(lo.id)}
+                      className="p-1.5 rounded-lg bg-slate-950 hover:bg-rose-950 text-slate-500 hover:text-rose-400 border border-slate-800 transition cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="bg-slate-950 p-2.5 rounded-2xl border border-slate-800/80 space-y-1.5 text-xs font-mono">
@@ -383,8 +432,9 @@ export const ProfileCardsAdminPortal: React.FC = () => {
                             </div>
                           </div>
                           <div className="text-right shrink-0">
-                            <span className="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800/80 text-[9px] font-bold">
-                              {pa.pairingStatus}
+                            <span className="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800/80 text-[9px] font-bold flex items-center gap-1">
+                              <ShieldCheck className="w-2.5 h-2.5 text-emerald-400" />
+                              Verified Pair
                             </span>
                             <span className="block text-[9px] text-slate-500 font-mono mt-0.5">
                               {pa.coBrandedListingsCount} co-listings
@@ -450,13 +500,21 @@ export const ProfileCardsAdminPortal: React.FC = () => {
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteAgent(agent.id)}
-                    className="p-1.5 rounded-lg bg-slate-950 hover:bg-rose-950 text-slate-500 hover:text-rose-400 border border-slate-800 transition"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {agent.pairedLoanOfficers && agent.pairedLoanOfficers.length > 0 && (
+                      <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/40 text-[10px] font-bold flex items-center gap-1 shadow-sm animate-pulse">
+                        <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
+                        <span>Verified Pair</span>
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteAgent(agent.id)}
+                      className="p-1.5 rounded-lg bg-slate-950 hover:bg-rose-950 text-slate-500 hover:text-rose-400 border border-slate-800 transition cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="bg-slate-950 p-2.5 rounded-2xl border border-slate-800/80 space-y-1.5 text-xs font-mono">
@@ -514,8 +572,9 @@ export const ProfileCardsAdminPortal: React.FC = () => {
                             </div>
                           </div>
                           <div className="text-right shrink-0">
-                            <span className="px-1.5 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800/80 text-[9px] font-bold">
-                              {pLo.pairingStatus}
+                            <span className="px-1.5 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800/80 text-[9px] font-bold flex items-center gap-1">
+                              <ShieldCheck className="w-2.5 h-2.5 text-blue-400" />
+                              Verified Pair
                             </span>
                             <span className="block text-[9px] text-slate-500 font-mono mt-0.5">
                               {pLo.pairedPreapprovalsCount} preapprovals
@@ -555,6 +614,175 @@ export const ProfileCardsAdminPortal: React.FC = () => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* SUB-TAB 3: VERIFIED LO + AGENT PAIRS MATRIX */}
+      {activeSubTab === 'pairs' && (
+        <div className="space-y-6">
+          {/* Active Pairing Control Box */}
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="p-2 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30">
+                  <ShieldCheck className="w-5 h-5 text-indigo-400" />
+                </span>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Create Active LO + Agent Verified Pair</h3>
+                  <p className="text-xs text-slate-400">
+                    Establish bidirectionally synced co-branded partnership between a Loan Officer and Realtor/Agent
+                  </p>
+                </div>
+              </div>
+              <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Database Synced
+              </span>
+            </div>
+
+            <form onSubmit={handleCreatePair} className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Select Loan Officer (LO)</label>
+                <select
+                  value={pairLoId}
+                  onChange={(e) => setPairLoId(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-indigo-500"
+                >
+                  <option value="">-- Choose Loan Officer --</option>
+                  {loanOfficers.map((lo) => (
+                    <option key={lo.id} value={lo.id}>
+                      {lo.name} ({lo.company})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Select Realtor / Agent</label>
+                <select
+                  value={pairAgentId}
+                  onChange={(e) => setPairAgentId(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-indigo-500"
+                >
+                  <option value="">-- Choose Realtor/Agent --</option>
+                  {agents.map((ag) => (
+                    <option key={ag.id} value={ag.id}>
+                      {ag.name} ({ag.brokerage})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-end">
+                <button
+                  type="submit"
+                  disabled={!pairLoId || !pairAgentId}
+                  className="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold rounded-xl text-xs transition cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30"
+                >
+                  <Link2 className="w-4 h-4" />
+                  <span>Verify & Create Pair Connection</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Active Verified Pairs Grid */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              Active Verified LO + Agent Partnerships
+            </h4>
+
+            {(() => {
+              // Extract unique pairs
+              const pairMap = new Map<string, { lo: LoanOfficerProfileCard; agent: AgentProfileCard }>();
+              loanOfficers.forEach((lo) => {
+                if (lo.pairedAgents) {
+                  lo.pairedAgents.forEach((pa) => {
+                    const matchedAgent = agents.find((ag) => ag.id === pa.agentId);
+                    if (matchedAgent) {
+                      const pairKey = `${lo.id}___${matchedAgent.id}`;
+                      pairMap.set(pairKey, { lo, agent: matchedAgent });
+                    }
+                  });
+                }
+              });
+
+              const pairEntries = Array.from(pairMap.values());
+
+              if (pairEntries.length === 0) {
+                return (
+                  <div className="p-8 bg-slate-900 border border-slate-800 rounded-3xl text-center space-y-2">
+                    <ShieldCheck className="w-8 h-8 text-slate-600 mx-auto" />
+                    <p className="text-slate-400 text-xs font-bold">No active Verified Pairs found in current database.</p>
+                    <p className="text-slate-500 text-[11px]">Use the selector above to establish an LO + Agent Verified Pair partnership.</p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="grid grid-cols-1 gap-4">
+                  {pairEntries.map(({ lo, agent }) => (
+                    <div
+                      key={`${lo.id}_${agent.id}`}
+                      className="bg-slate-900 border border-slate-800 hover:border-indigo-500/50 rounded-3xl p-5 shadow-2xl transition flex flex-col md:flex-row items-center justify-between gap-5"
+                    >
+                      {/* Left: LO Info */}
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-blue-400" />
+                          <span className="text-[10px] text-blue-400 font-bold uppercase">Loan Officer Partner</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-2xl bg-blue-600/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-bold text-sm shrink-0">
+                            {lo.name.substring(0, 2).toUpperCase()}
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-white">{lo.name}</h4>
+                            <p className="text-xs text-slate-400">{lo.title} • {lo.company}</p>
+                            <p className="text-[11px] font-mono text-blue-300">NMLS #{lo.nmlsNumber} • {lo.email}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Middle: Verified Pair Badge */}
+                      <div className="flex flex-col items-center justify-center shrink-0 space-y-1.5 px-4 py-2 bg-slate-950 rounded-2xl border border-indigo-900/60 text-center">
+                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-black shadow-lg animate-pulse">
+                          <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                          <span>Verified Pair</span>
+                        </div>
+                        <span className="text-[10px] font-mono text-slate-400">Bidirectional Co-Branded Connection</span>
+                        <button
+                          type="button"
+                          onClick={() => handleUnpairConnection(lo.id, agent.id)}
+                          className="mt-1 text-[10px] text-rose-400 hover:text-rose-300 hover:underline cursor-pointer"
+                        >
+                          Unpair Connection
+                        </button>
+                      </div>
+
+                      {/* Right: Agent Info */}
+                      <div className="flex-1 space-y-2 md:text-right">
+                        <div className="flex items-center gap-2 md:justify-end">
+                          <span className="text-[10px] text-emerald-400 font-bold uppercase">Realtor / Agent Partner</span>
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                        </div>
+                        <div className="flex items-center gap-3 md:flex-row-reverse">
+                          <div className="w-10 h-10 rounded-2xl bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold text-sm shrink-0">
+                            {agent.name.substring(0, 2).toUpperCase()}
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-white">{agent.name}</h4>
+                            <p className="text-xs text-slate-400">{agent.title} • {agent.brokerage}</p>
+                            <p className="text-[11px] font-mono text-emerald-300">License #{agent.licenseNumber} • {agent.email}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
         </div>
       )}
 
