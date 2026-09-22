@@ -25,6 +25,7 @@ import { MultiSourceDataPurgeStudio } from './MultiSourceDataPurgeStudio';
 import { PushNotificationManager } from './PushNotificationManager';
 import { LiveTwoWayNotesModal } from './LiveTwoWayNotesModal';
 import { GoogleAppHeader } from './GoogleAppHeader';
+import { GoogleAppsCommandDeck } from './GoogleAppsCommandDeck';
 import { IndustryAppsAdaptabilityBar } from './IndustryAppsAdaptabilityBar';
 import { IndustrySmartDocsGmailStudio } from './IndustrySmartDocsGmailStudio';
 import { useAccountPathway } from '../context/AccountPathwayContext';
@@ -980,6 +981,20 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
       {/* PROMPT STUDIO TAB */}
       {activeTab === 'studio' && (
         <div className="space-y-6">
+          {/* ULTRA-PROMINENT 7 GOOGLE WORKSPACE APPS COMMAND DECK */}
+          <GoogleAppsCommandDeck
+            activeTab={activeTab}
+            onSelectTab={setActiveTab}
+            messageCount={messages.length}
+            eventCount={events.length}
+            fileCount={files.length}
+            taskCount={tasks.length}
+            contactCount={contacts.length}
+            draftCount={18}
+            onRefresh={fetchWorkspaceData}
+            isRefreshing={loading}
+          />
+
           {/* Studio Header Card */}
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm transition-colors">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1382,6 +1397,8 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
             itemLabel="messages"
             onRefresh={fetchWorkspaceData}
             isRefreshing={loading}
+            activeTab={activeTab}
+            onNavigateTab={setActiveTab}
           />
 
           <AppAIPromptAndTemplateManager
@@ -1554,6 +1571,8 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
             itemLabel="upcoming events"
             onRefresh={fetchWorkspaceData}
             isRefreshing={loading}
+            activeTab={activeTab}
+            onNavigateTab={setActiveTab}
           />
 
           <AppAIPromptAndTemplateManager
@@ -1710,6 +1729,8 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
             itemLabel="files"
             onRefresh={fetchWorkspaceData}
             isRefreshing={loading}
+            activeTab={activeTab}
+            onNavigateTab={setActiveTab}
           />
           <AppAIPromptAndTemplateManager
             appId="drive"
@@ -1734,6 +1755,8 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
             appIcon={<Table className="w-5 h-5" />}
             onRefresh={fetchWorkspaceData}
             isRefreshing={loading}
+            activeTab={activeTab}
+            onNavigateTab={setActiveTab}
           />
           <AppAIPromptAndTemplateManager
             appId="sheets"
@@ -1799,6 +1822,8 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
             itemLabel="tasks"
             onRefresh={fetchWorkspaceData}
             isRefreshing={loading}
+            activeTab={activeTab}
+            onNavigateTab={setActiveTab}
           />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
@@ -1890,6 +1915,8 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
             itemLabel="contacts"
             onRefresh={fetchWorkspaceData}
             isRefreshing={loading}
+            activeTab={activeTab}
+            onNavigateTab={setActiveTab}
           />
           <div className="space-y-4">
           <div className="flex items-center justify-between">

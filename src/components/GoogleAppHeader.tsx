@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAccountPathway } from '../context/AccountPathwayContext';
-import { Building2, ExternalLink, RefreshCw, CheckCircle2, Sparkles, ShieldCheck } from 'lucide-react';
+import { WorkspaceTab } from '../types';
+import { Building2, ExternalLink, RefreshCw, CheckCircle2, Sparkles, ShieldCheck, Mail, Calendar, FileText, Table, CheckSquare, Users, Send } from 'lucide-react';
 
 interface GoogleAppHeaderProps {
   appName: string;
@@ -11,6 +12,8 @@ interface GoogleAppHeaderProps {
   itemLabel?: string;
   onRefresh?: () => void;
   isRefreshing?: boolean;
+  activeTab?: WorkspaceTab;
+  onNavigateTab?: (tab: WorkspaceTab) => void;
 }
 
 export const GoogleAppHeader: React.FC<GoogleAppHeaderProps> = ({
@@ -22,6 +25,8 @@ export const GoogleAppHeader: React.FC<GoogleAppHeaderProps> = ({
   itemLabel,
   onRefresh,
   isRefreshing,
+  activeTab,
+  onNavigateTab,
 }) => {
   const {
     pathway,
@@ -40,6 +45,16 @@ export const GoogleAppHeader: React.FC<GoogleAppHeaderProps> = ({
     }
     await syncData();
   };
+
+  const quickGoogleApps = [
+    { id: 'gmail' as WorkspaceTab, label: 'Gmail', icon: Mail, color: 'text-red-500' },
+    { id: 'calendar' as WorkspaceTab, label: 'Calendar', icon: Calendar, color: 'text-blue-500' },
+    { id: 'drive' as WorkspaceTab, label: 'Drive & Docs', icon: FileText, color: 'text-amber-500' },
+    { id: 'sheets' as WorkspaceTab, label: 'Sheets', icon: Table, color: 'text-emerald-500' },
+    { id: 'tasks' as WorkspaceTab, label: 'Tasks', icon: CheckSquare, color: 'text-sky-500' },
+    { id: 'contacts' as WorkspaceTab, label: 'Contacts', icon: Users, color: 'text-purple-500' },
+    { id: 'drafts' as WorkspaceTab, label: 'Drafts', icon: Send, color: 'text-rose-500' },
+  ];
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-4 transition-colors">
@@ -126,6 +141,33 @@ export const GoogleAppHeader: React.FC<GoogleAppHeaderProps> = ({
           </a>
         </div>
       </div>
+
+      {/* 7 Google Apps Fast-Switching Quick Bar */}
+      {onNavigateTab && (
+        <div className="flex items-center gap-1.5 pt-2 border-t border-slate-100 dark:border-slate-800/80 overflow-x-auto scrollbar-none">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mr-1 shrink-0">
+            Switch App:
+          </span>
+          {quickGoogleApps.map((qApp) => {
+            const Icon = qApp.icon;
+            const isCurrent = activeTab === qApp.id;
+            return (
+              <button
+                key={qApp.id}
+                onClick={() => onNavigateTab(qApp.id)}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer shrink-0 ${
+                  isCurrent
+                    ? 'bg-blue-600 text-white shadow-xs font-bold'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/60 dark:border-slate-700'
+                }`}
+              >
+                <Icon className={`w-3 h-3 ${isCurrent ? 'text-white' : qApp.color}`} />
+                <span>{qApp.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Pathway Informational Bar */}
       <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800/80 text-[11px] text-slate-500 dark:text-slate-400">

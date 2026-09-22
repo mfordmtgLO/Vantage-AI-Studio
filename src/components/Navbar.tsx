@@ -67,23 +67,28 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const isAdmin = isMikeFordAdmin(user) || isMikeFordAdmin({ email: connectedWorkspaceEmail });
 
-  const tabs = [
-    { id: 'suite' as WorkspaceTab, label: '💎 Vantage Suite', icon: Sparkles },
-    { id: 'commercial_strategy' as WorkspaceTab, label: '🚀 Commercial Strategy & ROI', icon: TrendingUp },
-    { id: 'dev_roadmap' as WorkspaceTab, label: '🛠️ Code Roadmap & System Architecture', icon: Code },
-    { id: 'studio' as WorkspaceTab, label: 'Prompt Studio', icon: Bot },
-    { id: 'brain' as WorkspaceTab, label: '2nd Brain & Memory', icon: Brain },
+  // Prominently featured 7 Google Workspace Apps
+  const googleApps = [
+    { id: 'gmail' as WorkspaceTab, label: 'Gmail', icon: Mail, color: 'text-red-600 dark:text-red-400', activeClass: 'bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 border-red-200 dark:border-red-900', badge: 'Inbox' },
+    { id: 'calendar' as WorkspaceTab, label: 'Calendar', icon: Calendar, color: 'text-blue-600 dark:text-blue-400', activeClass: 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-900', badge: 'Schedule' },
+    { id: 'drive' as WorkspaceTab, label: 'Drive & Docs', icon: FileText, color: 'text-amber-600 dark:text-amber-400', activeClass: 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900', badge: 'Cloud' },
+    { id: 'sheets' as WorkspaceTab, label: 'Sheets', icon: Table, color: 'text-emerald-600 dark:text-emerald-400', activeClass: 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900', badge: 'SQL' },
+    { id: 'tasks' as WorkspaceTab, label: 'Tasks', icon: CheckSquare, color: 'text-sky-600 dark:text-sky-400', activeClass: 'bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-900', badge: 'To-Do' },
+    { id: 'contacts' as WorkspaceTab, label: 'Contacts', icon: Users, color: 'text-purple-600 dark:text-purple-400', activeClass: 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-900', badge: 'CRM' },
+    { id: 'drafts' as WorkspaceTab, label: 'Drafts', icon: Send, color: 'text-rose-600 dark:text-rose-400', activeClass: 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-900', badge: '18' },
+  ];
+
+  // Autonomous AI Engines & Platform Studios
+  const studioTabs = [
+    { id: 'suite' as WorkspaceTab, label: '💎 Vantage Suite', icon: Sparkles, badge: '4-in-1' },
+    { id: 'studio' as WorkspaceTab, label: 'Prompt Studio & Copilot', icon: Bot },
+    { id: 'brain' as WorkspaceTab, label: '2nd Brain Memory', icon: Brain },
     { id: 'real_estate' as WorkspaceTab, label: 'Real Estate GeoMap', icon: Home },
     { id: 'orchestrator' as WorkspaceTab, label: 'Logic Orchestrator', icon: Cpu },
     { id: 'scheduler' as WorkspaceTab, label: 'Workflow Scheduler', icon: Clock },
-    { id: 'drafts' as WorkspaceTab, label: 'Saved Drafts (18)', icon: Send },
-    { id: 'gmail' as WorkspaceTab, label: 'Gmail', icon: Mail },
-    { id: 'calendar' as WorkspaceTab, label: 'Calendar', icon: Calendar },
-    { id: 'drive' as WorkspaceTab, label: 'Drive & Docs', icon: FileText },
-    { id: 'sheets' as WorkspaceTab, label: 'Sheets', icon: Table },
-    { id: 'tasks' as WorkspaceTab, label: 'Tasks', icon: CheckSquare },
-    { id: 'contacts' as WorkspaceTab, label: 'Contacts', icon: Users },
     { id: 'voice-macros' as WorkspaceTab, label: 'Voice Macros', icon: Mic },
+    { id: 'commercial_strategy' as WorkspaceTab, label: 'Commercial Strategy', icon: TrendingUp },
+    { id: 'dev_roadmap' as WorkspaceTab, label: 'Code Architecture', icon: Code },
   ];
 
   return (
@@ -377,25 +382,68 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        <nav className="flex space-x-1 overflow-x-auto pb-2 scrollbar-none">
-          {tabs.map((tab) => {
+        {/* Prominent Google Workspace 7-Apps Launcher Bar */}
+        <div className="pt-2 pb-1.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5">
+            <span className="hidden xl:inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mr-1 shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+              7 Google Apps:
+            </span>
+
+            {googleApps.map((app) => {
+              const Icon = app.icon;
+              const isActive = activeTab === app.id;
+              return (
+                <button
+                  key={app.id}
+                  onClick={() => setActiveTab(app.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer shadow-2xs border ${
+                    isActive
+                      ? `${app.activeClass} shadow-xs scale-[1.02]`
+                      : 'bg-white dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200/90 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
+                  }`}
+                  title={`Open Google ${app.label} Workspace`}
+                >
+                  <Icon className={`w-3.5 h-3.5 ${app.color}`} />
+                  <span>{app.label}</span>
+                  <span className={`text-[9px] px-1.5 py-0.2 rounded-md font-bold ${
+                    isActive ? 'bg-white/80 dark:bg-slate-900 text-slate-900 dark:text-slate-100' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+                  }`}>
+                    {app.badge}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Secondary Navigation: Autonomous AI Studios & Engines */}
+        <nav className="flex space-x-1 overflow-x-auto pb-2 scrollbar-none border-t border-slate-100/80 dark:border-slate-800/60 pt-1.5">
+          <span className="hidden xl:inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mr-1 my-auto shrink-0">
+            <Sparkles className="w-3 h-3 text-blue-500" />
+            AI Studios:
+          </span>
+
+          {studioTabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg whitespace-nowrap transition cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition cursor-pointer ${
                   isActive
-                    ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/80 shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                    ? 'bg-blue-600 text-white shadow-xs font-bold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/70'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
                 <span>{tab.label}</span>
-                {tab.id === 'suite' && (
-                  <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 uppercase tracking-wider shadow-xs">
-                    4-in-1
+                {tab.badge && (
+                  <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-full uppercase tracking-wider ${
+                    isActive ? 'bg-white text-blue-700' : 'bg-amber-400 text-slate-950 shadow-xs'
+                  }`}>
+                    {tab.badge}
                   </span>
                 )}
               </button>

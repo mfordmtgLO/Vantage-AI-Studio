@@ -9,7 +9,7 @@ export interface PluginDistributionRecord {
   targetDomain: string;
   licenseKey: string;
   distributionType: 'full_hybrid' | 'react_widget' | 'headless_hook' | 'llm_prompt_spec';
-  archetypeId?: 'second_brain' | 'workplace_ui' | 'voice_plugin';
+  archetypeId?: string;
   pluginTitle?: string;
   distributedAt: string;
   notes?: string;
