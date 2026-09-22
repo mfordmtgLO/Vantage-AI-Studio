@@ -31,7 +31,7 @@ export const PluginIntegrationWizardModal: React.FC<PluginIntegrationWizardModal
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [llmRuntime, setLlmRuntime] = useState<'claude-3.5-sonnet' | 'gpt-4o' | 'gemini-2.5-flash' | 'cursor'>('claude-3.5-sonnet');
   const [targetFramework, setTargetFramework] = useState<'react_vite' | 'nextjs_app_router' | 'html_embed' | 'wordpress'>('react_vite');
-  const [selectedPlugin, setSelectedPlugin] = useState<'homebuyer_geo' | 'second_brain' | 'workplace_ui' | 'voice_plugin'>('homebuyer_geo');
+  const [selectedPlugin, setSelectedPlugin] = useState<'homebuyer_geo' | 'second_brain' | 'workplace_ui' | 'voice_plugin' | 'full_suite' | 'mobile_microapps'>('homebuyer_geo');
 
   // Step 2: Diagnostic Terminal State
   const [diagnosticLogs, setDiagnosticLogs] = useState<string[]>([
@@ -183,12 +183,14 @@ export async function bootstrapVantageWorkspace() {
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
                   Select Plugin Archetype:
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   {[
-                    { id: 'homebuyer_geo', label: 'Vantage AI Studio-Real Estate GeoMap' },
-                    { id: 'second_brain', label: 'Vantage AI Studio-2nd Brain' },
-                    { id: 'workplace_ui', label: 'Vantage AI Studio-Workspace UI' },
-                    { id: 'voice_plugin', label: 'Vantage AI Studio-Voice Orchestrator' }
+                    { id: 'second_brain', label: '2nd Brain Memory Agent' },
+                    { id: 'homebuyer_geo', label: 'Real Estate GeoMap & MLS' },
+                    { id: 'voice_plugin', label: 'Voice Assistant Orchestrator' },
+                    { id: 'workplace_ui', label: 'Google Workspace UI Cockpit' },
+                    { id: 'full_suite', label: 'Commercial Enterprise Suite' },
+                    { id: 'mobile_microapps', label: 'Mobile Micro-Apps PWA' }
                   ].map((item) => (
                     <button
                       key={item.id}

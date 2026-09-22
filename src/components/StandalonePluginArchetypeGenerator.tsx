@@ -72,7 +72,11 @@ import {
   Command,
   ArrowRight,
   RefreshCw,
-  FileSpreadsheet
+  FileSpreadsheet,
+  MapPin,
+  Smartphone,
+  DollarSign,
+  Package
 } from 'lucide-react';
 
 interface StandalonePluginArchetypeGeneratorProps {
@@ -113,7 +117,13 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
     const meta = getArchetypeMeta(archetypeId);
     setConfig(meta.defaultConfig);
     setLicenseKey(`${meta.licensePrefix}-${Math.random().toString(36).substring(2, 6).toUpperCase()}-2026`);
-    if (archetypeId === 'workplace_ui') {
+    if (archetypeId === 'real_estate_geomap') {
+      setDistributionNotes('Standalone Vantage Real Estate GeoMap & MLS Intelligence deployment');
+    } else if (archetypeId === 'full_suite') {
+      setDistributionNotes('Commercial Enterprise Software Suite (All-in-One master distribution)');
+    } else if (archetypeId === 'mobile_microapps') {
+      setDistributionNotes('Standalone Vantage Mobile Micro-App & Add-to-Home-Screen PWA deployment');
+    } else if (archetypeId === 'workplace_ui') {
       setDistributionNotes('Standalone Vantage Workplace UI Cockpit deployment');
     } else if (archetypeId === 'voice_plugin') {
       setDistributionNotes('Standalone Vantage Voice Assistant & Speech Macro deployment');
@@ -185,6 +195,79 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
       setVoiceResponse(resp);
     }, 1200);
   };
+
+  // GeoMap Plugin Sandbox state
+  const [geoSearchQuery, setGeoSearchQuery] = useState('');
+  const [geoActiveLayer, setGeoActiveLayer] = useState<'all' | 'usda' | 'cra'>('all');
+  const [geoInterestRate, setGeoInterestRate] = useState(6.5);
+  const [geoDownPaymentPct, setGeoDownPaymentPct] = useState(10);
+  const [geoSelectedPropId, setGeoSelectedPropId] = useState('prop-1');
+
+  const geoPropertyListings = [
+    {
+      id: 'prop-1',
+      address: '4288 Evergreen Ridge Trail',
+      city: 'Bend',
+      state: 'OR',
+      zip: '97703',
+      price: 549000,
+      beds: 3,
+      baths: 2,
+      sqft: 1850,
+      status: 'Active',
+      lat: 44.0582,
+      lng: -121.3153,
+      isUsdaEligible: true,
+      isCraGrantEligible: false
+    },
+    {
+      id: 'prop-2',
+      address: '1124 Columbia River Way',
+      city: 'Vancouver',
+      state: 'WA',
+      zip: '98661',
+      price: 435000,
+      beds: 4,
+      baths: 2.5,
+      sqft: 2200,
+      status: 'Active',
+      lat: 45.6387,
+      lng: -122.6615,
+      isUsdaEligible: false,
+      isCraGrantEligible: true
+    },
+    {
+      id: 'prop-3',
+      address: '890 Sunny Hills Parkway',
+      city: 'Redmond',
+      state: 'OR',
+      zip: '97756',
+      price: 389000,
+      beds: 3,
+      baths: 2,
+      sqft: 1620,
+      status: 'Pending',
+      lat: 44.2726,
+      lng: -121.1739,
+      isUsdaEligible: true,
+      isCraGrantEligible: true
+    }
+  ];
+
+  const selectedGeoProp = geoPropertyListings.find(p => p.id === geoSelectedPropId) || geoPropertyListings[0];
+  const geoDownPaymentVal = (selectedGeoProp.price * geoDownPaymentPct) / 100;
+  const geoLoanVal = selectedGeoProp.price - geoDownPaymentVal;
+  const geoMonthlyRate = geoInterestRate / 100 / 12;
+  const geoMonthlyPI = Math.round((geoLoanVal * geoMonthlyRate * Math.pow(1 + geoMonthlyRate, 360)) / (Math.pow(1 + geoMonthlyRate, 360) - 1));
+  const geoTaxesIns = Math.round((selectedGeoProp.price * 0.012) / 12 + 115);
+  const geoTotalMonthly = geoMonthlyPI + geoTaxesIns;
+
+  // Full Suite Plugin Sandbox state
+  const [suiteActiveModule, setSuiteActiveModule] = useState<'brain' | 'geomap' | 'voice' | 'workspace'>('brain');
+
+  // Mobile Micro-Apps Sandbox state
+  const [mobileInstallPrompted, setMobileInstallPrompted] = useState(false);
+  const [mobileShareCopied, setMobileShareCopied] = useState(false);
 
   const handleGenerateNewKey = () => {
     setLicenseKey(`${currentMeta.licensePrefix}-${Math.random().toString(36).substring(2, 6).toUpperCase()}-2026`);
@@ -510,11 +593,11 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
           </div>
           <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-3 py-1 rounded-full">
             <Layers className="w-3.5 h-3.5 text-blue-500" />
-            <span>3 Modular Archetypes Loaded</span>
+            <span className="font-semibold">{VANTAGE_PLUGIN_ARCHETYPES.length} Modular Archetypes Loaded</span>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
           {VANTAGE_PLUGIN_ARCHETYPES.map((arch) => {
             const isSelected = selectedArchetype === arch.id;
             return (
@@ -536,8 +619,11 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
                         : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600'
                     }`}>
                       {arch.icon === 'brain' && <Brain className="w-5 h-5" />}
-                      {arch.icon === 'layout' && <Building2 className="w-5 h-5" />}
-                      {arch.icon === 'mic' && <Mic className="w-5 h-5" />}
+                      {arch.icon === 'map' && <MapPin className="w-5 h-5 text-emerald-500" />}
+                      {arch.icon === 'package' && <Package className="w-5 h-5 text-blue-500" />}
+                      {arch.icon === 'smartphone' && <Smartphone className="w-5 h-5 text-amber-500" />}
+                      {arch.icon === 'layout' && <Building2 className="w-5 h-5 text-indigo-500" />}
+                      {arch.icon === 'mic' && <Mic className="w-5 h-5 text-purple-500" />}
                     </div>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                       isSelected
@@ -1538,6 +1624,327 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
                       </p>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* 4. REAL ESTATE GEOMAP & MLS SANDBOX */}
+              {selectedArchetype === 'real_estate_geomap' && (
+                <div className="space-y-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                        <MapPin className="w-5 h-5 text-emerald-600" /> Geospatial Property & Mortgage Sandbox
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Test interactive MLS property pins, USDA 0% down boundary zones, CRA grant layers, and live P&I estimators.
+                      </p>
+                    </div>
+                    {/* Layer Filter Tabs */}
+                    <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setGeoActiveLayer('all')}
+                        className={`px-2.5 py-1 rounded-lg font-semibold transition ${geoActiveLayer === 'all' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300'}`}
+                      >
+                        All Listings
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setGeoActiveLayer('usda')}
+                        className={`px-2.5 py-1 rounded-lg font-semibold transition ${geoActiveLayer === 'usda' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300'}`}
+                      >
+                        USDA 0% Down
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setGeoActiveLayer('cra')}
+                        className={`px-2.5 py-1 rounded-lg font-semibold transition ${geoActiveLayer === 'cra' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300'}`}
+                      >
+                        LMI / CRA Grants
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                    {/* Property Listings Column */}
+                    <div className="lg:col-span-5 space-y-2.5 max-h-96 overflow-y-auto pr-1">
+                      <div className="relative mb-2">
+                        <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+                        <input
+                          type="text"
+                          placeholder="Search address, city, or zip..."
+                          value={geoSearchQuery}
+                          onChange={(e) => setGeoSearchQuery(e.target.value)}
+                          className="w-full pl-9 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+
+                      {geoPropertyListings
+                        .filter(p => {
+                          const match = (p.address + ' ' + p.city + ' ' + p.zip).toLowerCase().includes(geoSearchQuery.toLowerCase());
+                          if (!match) return false;
+                          if (geoActiveLayer === 'usda') return p.isUsdaEligible;
+                          if (geoActiveLayer === 'cra') return p.isCraGrantEligible;
+                          return true;
+                        })
+                        .map(prop => {
+                          const isSel = geoSelectedPropId === prop.id;
+                          return (
+                            <div
+                              key={prop.id}
+                              onClick={() => setGeoSelectedPropId(prop.id)}
+                              className={`p-3 rounded-2xl border transition cursor-pointer ${
+                                isSel
+                                  ? 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-500 shadow-sm ring-2 ring-emerald-500/20'
+                                  : 'bg-white dark:bg-slate-800/40 border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <div className="text-xs font-bold text-slate-900 dark:text-slate-100">${prop.price.toLocaleString()}</div>
+                                  <div className="text-[11px] font-medium text-slate-600 dark:text-slate-300">{prop.address}</div>
+                                  <div className="text-[10px] text-slate-400">{prop.city}, {prop.state} {prop.zip}</div>
+                                </div>
+                                <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
+                                  {prop.status}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 mt-2 pt-1.5 border-t border-slate-100 dark:border-slate-700/60 text-[10px] text-slate-500">
+                                <span>{prop.beds} Beds</span>
+                                <span>•</span>
+                                <span>{prop.baths} Baths</span>
+                                <span>•</span>
+                                <span>{prop.sqft.toLocaleString()} SqFt</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 mt-1.5">
+                                {prop.isUsdaEligible && (
+                                  <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 text-[9px] font-bold rounded border border-emerald-200 dark:border-emerald-800">
+                                    USDA 100%
+                                  </span>
+                                )}
+                                {prop.isCraGrantEligible && (
+                                  <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 text-[9px] font-bold rounded border border-blue-200 dark:border-blue-800">
+                                    $5K Grant
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+
+                    {/* Interactive Map & Mortgage P&I Card */}
+                    <div className="lg:col-span-7 space-y-4">
+                      {/* Map Simulator Canvas */}
+                      <div className="bg-slate-900 rounded-2xl h-48 relative overflow-hidden border border-slate-800 flex flex-col justify-between p-3.5 shadow-inner">
+                        <div className="flex items-center justify-between z-10">
+                          <span className="px-2 py-0.5 bg-black/60 backdrop-blur-md rounded-md text-[10px] text-white font-mono flex items-center gap-1">
+                            <Layers className="w-3 h-3 text-emerald-400" /> GPS: {selectedGeoProp.lat.toFixed(4)}, {selectedGeoProp.lng.toFixed(4)}
+                          </span>
+                          <span className="px-2 py-0.5 bg-emerald-600/80 backdrop-blur-md rounded-md text-[10px] text-white font-semibold">
+                            Boundary: Active
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-center my-auto">
+                          <div className="p-2.5 bg-emerald-600 text-white rounded-full shadow-2xl animate-pulse ring-8 ring-emerald-500/20">
+                            <MapPin className="w-5 h-5" />
+                          </div>
+                        </div>
+                        <div className="z-10 bg-slate-950/80 backdrop-blur-md p-2 rounded-lg border border-slate-800 flex items-center justify-between text-[11px] text-white">
+                          <div className="font-semibold">{selectedGeoProp.address}</div>
+                          <div className="font-bold text-emerald-400">${selectedGeoProp.price.toLocaleString()}</div>
+                        </div>
+                      </div>
+
+                      {/* Mortgage Qualifier Box */}
+                      <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3">
+                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
+                          <span className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                            <DollarSign className="w-4 h-4 text-emerald-600" /> Live Mortgage Estimator
+                          </span>
+                          <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                            ${geoTotalMonthly.toLocaleString()}/mo Total
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <div className="flex justify-between text-[11px] text-slate-600 dark:text-slate-300 mb-1">
+                              <span>Interest Rate:</span>
+                              <span className="font-bold">{geoInterestRate}%</span>
+                            </div>
+                            <input
+                              type="range"
+                              min="4.5"
+                              max="9.0"
+                              step="0.125"
+                              value={geoInterestRate}
+                              onChange={(e) => setGeoInterestRate(parseFloat(e.target.value))}
+                              className="w-full accent-emerald-600"
+                            />
+                          </div>
+                          <div>
+                            <div className="flex justify-between text-[11px] text-slate-600 dark:text-slate-300 mb-1">
+                              <span>Down Payment:</span>
+                              <span className="font-bold">{geoDownPaymentPct}% (${Math.round(geoDownPaymentVal).toLocaleString()})</span>
+                            </div>
+                            <input
+                              type="range"
+                              min="0"
+                              max="30"
+                              step="1"
+                              value={geoDownPaymentPct}
+                              onChange={(e) => setGeoDownPaymentPct(parseInt(e.target.value))}
+                              className="w-full accent-emerald-600"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 pt-1 text-center text-xs">
+                          <div className="p-2 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-700">
+                            <div className="text-[9px] text-slate-400">P&I</div>
+                            <div className="font-bold text-slate-800 dark:text-slate-200">${geoMonthlyPI.toLocaleString()}</div>
+                          </div>
+                          <div className="p-2 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-700">
+                            <div className="text-[9px] text-slate-400">Tax & Ins</div>
+                            <div className="font-bold text-slate-800 dark:text-slate-200">${geoTaxesIns.toLocaleString()}</div>
+                          </div>
+                          <div className="p-2 bg-emerald-50 dark:bg-emerald-950/60 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                            <div className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold">Total Est.</div>
+                            <div className="font-bold text-emerald-700 dark:text-emerald-300">${geoTotalMonthly.toLocaleString()}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 5. FULL COMMERCIAL ENTERPRISE SUITE SANDBOX */}
+              {selectedArchetype === 'full_suite' && (
+                <div className="space-y-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                        <Package className="w-5 h-5 text-blue-600" /> Commercial Enterprise Software Suite Cockpit
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Unified master suite packaging all 5 standalone plugins with multi-tenant license key validation.
+                      </p>
+                    </div>
+                    <span className="text-[11px] px-2.5 py-1 bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 font-bold rounded-lg border border-blue-200 dark:border-blue-800 w-fit">
+                      Enterprise All-in-One
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setSuiteActiveModule('brain')}
+                      className={`p-3.5 rounded-2xl border text-left transition ${suiteActiveModule === 'brain' ? 'bg-blue-50/90 dark:bg-blue-950/50 border-blue-500 shadow-md ring-2 ring-blue-500/20' : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700'}`}
+                    >
+                      <Brain className="w-4 h-4 text-blue-600 mb-1.5" />
+                      <div className="font-bold text-xs text-slate-900 dark:text-slate-100">2nd Brain Agent</div>
+                      <div className="text-[10px] text-slate-400">DeepSeek + Gemini</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSuiteActiveModule('geomap')}
+                      className={`p-3.5 rounded-2xl border text-left transition ${suiteActiveModule === 'geomap' ? 'bg-emerald-50/90 dark:bg-emerald-950/50 border-emerald-500 shadow-md ring-2 ring-emerald-500/20' : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700'}`}
+                    >
+                      <MapPin className="w-4 h-4 text-emerald-600 mb-1.5" />
+                      <div className="font-bold text-xs text-slate-900 dark:text-slate-100">GeoMap MLS</div>
+                      <div className="text-[10px] text-slate-400">USDA & Boundary GIS</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSuiteActiveModule('voice')}
+                      className={`p-3.5 rounded-2xl border text-left transition ${suiteActiveModule === 'voice' ? 'bg-purple-50/90 dark:bg-purple-950/50 border-purple-500 shadow-md ring-2 ring-purple-500/20' : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700'}`}
+                    >
+                      <Mic className="w-4 h-4 text-purple-600 mb-1.5" />
+                      <div className="font-bold text-xs text-slate-900 dark:text-slate-100">Voice Assistant</div>
+                      <div className="text-[10px] text-slate-400">Speech Macros & Audio</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSuiteActiveModule('workspace')}
+                      className={`p-3.5 rounded-2xl border text-left transition ${suiteActiveModule === 'workspace' ? 'bg-indigo-50/90 dark:bg-indigo-950/50 border-indigo-500 shadow-md ring-2 ring-indigo-500/20' : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700'}`}
+                    >
+                      <Building2 className="w-4 h-4 text-indigo-600 mb-1.5" />
+                      <div className="font-bold text-xs text-slate-900 dark:text-slate-100">Workspace Cockpit</div>
+                      <div className="text-[10px] text-slate-400">Google Workspace Tabs</div>
+                    </button>
+                  </div>
+
+                  <div className="p-4 bg-slate-900 text-white rounded-2xl border border-slate-800 space-y-2 text-xs">
+                    <div className="flex items-center justify-between text-slate-400 font-mono text-[11px]">
+                      <span>Enterprise License: {licenseKey}</span>
+                      <span className="text-emerald-400">Status: Validated</span>
+                    </div>
+                    <p className="text-slate-300">
+                      Module <span className="font-bold uppercase text-cyan-400">{suiteActiveModule}</span> loaded with commercial attribution header for <span className="font-bold text-white">Mike Ford &lt;fordmj@gmail.com&gt;</span>.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* 6. MOBILE MICRO-APPS & PWA SANDBOX */}
+              {selectedArchetype === 'mobile_microapps' && (
+                <div className="space-y-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                        <Smartphone className="w-5 h-5 text-amber-500" /> Mobile Micro-App & Add-to-Home-Screen Sandbox
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Test standalone mobile client portal with native install triggers, offline caching, and magic lead links.
+                      </p>
+                    </div>
+                    <span className="text-[11px] px-2.5 py-1 bg-amber-50 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 font-bold rounded-lg border border-amber-200 dark:border-amber-800 w-fit">
+                      Zero-Install PWA
+                    </span>
+                  </div>
+
+                  {/* Simulated Mobile Device Preview */}
+                  <div className="max-w-sm mx-auto bg-slate-950 text-white rounded-3xl p-5 border-4 border-slate-800 shadow-2xl space-y-4">
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 border-b border-slate-800 pb-2">
+                      <span>9:41 AM</span>
+                      <span>5G • 100%</span>
+                    </div>
+
+                    <div className="p-3 bg-amber-500/20 border border-amber-500/30 rounded-2xl flex items-center justify-between">
+                      <div>
+                        <div className="text-xs font-bold text-amber-300">Save to Home Screen</div>
+                        <div className="text-[10px] text-slate-400">Install native icon without app store</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileInstallPrompted(true);
+                          setTimeout(() => setMobileInstallPrompted(false), 3000);
+                        }}
+                        className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-black font-bold text-[10px] rounded-lg cursor-pointer"
+                      >
+                        {mobileInstallPrompted ? 'Installed!' : 'Install'}
+                      </button>
+                    </div>
+
+                    <div className="space-y-2 text-xs">
+                      <div className="p-3 bg-slate-900 rounded-xl border border-slate-800 space-y-1">
+                        <div className="font-bold text-slate-200">Client Portal Magic Link</div>
+                        <div className="text-[11px] text-slate-400">Personalized lead link ready to send via SMS or WhatsApp.</div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMobileShareCopied(true);
+                            setTimeout(() => setMobileShareCopied(false), 2000);
+                          }}
+                          className="mt-2 w-full py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          {mobileShareCopied ? <Check className="w-3.5 h-3.5" /> : <Share2 className="w-3.5 h-3.5" />}
+                          {mobileShareCopied ? 'Link Copied to Clipboard!' : 'Copy Shareable Magic Link'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

@@ -14,8 +14,35 @@ import {
   generateVoicePluginBackendCode,
   generateVoicePluginScriptEmbed
 } from './voicePluginService';
+import {
+  generateGeoMapPluginPrompt,
+  generateGeoMapPluginReactCode,
+  generateGeoMapPluginHookCode,
+  generateGeoMapPluginBackendCode,
+  generateGeoMapPluginScriptEmbed
+} from './geomapPluginService';
+import {
+  generateSuitePluginPrompt,
+  generateSuitePluginReactCode,
+  generateSuitePluginHookCode,
+  generateSuitePluginBackendCode,
+  generateSuitePluginScriptEmbed
+} from './suitePluginService';
+import {
+  generateMobileMicroAppPluginPrompt,
+  generateMobileMicroAppPluginReactCode,
+  generateMobileMicroAppPluginHookCode,
+  generateMobileMicroAppPluginBackendCode,
+  generateMobileMicroAppPluginScriptEmbed
+} from './mobileMicroAppPluginService';
 
-export type PluginArchetypeId = 'second_brain' | 'workplace_ui' | 'voice_plugin';
+export type PluginArchetypeId = 
+  | 'second_brain' 
+  | 'real_estate_geomap'
+  | 'voice_plugin'
+  | 'workplace_ui' 
+  | 'full_suite'
+  | 'mobile_microapps';
 
 export interface PluginArchetypeMeta {
   id: PluginArchetypeId;
@@ -24,7 +51,7 @@ export interface PluginArchetypeMeta {
   badge: string;
   tagline: string;
   description: string;
-  icon: 'brain' | 'layout' | 'mic';
+  icon: 'brain' | 'layout' | 'mic' | 'map' | 'package' | 'smartphone';
   licensePrefix: string;
   defaultConfig: PluginPackagingConfig;
 }
@@ -76,18 +103,18 @@ export const VANTAGE_PLUGIN_ARCHETYPES: PluginArchetypeMeta[] = [
     }
   },
   {
-    id: 'workplace_ui',
-    name: 'Vantage AI Studio-Workspace UI Plugin Module',
-    componentName: 'VantageWorkplaceUIPlugin',
-    badge: 'Multi-App Cockpit',
-    tagline: 'Embeddable Modular Workspace Suite with Google Workspace & Workflow Orchestrator Tabs',
-    description: 'Embeddable workspace dashboard featuring interactive tabs (Studio, Logic Orchestrator, Gmail Drafts, Drive Explorer, Sheets, Tasks, Calendar, Contacts) with workflow triggers and connected cloud accounts.',
-    icon: 'layout',
-    licensePrefix: 'VNTG-WORKPLACE',
+    id: 'real_estate_geomap',
+    name: 'Vantage AI Studio-Real Estate GeoMap & MLS Intelligence Plugin',
+    componentName: 'VantageGeoMapPlugin',
+    badge: 'Geospatial Property & MLS',
+    tagline: 'Interactive Property Boundary Explorer with MLS Cards, USDA Rural Zones & Mortgage Qualifier',
+    description: 'Turnkey geospatial real estate explorer featuring interactive GIS boundaries, USDA 0% down qualification zones, CRA LMI subsidy grant tracts, and live P&I mortgage estimators.',
+    icon: 'map',
+    licensePrefix: 'VNTG-GEOMAP',
     defaultConfig: {
       ...DEFAULT_PACKAGING_CONFIG,
-      pluginName: 'VantageWorkplaceUIPlugin',
-      apiBasePath: '/api/vantage-workplace'
+      pluginName: 'VantageGeoMapPlugin',
+      apiBasePath: '/api/vantage-geomap'
     }
   },
   {
@@ -103,6 +130,51 @@ export const VANTAGE_PLUGIN_ARCHETYPES: PluginArchetypeMeta[] = [
       ...DEFAULT_PACKAGING_CONFIG,
       pluginName: 'VantageVoiceAssistantPlugin',
       apiBasePath: '/api/vantage-voice'
+    }
+  },
+  {
+    id: 'workplace_ui',
+    name: 'Vantage AI Studio-Workspace UI Plugin Module',
+    componentName: 'VantageWorkplaceUIPlugin',
+    badge: 'Multi-App Cockpit',
+    tagline: 'Embeddable Modular Workspace Suite with Google Workspace & Workflow Orchestrator Tabs',
+    description: 'Embeddable workspace dashboard featuring interactive tabs (Studio, Logic Orchestrator, Gmail Drafts, Drive Explorer, Sheets, Tasks, Calendar, Contacts) with workflow triggers and connected cloud accounts.',
+    icon: 'layout',
+    licensePrefix: 'VNTG-WORKPLACE',
+    defaultConfig: {
+      ...DEFAULT_PACKAGING_CONFIG,
+      pluginName: 'VantageWorkplaceUIPlugin',
+      apiBasePath: '/api/vantage-workplace'
+    }
+  },
+  {
+    id: 'full_suite',
+    name: 'Vantage AI Studio-Commercial Enterprise Suite (All-in-One)',
+    componentName: 'VantageEnterpriseSuitePlugin',
+    badge: 'Enterprise All-in-One Suite',
+    tagline: 'Complete Commercial Multi-Tenant Workspace with White-Label RBAC & Client Packaging Vault',
+    description: 'The master enterprise software package containing all 5 standalone plugins unified into a high-performance commercial suite with multi-tenant database adapters, security watermarking, and license key validation.',
+    icon: 'package',
+    licensePrefix: 'VNTG-SUITE',
+    defaultConfig: {
+      ...DEFAULT_PACKAGING_CONFIG,
+      pluginName: 'VantageEnterpriseSuitePlugin',
+      apiBasePath: '/api/vantage-suite'
+    }
+  },
+  {
+    id: 'mobile_microapps',
+    name: 'Vantage AI Studio-Mobile Micro-Apps & Add-to-Home-Screen PWA',
+    componentName: 'VantageMobileMicroAppsPlugin',
+    badge: 'Zero-Install Mobile PWA',
+    tagline: 'Zero-Install Add-to-Home-Screen PWA with Biometric Auth, Offline Cache & Magic Share Links',
+    description: 'Stand-alone Progressive Web App (PWA) client portal optimized for iOS Safari & Android Chrome with standalone full-screen viewports, instant home screen install prompts, and dynamic QR distribution.',
+    icon: 'smartphone',
+    licensePrefix: 'VNTG-MOBILE',
+    defaultConfig: {
+      ...DEFAULT_PACKAGING_CONFIG,
+      pluginName: 'VantageMobileMicroAppsPlugin',
+      apiBasePath: '/api/vantage-mobile'
     }
   }
 ];
@@ -120,6 +192,15 @@ export function generatePluginBuildPrompt(
   currentGuardrails?: GuardrailSettings,
   sampleMemories?: UserMemory[]
 ): string {
+  if (archetypeId === 'real_estate_geomap') {
+    return generateGeoMapPluginPrompt(config);
+  }
+  if (archetypeId === 'full_suite') {
+    return generateSuitePluginPrompt(config);
+  }
+  if (archetypeId === 'mobile_microapps') {
+    return generateMobileMicroAppPluginPrompt(config);
+  }
   if (archetypeId === 'workplace_ui') {
     return generateWorkplaceUIPrompt(config);
   }
@@ -136,6 +217,15 @@ export function generatePluginReactCode(
   archetypeId: PluginArchetypeId,
   config: PluginPackagingConfig
 ): string {
+  if (archetypeId === 'real_estate_geomap') {
+    return generateGeoMapPluginReactCode(config);
+  }
+  if (archetypeId === 'full_suite') {
+    return generateSuitePluginReactCode(config);
+  }
+  if (archetypeId === 'mobile_microapps') {
+    return generateMobileMicroAppPluginReactCode(config);
+  }
   if (archetypeId === 'workplace_ui') {
     return generateWorkplaceUIReactCode(config);
   }
@@ -217,6 +307,15 @@ export function generatePluginHookCode(
   archetypeId: PluginArchetypeId,
   config: PluginPackagingConfig
 ): string {
+  if (archetypeId === 'real_estate_geomap') {
+    return generateGeoMapPluginHookCode(config);
+  }
+  if (archetypeId === 'full_suite') {
+    return generateSuitePluginHookCode(config);
+  }
+  if (archetypeId === 'mobile_microapps') {
+    return generateMobileMicroAppPluginHookCode(config);
+  }
   if (archetypeId === 'workplace_ui') {
     return generateWorkplaceUIHookCode(config);
   }
@@ -233,6 +332,15 @@ export function generatePluginBackendCode(
   archetypeId: PluginArchetypeId,
   config: PluginPackagingConfig
 ): string {
+  if (archetypeId === 'real_estate_geomap') {
+    return generateGeoMapPluginBackendCode(config);
+  }
+  if (archetypeId === 'full_suite') {
+    return generateSuitePluginBackendCode(config);
+  }
+  if (archetypeId === 'mobile_microapps') {
+    return generateMobileMicroAppPluginBackendCode(config);
+  }
   if (archetypeId === 'workplace_ui') {
     return generateWorkplaceUIBackendCode(config);
   }
@@ -249,6 +357,46 @@ export function generatePluginCliOrConfig(
   archetypeId: PluginArchetypeId,
   config: PluginPackagingConfig
 ): string {
+  if (archetypeId === 'real_estate_geomap') {
+    return `# Vantage AI Real Estate GeoMap Module Specification
+name: "${config.pluginName}"
+version: "2.5.0"
+category: "geospatial-real-estate"
+apiBasePath: "${config.apiBasePath}"
+layers:
+  - "usda-rural-boundaries"
+  - "cra-lmi-grants"
+  - "mls-property-listings"
+  - "mortgage-qualifier"
+`;
+  }
+  if (archetypeId === 'full_suite') {
+    return `# Vantage AI Universal Enterprise Suite Specification
+name: "${config.pluginName}"
+version: "3.0.0-enterprise"
+category: "full-suite-commercial"
+apiBasePath: "${config.apiBasePath}"
+modules:
+  - "2nd-brain-deepseek-gemini"
+  - "real-estate-geomap"
+  - "voice-macro-orchestrator"
+  - "workspace-ui-cockpit"
+  - "mobile-micro-apps"
+`;
+  }
+  if (archetypeId === 'mobile_microapps') {
+    return `# Vantage AI Mobile Micro-Apps PWA Specification
+name: "${config.pluginName}"
+version: "2.5.0"
+category: "mobile-pwa"
+apiBasePath: "${config.apiBasePath}"
+features:
+  - "add-to-home-screen"
+  - "biometric-auth"
+  - "offline-cache"
+  - "qr-lead-routing"
+`;
+  }
   if (archetypeId === 'workplace_ui') {
     return `# Vantage AI Workplace UI Module Specification
 name: "${config.pluginName}"
@@ -285,6 +433,15 @@ export function generatePluginScriptEmbed(
   archetypeId: PluginArchetypeId,
   config: PluginPackagingConfig
 ): string {
+  if (archetypeId === 'real_estate_geomap') {
+    return generateGeoMapPluginScriptEmbed(config);
+  }
+  if (archetypeId === 'full_suite') {
+    return generateSuitePluginScriptEmbed(config);
+  }
+  if (archetypeId === 'mobile_microapps') {
+    return generateMobileMicroAppPluginScriptEmbed(config);
+  }
   if (archetypeId === 'workplace_ui') {
     return generateWorkplaceUIScriptEmbed(config);
   }
