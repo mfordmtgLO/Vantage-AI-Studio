@@ -13,14 +13,20 @@ import { VoiceMacroManagerView } from './VoiceMacroManagerView';
 import { StandalonePluginArchetypeGenerator } from './StandalonePluginArchetypeGenerator';
 import { RealEstateMortgageView } from './RealEstateMortgageView';
 import { SuiteMasterUnifiedView } from './SuiteMasterUnifiedView';
+import { TopTierCommercialStrategyHub } from './TopTierCommercialStrategyHub';
+import { PrioritizedCodeImplementationRoadmap } from './PrioritizedCodeImplementationRoadmap';
 import { AppAIPromptAndTemplateManager } from './AppAIPromptAndTemplateManager';
 import { LeadDatabaseCleanupTool } from './LeadDatabaseCleanupTool';
+import { ExecutiveSmartInboxStudio } from './ExecutiveSmartInboxStudio';
+import { RelationalSheetsQueryEngine } from './RelationalSheetsQueryEngine';
+import { AutonomousMeetingConcierge } from './AutonomousMeetingConcierge';
+import { MultiSourceDataPurgeStudio } from './MultiSourceDataPurgeStudio';
 import { PushNotificationManager } from './PushNotificationManager';
 import { LiveTwoWayNotesModal } from './LiveTwoWayNotesModal';
 import { GoogleAppHeader } from './GoogleAppHeader';
 import { useAccountPathway } from '../context/AccountPathwayContext';
 import { useMemory } from '../context/MemoryContext';
-import { Bot, Mail, Calendar, FileText, Table, CheckSquare, Users, Send, Plus, RefreshCw, Sparkles, CheckCircle2, AlertCircle, Bell, MessageSquare, User, Copy, Check, RotateCcw, ArrowRight, CornerDownLeft, X, Layers, Brain, Shield, Megaphone, BookOpen, Smartphone } from 'lucide-react';
+import { Bot, Mail, Calendar, FileText, Table, CheckSquare, Users, Send, Plus, RefreshCw, Sparkles, CheckCircle2, AlertCircle, Bell, MessageSquare, User, Copy, Check, RotateCcw, ArrowRight, CornerDownLeft, X, Layers, Brain, Shield, Megaphone, BookOpen, Smartphone, Flame } from 'lucide-react';
 
 
 import { ShareableWorkflowData } from './ShareWorkflowModal';
@@ -92,6 +98,11 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
   const [contacts, setContacts] = useState<GoogleContact[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Autonomous OS Sub-Tab Navigation
+  const [gmailSubTab, setGmailSubTab] = useState<'smart_inbox' | 'messages'>('smart_inbox');
+  const [calendarSubTab, setCalendarSubTab] = useState<'concierge' | 'events'>('concierge');
+  const [sheetsSubTab, setSheetsSubTab] = useState<'relational_sql' | 'fuzzy_purge' | 'cleanup_tool'>('relational_sql');
 
   // Prompt Studio & Multi-Turn Chat state
   const [prompt, setPrompt] = useState<string>('');
@@ -807,6 +818,25 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
           onOpenPitchDeck={onOpenPitchDeck}
           onOpenByokDrawer={onOpenByokDrawer}
           onOpenByokChecklist={onOpenByokChecklist}
+          onNavigateTab={setActiveTab}
+        />
+      )}
+
+      {/* TOP-TIER BEST-SELLING COMMERCIAL STRATEGY & ROI TAB */}
+      {activeTab === 'commercial_strategy' && (
+        <TopTierCommercialStrategyHub
+          onOpenLicenseStudio={onOpenPitchDeck}
+          onOpenPitchDeck={onOpenPitchDeck}
+          onOpenShareLinksModal={onOpenShareLinksModal}
+          onNavigateTab={setActiveTab}
+        />
+      )}
+
+      {/* PRIORITIZED CODE IMPLEMENTATION ROADMAP TAB */}
+      {activeTab === 'dev_roadmap' && (
+        <PrioritizedCodeImplementationRoadmap
+          onNavigateTab={setActiveTab}
+          onOpenByokDrawer={onOpenByokDrawer}
         />
       )}
 
@@ -1216,89 +1246,151 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
             onLoadTemplateToStudio={handleLoadAppTemplateToStudio}
           />
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <Mail className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                Recent Gmail Messages ({messages.length})
-              </h2>
-              <button onClick={fetchWorkspaceData} className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline">
-                Refresh
-              </button>
-            </div>
+          {/* Sub-Tab Selector */}
+          <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+            <button
+              onClick={() => setGmailSubTab('smart_inbox')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
+                gmailSubTab === 'smart_inbox'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Flame className="w-4 h-4 text-amber-300" />
+              <span>Executive Smart Inbox & Urgency Heatmap</span>
+            </button>
+            <button
+              onClick={() => setGmailSubTab('messages')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
+                gmailSubTab === 'messages'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Mail className="w-4 h-4" />
+              <span>Recent Gmail Messages & Compose ({messages.length})</span>
+            </button>
+          </div>
 
-            {loading ? (
-              <div className="text-center py-12 text-xs text-slate-500 dark:text-slate-400">Loading messages...</div>
-            ) : messages.length === 0 ? (
-              <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500 dark:text-slate-400">
-                No messages found or access restricted.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {messages.map((m) => (
-                  <div key={m.id} className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition space-y-1 shadow-xs">
-                    <div className="flex justify-between items-start">
-                      <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">{m.from}</span>
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500">{m.date}</span>
-                    </div>
-                    <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">{m.subject}</h4>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">{m.snippet}</p>
+          {gmailSubTab === 'smart_inbox' ? (
+            <ExecutiveSmartInboxStudio
+              existingEvents={events}
+              onScheduleCalendarHold={(title, startIso, duration) => {
+                setPendingAction({
+                  id: `act-cal-hold-${Date.now()}`,
+                  type: 'calendar_create',
+                  title: `Provisional Hold: ${title}`,
+                  description: `Create Google Calendar soft-hold starting at ${new Date(startIso).toLocaleTimeString()} with 15-minute protected focus buffer.`,
+                  payload: { summary: title, startTime: startIso }
+                });
+              }}
+              onCreateTask={(title, notes) => {
+                setPendingAction({
+                  id: `act-task-${Date.now()}`,
+                  type: 'tasks_create',
+                  title: `Add Task: ${title}`,
+                  description: `Create action milestone in Google Tasks with cross-referenced thread notes.`,
+                  payload: { title, notes }
+                });
+              }}
+              onSendDraftEmail={(to, subject, body) => {
+                setEmailTo(to);
+                setEmailSubject(subject);
+                setEmailBody(body);
+                setPendingAction({
+                  id: `act-send-email-${Date.now()}`,
+                  type: 'gmail_send',
+                  title: `Send Draft: ${subject}`,
+                  description: `Dispatch synthesized VIP email to ${to} via Gmail API.`,
+                  payload: { to, subject, body }
+                });
+              }}
+            />
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <Mail className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    Recent Gmail Messages ({messages.length})
+                  </h2>
+                  <button onClick={fetchWorkspaceData} className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+                    Refresh
+                  </button>
+                </div>
+
+                {loading ? (
+                  <div className="text-center py-12 text-xs text-slate-500 dark:text-slate-400">Loading messages...</div>
+                ) : messages.length === 0 ? (
+                  <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500 dark:text-slate-400">
+                    No messages found or access restricted.
                   </div>
-                ))}
+                ) : (
+                  <div className="space-y-3">
+                    {messages.map((m) => (
+                      <div key={m.id} className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition space-y-1 shadow-xs">
+                        <div className="flex justify-between items-start">
+                          <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">{m.from}</span>
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500">{m.date}</span>
+                        </div>
+                        <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">{m.subject}</h4>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">{m.snippet}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
 
-          <div className="space-y-4">
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <Send className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                Compose & Send Email
-              </h3>
-              <form onSubmit={handleSendManualEmail} className="space-y-3">
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">To</label>
-                  <input
-                    type="email"
-                    required
-                    value={emailTo}
-                    onChange={(e) => setEmailTo(e.target.value)}
-                    placeholder="recipient@example.com"
-                    className="w-full p-2.5 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+              <div className="space-y-4">
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <Send className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    Compose & Send Email
+                  </h3>
+                  <form onSubmit={handleSendManualEmail} className="space-y-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">To</label>
+                      <input
+                        type="email"
+                        required
+                        value={emailTo}
+                        onChange={(e) => setEmailTo(e.target.value)}
+                        placeholder="recipient@example.com"
+                        className="w-full p-2.5 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">Subject</label>
+                      <input
+                        type="text"
+                        required
+                        value={emailSubject}
+                        onChange={(e) => setEmailSubject(e.target.value)}
+                        placeholder="Subject line"
+                        className="w-full p-2.5 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">Message</label>
+                      <textarea
+                        rows={4}
+                        value={emailBody}
+                        onChange={(e) => setEmailBody(e.target.value)}
+                        placeholder="Write your email body..."
+                        className="w-full p-2.5 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer"
+                    >
+                      Send Email (Requires Confirmation)
+                    </button>
+                  </form>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">Subject</label>
-                  <input
-                    type="text"
-                    required
-                    value={emailSubject}
-                    onChange={(e) => setEmailSubject(e.target.value)}
-                    placeholder="Subject line"
-                    className="w-full p-2.5 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">Message</label>
-                  <textarea
-                    rows={4}
-                    value={emailBody}
-                    onChange={(e) => setEmailBody(e.target.value)}
-                    placeholder="Write your email body..."
-                    className="w-full p-2.5 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer"
-                >
-                  Send Email (Requires Confirmation)
-                </button>
-              </form>
+              </div>
             </div>
-          </div>
-        </div>
+          )}
         </div>
       )}
 
@@ -1326,82 +1418,135 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
             onLoadTemplateToStudio={handleLoadAppTemplateToStudio}
           />
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                Upcoming Calendar Events ({events.length})
-              </h2>
-              <button onClick={fetchWorkspaceData} className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline">
-                Refresh
-              </button>
-            </div>
+          {/* Sub-Tab Selector */}
+          <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+            <button
+              onClick={() => setCalendarSubTab('concierge')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
+                calendarSubTab === 'concierge'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 text-purple-400" />
+              <span>Autonomous Meeting Negotiation & Concierge</span>
+            </button>
+            <button
+              onClick={() => setCalendarSubTab('events')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
+                calendarSubTab === 'events'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Calendar className="w-4 h-4" />
+              <span>Upcoming Events & Schedule Planner ({events.length})</span>
+            </button>
+          </div>
 
-            {loading ? (
-              <div className="text-center py-12 text-xs text-slate-500 dark:text-slate-400">Loading calendar...</div>
-            ) : events.length === 0 ? (
-              <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500 dark:text-slate-400">
-                No upcoming calendar events found.
+          {calendarSubTab === 'concierge' ? (
+            <AutonomousMeetingConcierge
+              existingEvents={events}
+              onCreateCalendarHold={(title, startIso, duration) => {
+                setPendingAction({
+                  id: `act-concierge-hold-${Date.now()}`,
+                  type: 'calendar_create',
+                  title: `Provisional Hold: ${title}`,
+                  description: `Create 15-minute protected hold on Google Calendar at ${new Date(startIso).toLocaleString()}.`,
+                  payload: { summary: title, startTime: startIso }
+                });
+              }}
+              onSendEmailDraft={(to, subject, body) => {
+                setEmailTo(to);
+                setEmailSubject(subject);
+                setEmailBody(body);
+                setPendingAction({
+                  id: `act-concierge-send-${Date.now()}`,
+                  type: 'gmail_send',
+                  title: `Send Negotiation Email: ${subject}`,
+                  description: `Dispatch 3 non-overlapping slot proposals to ${to} via Gmail.`,
+                  payload: { to, subject, body }
+                });
+              }}
+            />
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    Upcoming Calendar Events ({events.length})
+                  </h2>
+                  <button onClick={fetchWorkspaceData} className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+                    Refresh
+                  </button>
+                </div>
+
+                {loading ? (
+                  <div className="text-center py-12 text-xs text-slate-500 dark:text-slate-400">Loading calendar...</div>
+                ) : events.length === 0 ? (
+                  <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500 dark:text-slate-400">
+                    No upcoming calendar events found.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {events.map((ev) => {
+                      const startTime = ev.start?.dateTime || ev.start?.date || '';
+                      return (
+                        <div key={ev.id} className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition space-y-1 shadow-xs">
+                          <div className="flex justify-between items-start">
+                            <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">{ev.summary || 'Untitled Event'}</h4>
+                            <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-md border border-blue-100 dark:border-blue-900/60">
+                              {new Date(startTime).toLocaleString()}
+                            </span>
+                          </div>
+                          {ev.description && <p className="text-xs text-slate-600 dark:text-slate-400">{ev.description}</p>}
+                          {ev.location && <p className="text-[11px] text-slate-400 dark:text-slate-500">📍 {ev.location}</p>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="space-y-3">
-                {events.map((ev) => {
-                  const startTime = ev.start?.dateTime || ev.start?.date || '';
-                  return (
-                    <div key={ev.id} className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition space-y-1 shadow-xs">
-                      <div className="flex justify-between items-start">
-                        <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">{ev.summary || 'Untitled Event'}</h4>
-                        <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-md border border-blue-100 dark:border-blue-900/60">
-                          {new Date(startTime).toLocaleString()}
-                        </span>
-                      </div>
-                      {ev.description && <p className="text-xs text-slate-600 dark:text-slate-400">{ev.description}</p>}
-                      {ev.location && <p className="text-[11px] text-slate-400 dark:text-slate-500">📍 {ev.location}</p>}
+
+              <div className="space-y-4">
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <Plus className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    Schedule Event
+                  </h3>
+                  <form onSubmit={handleCreateManualEvent} className="space-y-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">Event Title</label>
+                      <input
+                        type="text"
+                        required
+                        value={eventSummary}
+                        onChange={(e) => setEventSummary(e.target.value)}
+                        placeholder="Sync with team"
+                        className="w-full p-2.5 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                      />
                     </div>
-                  );
-                })}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">Start Time</label>
+                      <input
+                        type="datetime-local"
+                        value={eventStart}
+                        onChange={(e) => setEventStart(e.target.value)}
+                        className="w-full p-2.5 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer"
+                    >
+                      Create Event (Requires Confirmation)
+                    </button>
+                  </form>
+                </div>
               </div>
-            )}
-          </div>
-
-          <div className="space-y-4">
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <Plus className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                Schedule Event
-              </h3>
-              <form onSubmit={handleCreateManualEvent} className="space-y-3">
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">Event Title</label>
-                  <input
-                    type="text"
-                    required
-                    value={eventSummary}
-                    onChange={(e) => setEventSummary(e.target.value)}
-                    placeholder="Sync with team"
-                    className="w-full p-2.5 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">Start Time</label>
-                  <input
-                    type="datetime-local"
-                    value={eventStart}
-                    onChange={(e) => setEventStart(e.target.value)}
-                    className="w-full p-2.5 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer"
-                >
-                  Create Event (Requires Confirmation)
-                </button>
-              </form>
             </div>
-          </div>
-        </div>
+          )}
         </div>
       )}
 
@@ -1450,7 +1595,47 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
             onExecuteAction={(action) => setPendingAction(action)}
             onLoadTemplateToStudio={handleLoadAppTemplateToStudio}
           />
-          <LeadDatabaseCleanupTool />
+
+          {/* Sheets Sub-Tab Selector */}
+          <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+            <button
+              onClick={() => setSheetsSubTab('relational_sql')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
+                sheetsSubTab === 'relational_sql'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Table className="w-4 h-4" />
+              <span>Relational SQL & Schema Drift Engine</span>
+            </button>
+            <button
+              onClick={() => setSheetsSubTab('fuzzy_purge')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
+                sheetsSubTab === 'fuzzy_purge'
+                  ? 'bg-purple-600 text-white shadow-xs'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 text-purple-300" />
+              <span>Multi-Source Fuzzy De-Duplication & Purge</span>
+            </button>
+            <button
+              onClick={() => setSheetsSubTab('cleanup_tool')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
+                sheetsSubTab === 'cleanup_tool'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Layers className="w-4 h-4" />
+              <span>Standard Pipeline Cleaner</span>
+            </button>
+          </div>
+
+          {sheetsSubTab === 'relational_sql' && <RelationalSheetsQueryEngine />}
+          {sheetsSubTab === 'fuzzy_purge' && <MultiSourceDataPurgeStudio />}
+          {sheetsSubTab === 'cleanup_tool' && <LeadDatabaseCleanupTool />}
         </div>
       )}
 

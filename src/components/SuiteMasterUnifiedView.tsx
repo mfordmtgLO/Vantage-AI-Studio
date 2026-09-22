@@ -7,10 +7,13 @@ import {
   ChevronRight, Compass, TrendingUp, Sliders, Volume2, ShieldCheck,
   BookOpen
 } from 'lucide-react';
-import { FirstTimeHomebuyerGeoPlugin } from './FirstTimeHomebuyerGeoPlugin';
+import { RealEstateMortgageView } from './RealEstateMortgageView';
 import { SecondBrainView } from './SecondBrainView';
 import { LogicOrchestratorView } from './LogicOrchestratorView';
 import { VoiceMacroManagerView } from './VoiceMacroManagerView';
+import { FlagshipStudioSuiteView } from './FlagshipStudioSuiteView';
+import { TopTierCommercialStrategyHub } from './TopTierCommercialStrategyHub';
+import { PrioritizedCodeImplementationRoadmap } from './PrioritizedCodeImplementationRoadmap';
 import { useAccountPathway } from '../context/AccountPathwayContext';
 import { useMemory } from '../context/MemoryContext';
 import { usePwaInstallPrompt } from '../hooks/usePwaInstallPrompt';
@@ -24,19 +27,21 @@ interface SuiteMasterUnifiedViewProps {
   onOpenPitchDeck?: () => void;
   onOpenByokDrawer?: () => void;
   onOpenByokChecklist?: () => void;
+  onNavigateTab?: (tab: any) => void;
 }
 
 export const SuiteMasterUnifiedView: React.FC<SuiteMasterUnifiedViewProps> = ({
   onOpenShareLinksModal,
   onOpenPitchDeck,
   onOpenByokDrawer,
-  onOpenByokChecklist
+  onOpenByokChecklist,
+  onNavigateTab
 }) => {
   const { pathway, isWorkspaceConnected, connectedWorkspaceEmail } = useAccountPathway();
   const { memories, activePersona, guardrails } = useMemory();
   const { isInstallable, isInstalled, isIOS, isIosGuideOpen, setIsIosGuideOpen, triggerInstall } = usePwaInstallPrompt();
 
-  const [activeModuleTab, setActiveModuleTab] = useState<'bento_all' | 'geomap' | 'brain' | 'voice' | 'workspace' | 'synergies'>('bento_all');
+  const [activeModuleTab, setActiveModuleTab] = useState<'bento_all' | 'superpowers' | 'commercial' | 'roadmap' | 'geomap' | 'brain' | 'voice' | 'workspace' | 'synergies'>('superpowers');
   const [simulationRunning, setSimulationRunning] = useState(false);
   const [simulationStep, setSimulationStep] = useState<number>(0);
   const [simulationLog, setSimulationLog] = useState<string[]>([]);
@@ -251,6 +256,45 @@ export const SuiteMasterUnifiedView: React.FC<SuiteMasterUnifiedViewProps> = ({
         <div className="flex items-center gap-1.5">
           <button
             type="button"
+            onClick={() => setActiveModuleTab('superpowers')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+              activeModuleTab === 'superpowers'
+                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-indigo-500/20'
+                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-amber-300" />
+            <span>💎 4-in-1 Superpowers Studio</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveModuleTab('commercial')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+              activeModuleTab === 'commercial'
+                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 shadow-md shadow-amber-500/20 font-black'
+                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            <TrendingUp className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            <span>🚀 Commercial Strategy & ROI</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveModuleTab('roadmap')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+              activeModuleTab === 'roadmap'
+                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-500/20 font-black'
+                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            <Cpu className="w-4 h-4 text-cyan-500" />
+            <span>🛠️ Code Roadmap & System Architecture</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveModuleTab('bento_all')}
             className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
               activeModuleTab === 'bento_all'
@@ -328,6 +372,42 @@ export const SuiteMasterUnifiedView: React.FC<SuiteMasterUnifiedViewProps> = ({
           </button>
         </div>
       </div>
+
+      {/* VIEW MODE 0: FLAGSHIP 4-IN-1 SUPERPOWERS STUDIO */}
+      {activeModuleTab === 'superpowers' && (
+        <FlagshipStudioSuiteView
+          onNavigateTab={(tab) => {
+            if (onNavigateTab) {
+              onNavigateTab(tab);
+            } else {
+              if (tab === 'brain') setActiveModuleTab('brain');
+              else if (tab === 'voice-macros' || tab === 'orchestrator') setActiveModuleTab('voice');
+              else if (tab === 'real_estate') setActiveModuleTab('geomap');
+              else if (tab === 'studio' || tab === 'sheets' || tab === 'gmail') setActiveModuleTab('workspace');
+            }
+          }}
+          onOpenPitchDeck={onOpenPitchDeck}
+          onOpenShareLinksModal={onOpenShareLinksModal}
+        />
+      )}
+
+      {/* VIEW MODE 0.5: TOP-TIER BEST-SELLING COMMERCIAL STRATEGY & ROI */}
+      {activeModuleTab === 'commercial' && (
+        <TopTierCommercialStrategyHub
+          onOpenLicenseStudio={onOpenPitchDeck}
+          onOpenPitchDeck={onOpenPitchDeck}
+          onOpenShareLinksModal={onOpenShareLinksModal}
+          onNavigateTab={onNavigateTab}
+        />
+      )}
+
+      {/* VIEW MODE 0.7: PRIORITIZED CODE IMPLEMENTATION ROADMAP */}
+      {activeModuleTab === 'roadmap' && (
+        <PrioritizedCodeImplementationRoadmap
+          onNavigateTab={onNavigateTab}
+          onOpenByokDrawer={onOpenByokDrawer}
+        />
+      )}
 
       {/* VIEW MODE 1: 4-IN-1 BENTO COMMAND DECK */}
       {activeModuleTab === 'bento_all' && (
@@ -676,7 +756,7 @@ export const SuiteMasterUnifiedView: React.FC<SuiteMasterUnifiedViewProps> = ({
         <div className="space-y-4">
           <div className="p-3 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-center justify-between text-xs">
             <span className="font-semibold text-emerald-800 dark:text-emerald-200 flex items-center gap-1.5">
-              <Home className="w-4 h-4" /> Live Embedded Module: First-Time Homebuyer GeoMap & DPA
+              <Home className="w-4 h-4" /> Live Embedded Module: First-Time Homebuyer GeoMap, DPA Stacker & Lead CRM
             </span>
             <button
               onClick={() => setActiveModuleTab('bento_all')}
@@ -685,9 +765,8 @@ export const SuiteMasterUnifiedView: React.FC<SuiteMasterUnifiedViewProps> = ({
               ← Back to 4-in-1 Suite Bento
             </button>
           </div>
-          <FirstTimeHomebuyerGeoPlugin
+          <RealEstateMortgageView
             onOpenByokDrawer={onOpenByokDrawer}
-            onOpenByokChecklist={onOpenByokChecklist}
           />
         </div>
       )}

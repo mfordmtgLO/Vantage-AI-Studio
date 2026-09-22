@@ -79,6 +79,10 @@ const DEFAULT_MASTER_SEED_LISTINGS: SyncedPropertyListing[] = [
       fnmaHomeReady3Percent: true,
       fhlmcHomePossible3Percent: true,
       stateHfaFirstHomeEligible: true,
+      lakeviewNationalDpaEligible: true,
+      lakeviewGrantAmountUsd: 13475,
+      ohcsFlexLendingFirstHomeEligible: true,
+      ohcsGrantAmountUsd: 15400,
       targetedAreaGrantBonus: false
     },
     sourceMasterFeedId: 'GeoSphere Oregon GIS Master'
@@ -115,6 +119,10 @@ const DEFAULT_MASTER_SEED_LISTINGS: SyncedPropertyListing[] = [
       fnmaHomeReady3Percent: true,
       fhlmcHomePossible3Percent: true,
       stateHfaFirstHomeEligible: true,
+      lakeviewNationalDpaEligible: true,
+      lakeviewGrantAmountUsd: 13615,
+      ohcsFlexLendingFirstHomeEligible: true,
+      ohcsGrantAmountUsd: 15560,
       targetedAreaGrantBonus: false
     },
     sourceMasterFeedId: 'GeoSphere Oregon GIS Master'
@@ -148,6 +156,10 @@ const DEFAULT_MASTER_SEED_LISTINGS: SyncedPropertyListing[] = [
       fnmaHomeReady3Percent: true,
       fhlmcHomePossible3Percent: true,
       stateHfaFirstHomeEligible: true,
+      lakeviewNationalDpaEligible: true,
+      lakeviewGrantAmountUsd: 16975,
+      ohcsFlexLendingFirstHomeEligible: true,
+      ohcsGrantAmountUsd: 19400,
       targetedAreaGrantBonus: true
     },
     sourceMasterFeedId: 'GeoSphere Oregon GIS Master'
@@ -184,7 +196,7 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
 
   const [properties, setProperties] = useState<SyncedPropertyListing[]>(initialProperties);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>(initialProperties[0]?.id || '');
-  const [activeFilter, setActiveFilter] = useState<'all' | 'usda' | 'lmi_cra' | 'price_drops' | 'prequalified'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'usda' | 'lmi_cra' | 'lakeview_national' | 'ohcs_flex_firsthome' | 'price_drops' | 'prequalified'>('all');
   const [zillowInputUrl, setZillowInputUrl] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
@@ -194,7 +206,7 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
   const [requestTargetArea, setRequestTargetArea] = useState('');
   const [requestBuyerEmail, setRequestBuyerEmail] = useState('');
   const [requestBuyerName, setRequestBuyerName] = useState('');
-  const [requestProgram, setRequestProgram] = useState<'USDA 100%' | 'LMI CRA Grant' | 'HomeReady 3%' | 'Any Low/No Down'>('Any Low/No Down');
+  const [requestProgram, setRequestProgram] = useState<'USDA 100%' | 'LMI CRA Grant' | 'HomeReady 3%' | 'Lakeview National DPA' | 'OHCS Flex Lending FirstHome' | 'Any Low/No Down'>('Any Low/No Down');
   const [areaRequestSuccess, setAreaRequestSuccess] = useState<string | null>(null);
 
   // Mobile PWA Install Helper
@@ -223,6 +235,8 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
     return properties.filter((prop) => {
       if (activeFilter === 'usda') return prop.specialPrograms.usdaRural100Financing;
       if (activeFilter === 'lmi_cra') return prop.specialPrograms.lmiCraGrantEligible;
+      if (activeFilter === 'lakeview_national') return prop.specialPrograms.lakeviewNationalDpaEligible;
+      if (activeFilter === 'ohcs_flex_firsthome') return prop.specialPrograms.ohcsFlexLendingFirstHomeEligible;
       if (activeFilter === 'price_drops') return (prop.priceDropAmount || 0) > 0;
       if (activeFilter === 'prequalified') return prop.price <= prequalResult.estimatedMaxPurchasePrice;
       return true;
@@ -506,6 +520,8 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
           <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
             {[
               { id: 'all', label: `All (${properties.length})` },
+              { id: 'lakeview_national', label: '🏞️ Lakeview 100% DPA' },
+              { id: 'ohcs_flex_firsthome', label: '🌲 OHCS Flex FirstHome' },
               { id: 'usda', label: '🌾 USDA 100% RD Rural' },
               { id: 'lmi_cra', label: '🏛️ LMI $5k CRA Grant' },
               { id: 'price_drops', label: '🔥 Price Drops' },
@@ -607,6 +623,16 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
 
               {/* Special Badges */}
               <div className="flex flex-wrap gap-1.5">
+                {selectedProperty.specialPrograms.lakeviewNationalDpaEligible && (
+                  <span className="px-2 py-0.5 rounded-md bg-amber-950 text-amber-300 border border-amber-800 text-[10px] font-bold">
+                    🏞️ Lakeview 100% National DPA (${(selectedProperty.specialPrograms.lakeviewGrantAmountUsd || 13475).toLocaleString()})
+                  </span>
+                )}
+                {selectedProperty.specialPrograms.ohcsFlexLendingFirstHomeEligible && (
+                  <span className="px-2 py-0.5 rounded-md bg-teal-950 text-teal-300 border border-teal-800 text-[10px] font-bold">
+                    🌲 OHCS Flex Lending FirstHome (${(selectedProperty.specialPrograms.ohcsGrantAmountUsd || 15400).toLocaleString()})
+                  </span>
+                )}
                 {selectedProperty.specialPrograms.usdaRural100Financing && (
                   <span className="px-2 py-0.5 rounded-md bg-emerald-950 text-emerald-300 border border-emerald-800 text-[10px] font-bold">
                     🌾 USDA 100% Financing (0% Down)
@@ -737,6 +763,8 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                     className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-white outline-none focus:border-emerald-500"
                   >
                     <option value="Any Low/No Down">Any Qualifying Low / No Down Payment Program</option>
+                    <option value="Lakeview National DPA">Lakeview National 100% DPA / Community Land Trust</option>
+                    <option value="OHCS Flex Lending FirstHome">OHCS Flex Lending FirstHome (3.5%–5% Cash Assistance)</option>
                     <option value="USDA 100%">USDA Rural Development (100% 0-Down Financing)</option>
                     <option value="LMI CRA Grant">LMI Census Tract CRA Grants ($5,000–$10,000)</option>
                     <option value="HomeReady 3%">Fannie Mae HomeReady (3% Down Payment)</option>

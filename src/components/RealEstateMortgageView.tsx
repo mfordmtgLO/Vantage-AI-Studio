@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { FirstTimeHomebuyerGeoPlugin } from './FirstTimeHomebuyerGeoPlugin';
+import { LeadDpaGrantStackerStudio } from './LeadDpaGrantStackerStudio';
+import { RealEstateLeadCaptureStudio } from './RealEstateLeadCaptureStudio';
 import { 
   Home, 
   MapPin, 
@@ -14,7 +16,9 @@ import {
   DollarSign,
   Layers,
   Database,
-  Building2
+  Building2,
+  Users,
+  Award
 } from 'lucide-react';
 import { SAMPLE_RENTCAST_LISTINGS } from '../services/geomapMortgageEngine';
 import { isMikeFordAdmin } from '../utils/adminAuth';
@@ -29,6 +33,7 @@ export const RealEstateMortgageView: React.FC<RealEstateMortgageViewProps> = ({
   onOpenPluginVault,
   onOpenByokDrawer
 }) => {
+  const [activeSubTab, setActiveSubTab] = useState<'geomap' | 'dpa_stacker' | 'lead_capture'>('geomap');
   const [copiedEmbed, setCopiedEmbed] = useState(false);
   const isAdmin = isMikeFordAdmin(auth.currentUser);
 
@@ -44,58 +49,120 @@ export const RealEstateMortgageView: React.FC<RealEstateMortgageViewProps> = ({
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* Top Metrics Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-1">
-          <div className="text-[11px] font-bold text-slate-500 uppercase flex items-center gap-1.5">
-            <Home className="w-3.5 h-3.5 text-blue-600" /> Active Priority MLS
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-1">
+          <div className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+            <Home className="w-3.5 h-3.5 text-blue-600" /> MLS Sync
           </div>
-          <div className="text-xl font-black text-slate-900 dark:text-slate-100 font-mono">
+          <div className="text-lg font-black text-slate-900 dark:text-slate-100 font-mono">
             {SAMPLE_RENTCAST_LISTINGS.length} Properties
           </div>
-          <div className="text-[10px] text-emerald-600 font-medium flex items-center gap-1">
-            <TrendingUp className="w-3 h-3" /> Average -4.8% Price Cuts
+          <div className="text-[10px] text-emerald-600 font-medium flex items-center gap-0.5">
+            <TrendingUp className="w-3 h-3" /> Avg -4.8% Price Cuts
           </div>
         </div>
 
-        <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-1">
-          <div className="text-[11px] font-bold text-slate-500 uppercase flex items-center gap-1.5">
-            <Shield className="w-3.5 h-3.5 text-emerald-600" /> USDA 100% Eligible
+        <div className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-1">
+          <div className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+            <Award className="w-3.5 h-3.5 text-amber-600" /> Lakeview 100% DPA
           </div>
-          <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
+          <div className="text-lg font-black text-amber-600 dark:text-amber-400 font-mono">
+            100% 0-Down
+          </div>
+          <div className="text-[10px] text-slate-500 font-medium">
+            CLT & Soft Second Grants
+          </div>
+        </div>
+
+        <div className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-1">
+          <div className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+            <Building2 className="w-3.5 h-3.5 text-teal-600" /> OHCS Flex FirstHome
+          </div>
+          <div className="text-lg font-black text-teal-600 dark:text-teal-400 font-mono">
+            3.5%–5% Cash
+          </div>
+          <div className="text-[10px] text-slate-500 font-medium">
+            Oregon Housing DPA
+          </div>
+        </div>
+
+        <div className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-1">
+          <div className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+            <Shield className="w-3.5 h-3.5 text-emerald-600" /> USDA RD 100%
+          </div>
+          <div className="text-lg font-black text-emerald-600 dark:text-emerald-400 font-mono">
             {SAMPLE_RENTCAST_LISTINGS.filter(l => l.specialPrograms.usdaRuralEligible).length} Homes
           </div>
           <div className="text-[10px] text-slate-500 font-medium">
-            Zero Down Payment Verified
+            Zero Down Payment
           </div>
         </div>
 
-        <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-1">
-          <div className="text-[11px] font-bold text-slate-500 uppercase flex items-center gap-1.5">
+        <div className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-1">
+          <div className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
             <DollarSign className="w-3.5 h-3.5 text-purple-600" /> CRA LMI Grants
           </div>
-          <div className="text-xl font-black text-purple-600 dark:text-purple-400 font-mono">
+          <div className="text-lg font-black text-purple-600 dark:text-purple-400 font-mono">
             $10,000 / tract
           </div>
           <div className="text-[10px] text-purple-600 dark:text-purple-400 font-medium">
-            Non-Repayable Down Payment
-          </div>
-        </div>
-
-        <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-1">
-          <div className="text-[11px] font-bold text-slate-500 uppercase flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-600" /> Avg RentCast Score
-          </div>
-          <div className="text-xl font-black text-indigo-600 dark:text-indigo-400 font-mono">
-            93.5 / 100
-          </div>
-          <div className="text-[10px] text-slate-500 font-medium">
-            Top 5% Rental Yield & Equity
+            Non-Repayable Grant
           </div>
         </div>
       </div>
 
-      {/* Main Homebuyer & GeoMap Engine Component */}
-      <FirstTimeHomebuyerGeoPlugin onOpenByokDrawer={onOpenByokDrawer} />
+      {/* Sub-Tab Navigation Bar */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        <button
+          onClick={() => setActiveSubTab('geomap')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
+            activeSubTab === 'geomap'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
+          }`}
+        >
+          <MapPin className="w-4 h-4 text-blue-300" />
+          <span>GeoMap & USDA Spatial Explorer</span>
+        </button>
+
+        <button
+          onClick={() => setActiveSubTab('dpa_stacker')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
+            activeSubTab === 'dpa_stacker'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
+          }`}
+        >
+          <Award className="w-4 h-4 text-purple-400" />
+          <span>Lead DPA Grant & Loan Stacker</span>
+          <span className="text-[10px] px-1.5 py-0.2 bg-purple-500/30 text-purple-200 rounded-full font-bold">5 Grants</span>
+        </button>
+
+        <button
+          onClick={() => setActiveSubTab('lead_capture')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
+            activeSubTab === 'lead_capture'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
+          }`}
+        >
+          <Users className="w-4 h-4 text-emerald-400" />
+          <span>Lead Intake & Prequal CRM Pipeline</span>
+        </button>
+      </div>
+
+      {/* Sub-Tab Rendering */}
+      {activeSubTab === 'geomap' && (
+        <FirstTimeHomebuyerGeoPlugin onOpenByokDrawer={onOpenByokDrawer} />
+      )}
+
+      {activeSubTab === 'dpa_stacker' && (
+        <LeadDpaGrantStackerStudio />
+      )}
+
+      {activeSubTab === 'lead_capture' && (
+        <RealEstateLeadCaptureStudio />
+      )}
 
       {/* Turnkey Commercial Distribution Bar */}
       <div className="p-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl border border-slate-800 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">

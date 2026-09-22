@@ -1,4 +1,4 @@
-export type WorkspaceTab = 'suite' | 'studio' | 'brain' | 'real_estate' | 'orchestrator' | 'scheduler' | 'drafts' | 'gmail' | 'calendar' | 'drive' | 'sheets' | 'tasks' | 'contacts' | 'voice-macros' | 'admin_plugins';
+export type WorkspaceTab = 'suite' | 'commercial_strategy' | 'dev_roadmap' | 'studio' | 'brain' | 'real_estate' | 'orchestrator' | 'scheduler' | 'drafts' | 'gmail' | 'calendar' | 'drive' | 'sheets' | 'tasks' | 'contacts' | 'voice-macros' | 'admin_plugins';
 
 export type AccountPathway = 'google_apps' | 'workspace';
 
@@ -89,6 +89,76 @@ export interface UserMemory {
   updatedAt?: string;
   aiSummary?: string;
   syncedToCloud?: boolean;
+  temporal?: {
+    accessCount: number;
+    lastAccessedAt: string;
+    decayLambda: number; // e.g. 0.05 for standard half-life
+    isPinnedImmortal: boolean;
+    importanceScore: number; // 1 to 10
+    synapticStrength: number; // 0 to 100%
+    calculatedRecencyScore?: number;
+  };
+  piiCleaned?: boolean;
+}
+
+export interface GraphNode {
+  id: string;
+  title: string;
+  type: MemoryType | 'entity' | 'tag' | 'persona';
+  category?: string;
+  tags: string[];
+  val: number; // Node size / synaptic weight
+  color?: string;
+  connectionsCount?: number;
+  createdAt?: string;
+  isPinned?: boolean;
+}
+
+export interface GraphEdge {
+  source: string;
+  target: string;
+  weight: number;
+  label?: string;
+}
+
+export interface IngestionDaemonFeed {
+  id: string;
+  name: string;
+  industry: string;
+  targetUrlOrRss: string;
+  schedule: 'realtime_webhook' | 'hourly' | 'daily' | 'weekly' | 'manual';
+  lastIngestedAt?: string;
+  status: 'active' | 'paused' | 'ingesting' | 'error';
+  autoExecutiveBriefing: boolean;
+  diffSummary?: string;
+  itemsIngestedCount: number;
+  category: string;
+  defaultTags: string[];
+}
+
+export type PiiMaskingMode = 'redact' | 'partial_mask' | 'hash_token' | 'strict_block';
+
+export interface PiiMaskingConfig {
+  mode: PiiMaskingMode;
+  maskSsn: boolean;
+  maskCreditCards: boolean;
+  maskBankAccounts: boolean;
+  maskPhoneNumbers: boolean;
+  maskEmails: boolean;
+  maskApiKeys: boolean;
+  maskHipaaMedical: boolean;
+  complianceStandards: Array<'HIPAA' | 'GLBA' | 'GDPR' | 'SOC2'>;
+  autoSanitizeOnIngest: boolean;
+}
+
+export interface PiiAuditRecord {
+  id: string;
+  timestamp: string;
+  detectedType: 'SSN' | 'CREDIT_CARD' | 'BANK_ACCOUNT' | 'PHONE' | 'EMAIL' | 'API_KEY' | 'HIPAA_MEDICAL';
+  originalSnippet: string;
+  maskedSnippet: string;
+  sourceMemoryTitle: string;
+  actionTaken: 'redacted' | 'partially_masked' | 'tokenized' | 'blocked';
 }
 
 export type PersonalityPreset = 

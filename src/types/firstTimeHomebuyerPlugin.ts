@@ -18,6 +18,10 @@ export interface SpecialLoanProgramBadges {
   fnmaHomeReady3Percent: boolean;
   fhlmcHomePossible3Percent: boolean;
   stateHfaFirstHomeEligible: boolean;
+  lakeviewNationalDpaEligible?: boolean;
+  lakeviewGrantAmountUsd?: number;
+  ohcsFlexLendingFirstHomeEligible?: boolean;
+  ohcsGrantAmountUsd?: number;
   targetedAreaGrantBonus: boolean;
 }
 
@@ -81,7 +85,7 @@ export interface AreaListingRequestPayload {
   targetCityOrZip: string;
   targetState: string;
   maxTargetMonthlyPayment: number;
-  preferredDownPaymentProgram: 'USDA 100%' | 'LMI CRA Grant' | 'HomeReady 3%' | 'Any Low/No Down';
+  preferredDownPaymentProgram: 'USDA 100%' | 'LMI CRA Grant' | 'HomeReady 3%' | 'Lakeview National DPA' | 'OHCS Flex Lending FirstHome' | 'Any Low/No Down';
   buyerGrossMonthlyIncome: number;
   submittedAt: string;
   status: 'Pending Admin Review' | 'RentCast Pull Scheduled' | 'Synced To Map';

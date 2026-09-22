@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMemory } from '../context/MemoryContext';
-import { Brain, Upload, Search, Sparkles, FileText, Database, Shield, Cpu, Tag, CheckCircle2, Loader2, ArrowRight, User, RotateCcw, Trash2, CloudCheck, ExternalLink, Cloud, Code, Box, Lock, BookOpen, Briefcase, Zap, Sliders } from 'lucide-react';
+import { Brain, Upload, Search, Sparkles, FileText, Database, Shield, Cpu, Tag, CheckCircle2, Loader2, ArrowRight, User, RotateCcw, Trash2, CloudCheck, ExternalLink, Cloud, Code, Box, Lock, BookOpen, Briefcase, Zap, Sliders, Activity, Share2, ShieldCheck, EyeOff, Radio } from 'lucide-react';
 import { AgentMemoryExplorer } from './AgentMemoryExplorer';
 import { GuardrailsAndBoundariesStudio } from './GuardrailsAndBoundariesStudio';
 import { StandalonePluginArchetypeGenerator } from './StandalonePluginArchetypeGenerator';
@@ -10,6 +10,10 @@ import { TrainMyBrainQuickInput } from './TrainMyBrainQuickInput';
 import { AdminCommercialAccessGate } from './AdminCommercialAccessGate';
 import { CommercialVersionReleaseStudio } from './CommercialVersionReleaseStudio';
 import { IndustrySpecialtyBrainStudio } from './IndustrySpecialtyBrainStudio';
+import { TemporalMemoryDecayStudio } from './TemporalMemoryDecayStudio';
+import { KnowledgeGraphExplorer } from './KnowledgeGraphExplorer';
+import { ContinuousIngestionDaemonStudio } from './ContinuousIngestionDaemonStudio';
+import { PiiAirgapComplianceStudio } from './PiiAirgapComplianceStudio';
 import { INDUSTRY_CAREER_TEMPLATES, IndustryCareerTemplate } from '../data/industryCareerTemplates';
 import { isMikeFordAdmin, ADMIN_PRIMARY_EMAIL, ADMIN_PRIMARY_NAME } from '../utils/adminAuth';
 import { getByokHttpHeaders } from '../utils/byokStorage';
@@ -39,7 +43,7 @@ export const SecondBrainView: React.FC = () => {
     setIsGuardrailsModalOpen
   } = useMemory();
 
-  const [activeTab, setActiveTab] = useState<'recall' | 'templates' | 'train' | 'releases' | 'ingest' | 'explorer' | 'guardrails' | 'scenarios' | 'plugin_generator'>('recall');
+  const [activeTab, setActiveTab] = useState<'recall' | 'temporal' | 'graph' | 'daemons' | 'pii_airgap' | 'templates' | 'train' | 'releases' | 'ingest' | 'explorer' | 'guardrails' | 'scenarios' | 'plugin_generator'>('recall');
   const [activeTemplate, setActiveTemplate] = useState<IndustryCareerTemplate | null>(INDUSTRY_CAREER_TEMPLATES[0].careers[0]);
   const [query, setQuery] = useState<string>('');
   const [engine, setEngine] = useState<'hybrid' | 'deepseek' | 'gemini'>('hybrid');
@@ -239,15 +243,59 @@ export const SecondBrainView: React.FC = () => {
       <div className="flex border-b border-slate-200 dark:border-slate-800 overflow-x-auto">
         <button
           onClick={() => setActiveTab('recall')}
-          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
             activeTab === 'recall' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
           <Search className="w-4 h-4" /> AI Memory Recall
         </button>
         <button
+          onClick={() => setActiveTab('temporal')}
+          className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
+            activeTab === 'temporal' ? 'border-indigo-600 text-indigo-600 font-bold' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+          }`}
+        >
+          <Activity className="w-4 h-4 text-indigo-600" /> Synaptic Decay & Recency
+          <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">
+            e^(-λt)
+          </span>
+        </button>
+        <button
+          onClick={() => setActiveTab('graph')}
+          className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
+            activeTab === 'graph' ? 'border-indigo-600 text-indigo-600 font-bold' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+          }`}
+        >
+          <Share2 className="w-4 h-4 text-indigo-600" /> Knowledge Graph (Obsidian)
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">
+            Interactive
+          </span>
+        </button>
+        <button
+          onClick={() => setActiveTab('daemons')}
+          className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
+            activeTab === 'daemons' ? 'border-emerald-600 text-emerald-600 font-bold' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+          }`}
+        >
+          <Database className="w-4 h-4 text-emerald-600" /> Ingestion Daemons
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
+            Live Feeds
+          </span>
+        </button>
+        <button
+          onClick={() => setActiveTab('pii_airgap')}
+          className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
+            activeTab === 'pii_airgap' ? 'border-purple-600 text-purple-600 font-bold' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+          }`}
+        >
+          <ShieldCheck className="w-4 h-4 text-purple-600" /> PII Airgap & Compliance
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300">
+            HIPAA/GLBA
+          </span>
+        </button>
+        <button
           onClick={() => setActiveTab('templates')}
-          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
             activeTab === 'templates' ? 'border-indigo-600 text-indigo-600 font-bold' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
@@ -262,7 +310,7 @@ export const SecondBrainView: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('train')}
-          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
             activeTab === 'train' ? 'border-purple-600 text-purple-600 font-bold' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
@@ -277,7 +325,7 @@ export const SecondBrainView: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('ingest')}
-          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
             activeTab === 'ingest' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
@@ -285,7 +333,7 @@ export const SecondBrainView: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('explorer')}
-          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
             activeTab === 'explorer' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
@@ -293,7 +341,7 @@ export const SecondBrainView: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('guardrails')}
-          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
             activeTab === 'guardrails' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
@@ -304,7 +352,7 @@ export const SecondBrainView: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('scenarios')}
-          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
             activeTab === 'scenarios' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
@@ -316,7 +364,7 @@ export const SecondBrainView: React.FC = () => {
           <>
             <button
               onClick={() => setActiveTab('releases')}
-              className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
+              className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
                 activeTab === 'releases' ? 'border-indigo-600 text-indigo-600 font-bold' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
@@ -327,7 +375,7 @@ export const SecondBrainView: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('plugin_generator')}
-              className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
+              className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition shrink-0 cursor-pointer ${
                 activeTab === 'plugin_generator' ? 'border-indigo-600 text-indigo-600 font-bold' : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
@@ -858,6 +906,40 @@ export const SecondBrainView: React.FC = () => {
             </button>
           </form>
         </div>
+      )}
+
+      {/* Tab: Temporal Synaptic Decay & Recency Reinforcement */}
+      {activeTab === 'temporal' && (
+        <TemporalMemoryDecayStudio 
+          memories={memories} 
+          onSaveMemory={saveMemory} 
+        />
+      )}
+
+      {/* Tab: Obsidian Interactive Knowledge Graph Visualizer */}
+      {activeTab === 'graph' && (
+        <KnowledgeGraphExplorer 
+          memories={memories}
+        />
+      )}
+
+      {/* Tab: Continuous Ingestion Daemons & Webhooks */}
+      {activeTab === 'daemons' && (
+        <ContinuousIngestionDaemonStudio 
+          onSaveMemory={saveMemory} 
+        />
+      )}
+
+      {/* Tab: PII Redaction & Airgapped Compliance Studio */}
+      {activeTab === 'pii_airgap' && (
+        <PiiAirgapComplianceStudio 
+          memories={memories} 
+          onBatchSanitizeMemories={async (sanitizedList) => {
+            for (const s of sanitizedList) {
+              await saveMemory(s);
+            }
+          }} 
+        />
       )}
 
       {/* Tab 3: Agent Memory Explorer */}

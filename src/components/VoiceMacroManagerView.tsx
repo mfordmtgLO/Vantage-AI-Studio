@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { VoiceMacroRecipe, VoiceSafetyAirgapConfig } from '../types/voiceMacro';
 import { speakSpokenAirgap, DEFAULT_AIRGAP_CONFIG } from '../services/voiceMacroEngine';
+import { SpeechToIntentChiefOfStaffStudio } from './SpeechToIntentChiefOfStaffStudio';
 
 interface VoiceMacroManagerViewProps {
   onExecuteWorkflow?: (name: string) => void;
@@ -42,6 +43,8 @@ export const VoiceMacroManagerView: React.FC<VoiceMacroManagerViewProps> = ({
   onExecuteWorkflow,
   onExecuteCustomRecipe 
 }) => {
+  const [activeSubTab, setActiveSubTab] = useState<'chief_of_staff' | 'recipes' | 'airgap'>('chief_of_staff');
+
   const [macros, setMacros] = useState<VoiceMacroRecipe[]>(() => {
     try {
       const stored = localStorage.getItem('vantage_voice_macros');
@@ -193,6 +196,47 @@ export const VoiceMacroManagerView: React.FC<VoiceMacroManagerViewProps> = ({
         </div>
       </div>
 
+      {/* Sub-Tab Navigation Bar */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        <button
+          onClick={() => setActiveSubTab('chief_of_staff')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
+            activeSubTab === 'chief_of_staff'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
+          }`}
+        >
+          <Mic className="w-4 h-4 text-blue-300" />
+          <span>Speech-to-Intent Chief of Staff</span>
+          <span className="text-[10px] px-1.5 py-0.2 bg-blue-500/40 text-blue-100 rounded-full font-bold">Live AI</span>
+        </button>
+
+        <button
+          onClick={() => setActiveSubTab('recipes')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
+            activeSubTab === 'recipes'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
+          }`}
+        >
+          <Layers className="w-4 h-4" />
+          <span>Registered Voice Aliases & Recipes</span>
+          <span className="text-[10px] px-1.5 py-0.2 bg-slate-200 dark:bg-slate-800 rounded-full font-bold">{macros.length}</span>
+        </button>
+
+        <button
+          onClick={() => setActiveSubTab('airgap')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
+            activeSubTab === 'airgap'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
+          }`}
+        >
+          <ShieldCheck className="w-4 h-4 text-emerald-400" />
+          <span>Safety Airgap & Audio Feedback</span>
+        </button>
+      </div>
+
       {/* Success Notification */}
       {successMsg && (
         <div className="p-4 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs rounded-xl flex items-center gap-2 animate-in fade-in">
@@ -201,8 +245,16 @@ export const VoiceMacroManagerView: React.FC<VoiceMacroManagerViewProps> = ({
         </div>
       )}
 
-      {/* 2-Column Grid: Macro List + Safety Airgap Settings */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* SUB-TAB: Chief of Staff Studio */}
+      {activeSubTab === 'chief_of_staff' && (
+        <SpeechToIntentChiefOfStaffStudio
+          onExecuteWorkflow={onExecuteWorkflow}
+        />
+      )}
+
+      {/* SUB-TAB: Registered Recipes & Safety Airgap */}
+      {(activeSubTab === 'recipes' || activeSubTab === 'airgap') && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* Left 2 Cols: Registered Voice Macros */}
         <div className="lg:col-span-2 space-y-4">
@@ -388,6 +440,7 @@ export const VoiceMacroManagerView: React.FC<VoiceMacroManagerViewProps> = ({
         </div>
 
       </div>
+      )}
 
       {/* Add Macro Modal */}
       {showAddModal && (

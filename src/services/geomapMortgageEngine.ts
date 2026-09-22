@@ -137,6 +137,10 @@ export function parseZillowListingUrl(url: string): Partial<SyncedPropertyListin
         fnmaHomeReady3Percent: true,
         fhlmcHomePossible3Percent: true,
         stateHfaFirstHomeEligible: true,
+        lakeviewNationalDpaEligible: true,
+        lakeviewGrantAmountUsd: 13475,
+        ohcsFlexLendingFirstHomeEligible: true,
+        ohcsGrantAmountUsd: 15400,
         targetedAreaGrantBonus: false
       }
     };

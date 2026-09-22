@@ -67,6 +67,8 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const tabs = [
     { id: 'suite' as WorkspaceTab, label: '💎 Vantage Suite', icon: Sparkles },
+    { id: 'commercial_strategy' as WorkspaceTab, label: '🚀 Commercial Strategy & ROI', icon: TrendingUp },
+    { id: 'dev_roadmap' as WorkspaceTab, label: '🛠️ Code Roadmap & System Architecture', icon: Code },
     { id: 'studio' as WorkspaceTab, label: 'Prompt Studio', icon: Bot },
     { id: 'brain' as WorkspaceTab, label: '2nd Brain & Memory', icon: Brain },
     { id: 'real_estate' as WorkspaceTab, label: 'Real Estate GeoMap', icon: Home },
