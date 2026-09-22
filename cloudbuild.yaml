@@ -1,49 +1,28 @@
 # Google Cloud Build CI/CD Configuration
 # Automatically builds and deploys to Google Cloud Run on GitHub commits
-# Project: vantage-ai-workspace (Region: us-west2)
+# Project: vantage-ai-workspace (Region: us-west1 - Oregon)
 # Copyright (c) 2026 Mike Ford <fordmj@gmail.com>
 
 steps:
-  # 1. Build the container image using Cloud Build
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'build'
-      - '-t'
-      - 'gcr.io/$PROJECT_ID/vantage-ai-workspace:$COMMIT_SHA'
-      - '-t'
-      - 'gcr.io/$PROJECT_ID/vantage-ai-workspace:latest'
-      - '.'
-
-  # 2. Push the container image to Container Registry / Artifact Registry
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'push'
-      - 'gcr.io/$PROJECT_ID/vantage-ai-workspace:$COMMIT_SHA'
-
-  # 3. Deploy container image to Google Cloud Run
+  # Deploy directly to Cloud Run in us-west1 (Oregon) using source build
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
       - 'run'
       - 'deploy'
       - 'vantage-ai-workspace'
-      - '--image'
-      - 'gcr.io/$PROJECT_ID/vantage-ai-workspace:$COMMIT_SHA'
+      - '--source'
+      - '.'
       - '--region'
-      - 'us-west2'
+      - 'us-west1'
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
       - '--port'
       - '3000'
-      - '--clear-base-image-annotations'
-      - '--remove-annotations=run.googleapis.com/sources,run.googleapis.com/base-images'
-
-images:
-  - 'gcr.io/$PROJECT_ID/vantage-ai-workspace:$COMMIT_SHA'
-  - 'gcr.io/$PROJECT_ID/vantage-ai-workspace:latest'
 
 options:
   logging: CLOUD_LOGGING_ONLY
 
 timeout: '1200s'
+
