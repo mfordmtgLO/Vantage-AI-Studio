@@ -40,6 +40,7 @@ export const SuiteMasterUnifiedView: React.FC<SuiteMasterUnifiedViewProps> = ({
   const { pathway, isWorkspaceConnected, connectedWorkspaceEmail } = useAccountPathway();
   const { memories, activePersona, guardrails } = useMemory();
   const { isInstallable, isInstalled, isIOS, isIosGuideOpen, setIsIosGuideOpen, triggerInstall } = usePwaInstallPrompt();
+  const isAdmin = isMikeFordAdmin(auth.currentUser) || isMikeFordAdmin({ email: connectedWorkspaceEmail });
 
   const [activeModuleTab, setActiveModuleTab] = useState<'bento_all' | 'superpowers' | 'commercial' | 'roadmap' | 'geomap' | 'brain' | 'voice' | 'workspace' | 'synergies'>('superpowers');
   const [simulationRunning, setSimulationRunning] = useState(false);
@@ -197,12 +198,12 @@ export const SuiteMasterUnifiedView: React.FC<SuiteMasterUnifiedViewProps> = ({
                 <QrCode className="w-4 h-4" />
               </button>
 
-              {onOpenShareLinksModal && (
+              {isAdmin && onOpenShareLinksModal && (
                 <button
                   type="button"
                   onClick={onOpenShareLinksModal}
                   className="px-3.5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl transition cursor-pointer flex items-center gap-1 shadow-xs"
-                  title="Open Lead Mobile URLs & Pitch Generator"
+                  title="Open Lead Mobile URLs & Pitch Generator (Admin Only)"
                 >
                   <Share2 className="w-4 h-4" />
                   <span className="hidden sm:inline">Lead URLs</span>
@@ -210,7 +211,7 @@ export const SuiteMasterUnifiedView: React.FC<SuiteMasterUnifiedViewProps> = ({
               )}
             </div>
 
-            {onOpenPitchDeck && (
+            {isAdmin && onOpenPitchDeck && (
               <button
                 type="button"
                 onClick={onOpenPitchDeck}

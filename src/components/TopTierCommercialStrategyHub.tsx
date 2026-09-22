@@ -20,7 +20,8 @@ import {
   EXECUTIVE_MASTER_HOOK,
   PricingTier
 } from '../data/commercialSalesPitchDeck';
-import { ADMIN_PRIMARY_EMAIL, ADMIN_PRIMARY_NAME } from '../utils/adminAuth';
+import { ADMIN_PRIMARY_EMAIL, ADMIN_PRIMARY_NAME, isMikeFordAdmin } from '../utils/adminAuth';
+import { auth } from '../services/firebase';
 import { useAccountPathway } from '../context/AccountPathwayContext';
 import { LEAD_MOBILE_PLUGIN_MODULES } from '../data/leadMobilePluginUrls';
 
@@ -46,6 +47,7 @@ export const TopTierCommercialStrategyHub: React.FC<TopTierCommercialStrategyHub
   onNavigateTab
 }) => {
   const { connectedWorkspaceEmail } = useAccountPathway();
+  const isAdmin = isMikeFordAdmin(auth.currentUser) || isMikeFordAdmin({ email: connectedWorkspaceEmail });
   const [activeTab, setActiveTab] = useState<CommercialTab>('overview');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
@@ -303,7 +305,7 @@ Signature: ___________________________ Date: _________
                 <span>Open Sales Pitch Deck Modal</span>
               </button>
             )}
-            {onOpenLicenseStudio && (
+            {isAdmin && onOpenLicenseStudio && (
               <button
                 type="button"
                 onClick={onOpenLicenseStudio}
@@ -313,7 +315,7 @@ Signature: ___________________________ Date: _________
                 <span>Commercial License Vault</span>
               </button>
             )}
-            {onOpenShareLinksModal && (
+            {isAdmin && onOpenShareLinksModal && (
               <button
                 type="button"
                 onClick={onOpenShareLinksModal}

@@ -3,7 +3,8 @@ import {
   MessageSquare, Send, Phone, User, Shield, CheckCircle2, Clock, 
   Trash2, Bell, Sparkles, Smartphone, Mail, ChevronRight, Search, 
   Filter, CheckSquare, RefreshCw, Eye, Building2, ExternalLink,
-  Copy, Check, Briefcase, Package, Layers, Sliders, Brain, Users
+  Copy, Check, Briefcase, Package, Layers, Sliders, Brain, Users,
+  Share2
 } from 'lucide-react';
 import { useAccountPathway } from '../context/AccountPathwayContext';
 import { IndustryCareerTemplateSelector } from './IndustryCareerTemplateSelector';
@@ -25,7 +26,8 @@ interface VisitorNote {
 export const MobileAdminDashboard: React.FC<{ 
   onOpenDesktopView?: () => void;
   onOpenPluginVault?: () => void;
-}> = ({ onOpenDesktopView, onOpenPluginVault }) => {
+  onOpenShareLinksModal?: () => void;
+}> = ({ onOpenDesktopView, onOpenPluginVault, onOpenShareLinksModal }) => {
   const [activeTab, setActiveTab] = useState<'notes' | 'customers' | 'profile-cards' | 'quick-sms' | 'workspace' | 'morph-suite' | 'commercial-releases' | 'settings'>('notes');
   const [brainSubView, setBrainSubView] = useState<'morph' | 'train'>('morph');
   const [activeTemplate, setActiveTemplate] = useState<IndustryCareerTemplate | null>(null);
@@ -120,6 +122,16 @@ export const MobileAdminDashboard: React.FC<{
               >
                 <Sparkles className="w-3.5 h-3.5 text-purple-400" />
                 Plugins
+              </button>
+            )}
+            {onOpenShareLinksModal && (
+              <button
+                onClick={onOpenShareLinksModal}
+                className="text-[11px] font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 px-2.5 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1 cursor-pointer"
+                title="Open Live Lead Mobile URLs & PWA Launchers"
+              >
+                <Share2 className="w-3.5 h-3.5 text-amber-300" />
+                <span>Lead URLs</span>
               </button>
             )}
             {onOpenDesktopView && (
@@ -477,6 +489,32 @@ export const MobileAdminDashboard: React.FC<{
 
         {activeTab === 'settings' && (
           <div className="space-y-4">
+            {/* Live Lead Mobile PWA URLs Generator Card */}
+            {onOpenShareLinksModal && (
+              <div className="bg-gradient-to-r from-blue-950/70 to-indigo-950/70 p-4 rounded-2xl border border-blue-800/60 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <Smartphone className="w-4 h-4 text-amber-300" />
+                    Shareable Lead Mobile URLs & QR Codes
+                  </h4>
+                  <span className="text-[10px] bg-amber-400 text-slate-950 font-black px-2 py-0.5 rounded-full">
+                    Admin Only
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  Generate customer-ready mobile demo links, SMS pitch copy, and QR codes with 1-click iPhone / Android Add-to-Home-Screen launchers.
+                </p>
+                <button
+                  type="button"
+                  onClick={onOpenShareLinksModal}
+                  className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl text-xs transition shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Share2 className="w-4 h-4" />
+                  <span>Open 5 Live Mobile Plugin URLs Hub</span>
+                </button>
+              </div>
+            )}
+
             {/* Direct Secret Admin URLs Card */}
             <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 space-y-3">
               <div className="flex items-center justify-between">

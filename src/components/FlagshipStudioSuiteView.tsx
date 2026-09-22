@@ -38,6 +38,8 @@ import { WorkspaceTab } from '../types';
 import { useMemory } from '../context/MemoryContext';
 import { useAccountPathway } from '../context/AccountPathwayContext';
 import { formatUSD } from '../services/geomapMortgageEngine';
+import { isMikeFordAdmin } from '../utils/adminAuth';
+import { auth } from '../services/firebase';
 
 interface FlagshipStudioSuiteViewProps {
   onNavigateTab: (tab: WorkspaceTab) => void;
@@ -54,6 +56,7 @@ export const FlagshipStudioSuiteView: React.FC<FlagshipStudioSuiteViewProps> = (
 }) => {
   const { memories, guardrails } = useMemory();
   const { connectedWorkspaceEmail, isWorkspaceConnected } = useAccountPathway();
+  const isAdmin = isMikeFordAdmin(auth.currentUser) || isMikeFordAdmin({ email: connectedWorkspaceEmail });
 
   const [copiedMasterSnippet, setCopiedMasterSnippet] = useState(false);
   const [activeSimulationStep, setActiveSimulationStep] = useState<number | null>(null);
@@ -556,7 +559,7 @@ export const FlagshipStudioSuiteView: React.FC<FlagshipStudioSuiteViewProps> = (
             <span>{copiedMasterSnippet ? 'Copied' : 'Copy Script Tag'}</span>
           </button>
 
-          {onOpenShareLinksModal && (
+          {isAdmin && onOpenShareLinksModal && (
             <button
               onClick={onOpenShareLinksModal}
               className="flex items-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition shadow-md shadow-blue-600/30 cursor-pointer"

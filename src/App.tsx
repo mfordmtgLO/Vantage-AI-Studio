@@ -310,8 +310,13 @@ export default function App() {
               setActiveTab('admin_plugins');
               setIsMobileAdminMode(false);
             }} 
+            onOpenShareLinksModal={() => setIsShareLinksModalOpen(true)}
           />
           <ConnectWorkspaceModal />
+          <LeadMobileShareLinksModal
+            isOpen={isShareLinksModalOpen}
+            onClose={() => setIsShareLinksModalOpen(false)}
+          />
         </AccountPathwayProvider>
       </ThemeProvider>
     );

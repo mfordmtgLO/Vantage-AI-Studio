@@ -311,13 +311,13 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             )}
 
-            {/* Shareable Live Mobile URLs & PWA Launcher Button */}
-            {onOpenShareLinksModal && (
+            {/* Shareable Live Mobile URLs & PWA Launcher Button (Admin Only) */}
+            {isAdmin && onOpenShareLinksModal && (
               <button
                 id="lead-mobile-urls-nav-btn"
                 onClick={onOpenShareLinksModal}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl transition shadow-md shadow-blue-500/20 cursor-pointer"
-                title="Open Live Shareable Mobile & Desktop URLs with 1-Click Add-to-Home-Screen for Leads"
+                title="Open Live Shareable Mobile & Desktop URLs with 1-Click Add-to-Home-Screen for Leads (Admin Only)"
               >
                 <Smartphone className="w-3.5 h-3.5 text-amber-300" />
                 <span className="hidden sm:inline">Lead Mobile URLs</span>
