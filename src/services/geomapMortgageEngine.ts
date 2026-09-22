@@ -18,6 +18,12 @@ import {
   PriceAuditLog,
   LeadBuyerProfile
 } from '../types/firstTimeHomebuyerPlugin';
+import {
+  MortgageLoanEligibilityService,
+  mortgageEligibilityService
+} from './mortgageLoanEligibilityService';
+
+export { MortgageLoanEligibilityService, mortgageEligibilityService };
 
 /**
  * Monthly P&I calculation

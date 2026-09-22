@@ -13,6 +13,7 @@ export interface GeoCoordinate {
 
 export interface SpecialLoanProgramBadges {
   usdaRural100Financing: boolean;
+  usdaRuralEligible?: boolean;
   lmiCraGrantEligible: boolean;
   craGrantAmountUsd: number;
   fnmaHomeReady3Percent: boolean;
@@ -22,6 +23,7 @@ export interface SpecialLoanProgramBadges {
   lakeviewGrantAmountUsd?: number;
   ohcsFlexLendingFirstHomeEligible?: boolean;
   ohcsGrantAmountUsd?: number;
+  nhfDpaEligible?: boolean;
   targetedAreaGrantBonus: boolean;
 }
 

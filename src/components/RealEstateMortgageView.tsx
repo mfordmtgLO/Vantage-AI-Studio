@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FirstTimeHomebuyerGeoPlugin } from './FirstTimeHomebuyerGeoPlugin';
 import { LeadDpaGrantStackerStudio } from './LeadDpaGrantStackerStudio';
 import { RealEstateLeadCaptureStudio } from './RealEstateLeadCaptureStudio';
+import { MortgageLoanProductManager } from './MortgageLoanProductManager';
 import { 
   Home, 
   MapPin, 
@@ -18,7 +19,8 @@ import {
   Database,
   Building2,
   Users,
-  Award
+  Award,
+  ShieldCheck
 } from 'lucide-react';
 import { SAMPLE_RENTCAST_LISTINGS } from '../services/geomapMortgageEngine';
 import { isMikeFordAdmin } from '../utils/adminAuth';
@@ -33,7 +35,7 @@ export const RealEstateMortgageView: React.FC<RealEstateMortgageViewProps> = ({
   onOpenPluginVault,
   onOpenByokDrawer
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'geomap' | 'dpa_stacker' | 'lead_capture'>('geomap');
+  const [activeSubTab, setActiveSubTab] = useState<'geomap' | 'loan_products' | 'dpa_stacker' | 'lead_capture'>('geomap');
   const [copiedEmbed, setCopiedEmbed] = useState(false);
   const isAdmin = isMikeFordAdmin(auth.currentUser);
 
@@ -126,6 +128,19 @@ export const RealEstateMortgageView: React.FC<RealEstateMortgageViewProps> = ({
         </button>
 
         <button
+          onClick={() => setActiveSubTab('loan_products')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
+            activeSubTab === 'loan_products'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
+          }`}
+        >
+          <ShieldCheck className="w-4 h-4 text-amber-400" />
+          <span>Mortgage Loan Products (Lakeview & OHCS)</span>
+          <span className="text-[10px] px-1.5 py-0.2 bg-amber-500/30 text-amber-200 rounded-full font-bold">Config Matrix</span>
+        </button>
+
+        <button
           onClick={() => setActiveSubTab('dpa_stacker')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
             activeSubTab === 'dpa_stacker'
@@ -154,6 +169,12 @@ export const RealEstateMortgageView: React.FC<RealEstateMortgageViewProps> = ({
       {/* Sub-Tab Rendering */}
       {activeSubTab === 'geomap' && (
         <FirstTimeHomebuyerGeoPlugin onOpenByokDrawer={onOpenByokDrawer} />
+      )}
+
+      {activeSubTab === 'loan_products' && (
+        <MortgageLoanProductManager
+          onFilterPropertiesByProduct={() => setActiveSubTab('geomap')}
+        />
       )}
 
       {activeSubTab === 'dpa_stacker' && (

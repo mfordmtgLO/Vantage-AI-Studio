@@ -43,7 +43,8 @@ import {
   calculateMonthlyPI,
   formatUSD,
   parseZillowListingUrl,
-  submitAreaListingRequest
+  submitAreaListingRequest,
+  mortgageEligibilityService
 } from '../services/geomapMortgageEngine';
 
 const DEFAULT_MASTER_SEED_LISTINGS: SyncedPropertyListing[] = [
@@ -230,13 +231,19 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
     return res;
   }, [buyerProfile, onPrequalRecalculated]);
 
-  // Filter listings
+  // Filter listings via MortgageLoanEligibilityService
   const filteredProperties = useMemo(() => {
+    if (activeFilter === 'lakeview_national') {
+      return mortgageEligibilityService.filterGeoMapPropertiesByDownPayment(properties, 'lakeview_national');
+    }
+    if (activeFilter === 'ohcs_flex_firsthome') {
+      return mortgageEligibilityService.filterGeoMapPropertiesByDownPayment(properties, 'ohcs_flex');
+    }
+    if (activeFilter === 'usda') {
+      return mortgageEligibilityService.filterGeoMapPropertiesByDownPayment(properties, 'zero_down').filter(p => p.specialPrograms.usdaRural100Financing);
+    }
     return properties.filter((prop) => {
-      if (activeFilter === 'usda') return prop.specialPrograms.usdaRural100Financing;
       if (activeFilter === 'lmi_cra') return prop.specialPrograms.lmiCraGrantEligible;
-      if (activeFilter === 'lakeview_national') return prop.specialPrograms.lakeviewNationalDpaEligible;
-      if (activeFilter === 'ohcs_flex_firsthome') return prop.specialPrograms.ohcsFlexLendingFirstHomeEligible;
       if (activeFilter === 'price_drops') return (prop.priceDropAmount || 0) > 0;
       if (activeFilter === 'prequalified') return prop.price <= prequalResult.estimatedMaxPurchasePrice;
       return true;
