@@ -1,0 +1,53 @@
+name: Auto-Deploy to Google Cloud Run
+
+on:
+  push:
+    branches:
+      - master
+      - main
+
+env:
+  PROJECT_ID: 'My First Project'
+  SERVICE_NAME: 'vantage-ai-workspace'
+  REGION: 'us-west2'
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy to Cloud Run
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci || npm install
+
+      - name: Build Application & Server
+        run: npm run build
+
+      - name: Authenticate to Google Cloud
+        # If using Workload Identity Federation or Service Account Key
+        uses: google-github-actions/auth@v2
+        if: env.GCP_SA_KEY != ''
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Deploy to Cloud Run directly from Source
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v2
+        if: env.GCP_SA_KEY != ''
+        with:
+          service: ${{ env.SERVICE_NAME }}
+          region: ${{ env.REGION }}
+          source: ./
