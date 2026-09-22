@@ -43,9 +43,9 @@ import {
   calculateMonthlyPI,
   formatUSD,
   parseZillowListingUrl,
-  submitAreaListingRequest,
-  mortgageEligibilityService
+  submitAreaListingRequest
 } from '../services/geomapMortgageEngine';
+import mortgageEligibilityService from '../services/mortgageEligibility';
 
 const DEFAULT_MASTER_SEED_LISTINGS: SyncedPropertyListing[] = [
   {
@@ -197,7 +197,7 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
 
   const [properties, setProperties] = useState<SyncedPropertyListing[]>(initialProperties);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>(initialProperties[0]?.id || '');
-  const [activeFilter, setActiveFilter] = useState<'all' | 'usda' | 'lmi_cra' | 'lakeview_national' | 'ohcs_flex_firsthome' | 'price_drops' | 'prequalified'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'lakeview_national' | 'ohcs_flex_firsthome' | 'usda' | 'homeready' | 'nhf_fallback' | 'lmi_cra' | 'price_drops' | 'prequalified'>('all');
   const [zillowInputUrl, setZillowInputUrl] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
@@ -240,7 +240,13 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
       return mortgageEligibilityService.filterGeoMapPropertiesByDownPayment(properties, 'ohcs_flex');
     }
     if (activeFilter === 'usda') {
-      return mortgageEligibilityService.filterGeoMapPropertiesByDownPayment(properties, 'zero_down').filter(p => p.specialPrograms.usdaRural100Financing);
+      return mortgageEligibilityService.filterGeoMapPropertiesByDownPayment(properties, 'usda_zone');
+    }
+    if (activeFilter === 'homeready') {
+      return mortgageEligibilityService.filterGeoMapPropertiesByDownPayment(properties, 'homeready');
+    }
+    if (activeFilter === 'nhf_fallback') {
+      return mortgageEligibilityService.filterGeoMapPropertiesByDownPayment(properties, 'nhf_fallback');
     }
     return properties.filter((prop) => {
       if (activeFilter === 'lmi_cra') return prop.specialPrograms.lmiCraGrantEligible;
@@ -530,6 +536,8 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
               { id: 'lakeview_national', label: '🏞️ Lakeview 100% DPA' },
               { id: 'ohcs_flex_firsthome', label: '🌲 OHCS Flex FirstHome' },
               { id: 'usda', label: '🌾 USDA 100% RD Rural' },
+              { id: 'homeready', label: '🔑 HomeReady 3% Down' },
+              { id: 'nhf_fallback', label: '🇺🇸 NHF FHA 0% Fallback' },
               { id: 'lmi_cra', label: '🏛️ LMI $5k CRA Grant' },
               { id: 'price_drops', label: '🔥 Price Drops' },
               { id: 'prequalified', label: '✅ Prequalified Only' }
@@ -690,6 +698,62 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                   </span>
                 </div>
               </div>
+
+              {/* Real-time Mortgage Eligibility Service Pre-Screen Analysis */}
+              {(() => {
+                const prescreen = mortgageEligibilityService.getComprehensiveDpaPrescreenReport(
+                  {
+                    grossAnnualIncome: buyerProfile.grossMonthlyIncome * 12,
+                    creditScore: 680,
+                    areaMedianIncomeUsd: 92000,
+                    propertyState: selectedProperty.state || 'OR',
+                    propertyPrice: selectedProperty.price,
+                    liquidDownPayment: buyerProfile.availableDownPayment,
+                    isTargetedCensusTract: Boolean(selectedProperty.specialPrograms.lmiCraGrantEligible)
+                  },
+                  selectedProperty
+                );
+
+                return (
+                  <div className="bg-stone-900/90 p-3 rounded-xl border border-emerald-900/60 text-xs space-y-2">
+                    <div className="flex items-center justify-between border-b border-stone-800 pb-1.5">
+                      <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Mortgage Eligibility Service Matrix
+                      </span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
+                        {prescreen.isZeroDownEligible ? '100% Zero-Down Qualified' : 'Low Down Payment'}
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] font-medium text-stone-200">
+                      {prescreen.recommendationSummary}
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-2 text-[10px]">
+                      <div className="p-2 rounded bg-stone-950 border border-stone-800">
+                        <span className="text-stone-400 block font-bold">USDA RD Zone:</span>
+                        <span className={prescreen.usdaRuralOption?.isEligible ? 'text-emerald-400 font-bold' : 'text-stone-500'}>
+                          {prescreen.usdaRuralOption?.isEligible ? '✓ Zone Eligible (100% LTV)' : 'Outside Rural Zone'}
+                        </span>
+                      </div>
+
+                      <div className="p-2 rounded bg-stone-950 border border-stone-800">
+                        <span className="text-stone-400 block font-bold">HomeReady 3% Down:</span>
+                        <span className={prescreen.homeReadyOption?.isEligible ? 'text-purple-400 font-bold' : 'text-stone-500'}>
+                          {prescreen.homeReadyOption?.isEligible ? `✓ Eligible ($${prescreen.homeReadyOption.requiredDownPaymentUsd.toLocaleString()} Down)` : 'Income Above Cap'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {prescreen.universalNhfFallbackOption.isEligible && (
+                      <div className="text-[10px] text-amber-300/90 bg-amber-950/40 p-1.5 rounded border border-amber-900/50 flex items-center gap-1">
+                        <Shield className="w-3 h-3 text-amber-400 shrink-0" />
+                        <span>NHF FHA Fallback: 3.5% ($${prescreen.universalNhfFallbackOption.estimatedGrantUsd.toLocaleString()}) DPA Gift available.</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Two-Way Notes Box */}
               <div className="text-xs text-stone-300 bg-stone-900/60 p-2.5 rounded-xl border border-stone-800 whitespace-pre-wrap font-sans">
