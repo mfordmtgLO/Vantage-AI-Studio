@@ -24,6 +24,8 @@ import { MultiSourceDataPurgeStudio } from './MultiSourceDataPurgeStudio';
 import { PushNotificationManager } from './PushNotificationManager';
 import { LiveTwoWayNotesModal } from './LiveTwoWayNotesModal';
 import { GoogleAppHeader } from './GoogleAppHeader';
+import { IndustryAppsAdaptabilityBar } from './IndustryAppsAdaptabilityBar';
+import { IndustrySmartDocsGmailStudio } from './IndustrySmartDocsGmailStudio';
 import { useAccountPathway } from '../context/AccountPathwayContext';
 import { useMemory } from '../context/MemoryContext';
 import { Bot, Mail, Calendar, FileText, Table, CheckSquare, Users, Send, Plus, RefreshCw, Sparkles, CheckCircle2, AlertCircle, Bell, MessageSquare, User, Copy, Check, RotateCcw, ArrowRight, CornerDownLeft, X, Layers, Brain, Shield, Megaphone, BookOpen, Smartphone, Flame } from 'lucide-react';
@@ -103,6 +105,7 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
   const [gmailSubTab, setGmailSubTab] = useState<'smart_inbox' | 'messages'>('smart_inbox');
   const [calendarSubTab, setCalendarSubTab] = useState<'concierge' | 'events'>('concierge');
   const [sheetsSubTab, setSheetsSubTab] = useState<'relational_sql' | 'fuzzy_purge' | 'cleanup_tool'>('relational_sql');
+  const [isSmartAppsStudioOpen, setIsSmartAppsStudioOpen] = useState<boolean>(false);
 
   // Prompt Studio & Multi-Turn Chat state
   const [prompt, setPrompt] = useState<string>('');
@@ -808,6 +811,40 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
             <span className="text-xs font-medium">{actionSuccessMsg}</span>
           </div>
           <button onClick={() => setActionSuccessMsg(null)} className="text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-300 font-bold text-sm">×</button>
+        </div>
+      )}
+
+      {/* INDUSTRY & CAREER BEHAVIORAL ADAPTABILITY BAR (FOR BOTH GOOGLE APPS PATHWAYS) */}
+      <IndustryAppsAdaptabilityBar
+        onOpenSmartStudio={() => setIsSmartAppsStudioOpen(true)}
+        onOpenDraftModal={() => setActiveTab('drafts')}
+        onOpenSheetsEngine={() => setActiveTab('sheets')}
+      />
+
+      {/* SMART APPS STUDIO MODAL */}
+      {isSmartAppsStudioOpen && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
+          <div className="max-w-5xl w-full my-auto">
+            <div className="flex justify-end mb-2">
+              <button
+                type="button"
+                onClick={() => setIsSmartAppsStudioOpen(false)}
+                className="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-200 hover:text-white font-bold text-xs transition cursor-pointer"
+              >
+                ✕ Close Studio
+              </button>
+            </div>
+            <IndustrySmartDocsGmailStudio
+              onOpenDraftModal={() => {
+                setIsSmartAppsStudioOpen(false);
+                setActiveTab('drafts');
+              }}
+              onOpenSheetsEngine={() => {
+                setIsSmartAppsStudioOpen(false);
+                setActiveTab('sheets');
+              }}
+            />
+          </div>
         </div>
       )}
 

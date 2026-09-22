@@ -1,7 +1,10 @@
 import React, { useState, useRef } from 'react';
-import { Mail, Send, Sparkles, CheckCircle2, Loader2, Bot, Building2, User, Mic, MicOff, ExternalLink } from 'lucide-react';
+import { Mail, Send, Sparkles, CheckCircle2, Loader2, Bot, Building2, User, Mic, MicOff, ExternalLink, ShieldCheck, Brain } from 'lucide-react';
 import { getAccessToken } from '../services/firebase';
 import { safeBtoa } from '../utils/base64';
+import { useMemory } from '../context/MemoryContext';
+import { ALL_10_INDUSTRY_GOOGLE_PROFILES, getProfileForIndustry } from '../data/industryGoogleAppsIntelligence';
+import { INDUSTRY_CAREER_TEMPLATES } from '../data/industryCareerTemplates';
 
 interface ContactDraft {
   id: string;
@@ -164,6 +167,17 @@ export const GmailDraftsView: React.FC = () => {
   const [drafts, setDrafts] = useState<ContactDraft[]>(
     contactList.map((item, index) => ({ id: 'draft_' + index, ...item }))
   );
+  const { guardrails } = useMemory();
+
+  // Detect active 2nd Brain Industry profile
+  const activeIndustryId = INDUSTRY_CAREER_TEMPLATES.find(g => 
+    guardrails.customPersonaDirective?.toLowerCase().includes(g.id) ||
+    guardrails.customPersonaDirective?.toLowerCase().includes(g.name.toLowerCase()) ||
+    g.careers.some(c => c.morphedPersonaTitle === guardrails.personalityPreset)
+  )?.id || 'mortgage_real_estate';
+
+  const currentProfile = getProfileForIndustry(activeIndustryId);
+
   const [selectedDraftId, setSelectedDraftId] = useState<string>(drafts[0]?.id || '');
   const [isSavingAll, setIsSavingAll] = useState<boolean>(false);
   const [savedStatus, setSavedStatus] = useState<{ [key: string]: boolean }>({});
@@ -174,6 +188,14 @@ export const GmailDraftsView: React.FC = () => {
   const recognitionRef = useRef<any>(null);
 
   const activeDraft = drafts.find(d => d.id === selectedDraftId) || drafts[0];
+
+  const handleApplyIndustryDisclaimer = () => {
+    if (!activeDraft) return;
+    const disclaimersText = '\n\n' + '─'.repeat(40) + '\n' + currentProfile.requiredRegulatoryDisclaimers.join('\n\n');
+    handleUpdateActiveDraft('body', activeDraft.body + disclaimersText);
+    setGlobalSuccess(`Appended ${currentProfile.industryName} regulatory disclaimers to active draft!`);
+    setTimeout(() => setGlobalSuccess(null), 3500);
+  };
 
   const toggleSpeechRecognition = () => {
     if (isRecording) {
@@ -394,6 +416,16 @@ export const GmailDraftsView: React.FC = () => {
                 <p className="text-xs text-slate-500 font-medium">{activeDraft.organization} • &lt;{activeDraft.email}&gt;</p>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={handleApplyIndustryDisclaimer}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-xl border border-indigo-200 dark:border-indigo-800 transition cursor-pointer"
+                  title={`Append regulatory disclaimers for ${currentProfile.industryName}`}
+                >
+                  <ShieldCheck className="w-4 h-4 text-purple-600" />
+                  <span>Append {currentProfile.industryName.split(',')[0]} Footers</span>
+                </button>
+
                 {savedStatus[activeDraft.id] ? (
                   <>
                     <span className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-xl border border-emerald-200">

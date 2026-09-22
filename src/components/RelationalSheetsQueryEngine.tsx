@@ -21,6 +21,7 @@ import {
   SchemaValidationIssue,
   RelationalSheetQueryRunner 
 } from '../utils/workspaceQueryEngine';
+import { ALL_10_INDUSTRY_GOOGLE_PROFILES } from '../data/industryGoogleAppsIntelligence';
 
 export const RelationalSheetsQueryEngine: React.FC = () => {
   const [datasets, setDatasets] = useState<SheetDataset[]>(PREBUILT_SHEET_DATASETS);
@@ -218,6 +219,37 @@ export const RelationalSheetsQueryEngine: React.FC = () => {
           <span>{notificationMsg}</span>
         </div>
       )}
+
+      {/* 10 Industry Specialty Google Sheets Starter Models Bar */}
+      <div className="bg-slate-900 border border-indigo-500/30 p-4 rounded-2xl text-white space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-black uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>2nd Brain Connected: Load Industry-Smart Google Sheets Starter Database</span>
+          </span>
+          <span className="text-[10px] text-slate-400 font-mono">10 Specialized Models</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+          {ALL_10_INDUSTRY_GOOGLE_PROFILES.map((prof) => {
+            const sheet = prof.sheetsSpreadsheetTemplates[0];
+            return (
+              <button
+                key={prof.industryId}
+                type="button"
+                onClick={() => {
+                  setSqlQuery(`SELECT * FROM pipeline LIMIT 50;`);
+                  setNotificationMsg(`Loaded Google Sheets Model for ${prof.industryName}: "${sheet?.title}"`);
+                  setTimeout(() => setNotificationMsg(null), 4000);
+                }}
+                className="p-2 bg-slate-800 hover:bg-indigo-600/80 border border-slate-700 hover:border-indigo-400 rounded-xl text-left transition cursor-pointer text-xs font-medium space-y-0.5"
+              >
+                <div className="text-[10px] font-bold text-amber-300 truncate">{prof.industryName.split(',')[0]}</div>
+                <div className="text-[11px] font-semibold text-white truncate">{sheet?.title}</div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Dataset Picker & Real-Time Aggregates */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
