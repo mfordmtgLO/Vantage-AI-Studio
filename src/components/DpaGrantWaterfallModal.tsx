@@ -23,7 +23,7 @@ import {
   Award
 } from 'lucide-react';
 import { SyncedPropertyListing, BuyerDtiProfile } from '../types/firstTimeHomebuyerPlugin';
-import { calculateDpaGrantWaterfall, formatUSD } from '../services/geomapMortgageEngine';
+import { formatUSD } from '../services/geomapMortgageEngine';
 import { calculateDpaGrantWaterfall as calcWaterfall } from '../services/geomapCognitiveEngine';
 
 interface DpaGrantWaterfallModalProps {

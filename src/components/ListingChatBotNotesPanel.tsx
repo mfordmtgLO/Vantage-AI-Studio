@@ -50,6 +50,10 @@ interface ListingChatBotNotesPanelProps {
   prequalResult: BuyerPrequalificationResult;
   onUpdatePropertyNotes?: (propertyId: string, updatedNotes: string) => void;
   className?: string;
+  assignedLoanOfficerName?: string;
+  assignedAgentName?: string;
+  hasPairedAgent?: boolean;
+  onOpenLeadCapture?: (note: string) => void;
 }
 
 export const ListingChatBotNotesPanel: React.FC<ListingChatBotNotesPanelProps> = ({
@@ -57,7 +61,11 @@ export const ListingChatBotNotesPanel: React.FC<ListingChatBotNotesPanelProps> =
   buyerProfile,
   prequalResult,
   onUpdatePropertyNotes,
-  className = ''
+  className = '',
+  assignedLoanOfficerName = 'Mike Ford',
+  assignedAgentName,
+  hasPairedAgent = false,
+  onOpenLeadCapture
 }) => {
   const [showIncomeSidebar, setShowIncomeSidebar] = useState(false);
   const [showInquiryModal, setShowInquiryModal] = useState(false);
@@ -99,16 +107,22 @@ export const ListingChatBotNotesPanel: React.FC<ListingChatBotNotesPanelProps> =
     const initialGreeting: ChatMessage = {
       id: `msg-init-${property.id}`,
       sender: 'assistant',
-      text: `Hello! I'm Mike Ford's AI Assistant for ${property.formattedAddress}.\n\n` +
-            `• Price: ${formatUSD(property.price)}\n` +
-            `• Summary: ${prescreen.recommendationSummary}\n` +
-            `• Initial Listing Notes: "${property.propertyNotes}"\n\n` +
-            `Select a quick question button below or type a custom question to analyze down payment grants, DTI limits, or closing costs.`,
+      text: hasPairedAgent && assignedAgentName
+        ? `Hello! I'm the AI Assistant for ${assignedLoanOfficerName} and ${assignedAgentName} for ${property.formattedAddress}.\n\n` +
+          `• Price: ${formatUSD(property.price)}\n` +
+          `• Summary: ${prescreen.recommendationSummary}\n` +
+          `• Initial Listing Notes: "${property.propertyNotes}"\n\n` +
+          `Select a quick question button below or type a custom question. Inbound notes and showing requests are relayed directly to both ${assignedLoanOfficerName} and ${assignedAgentName}.`
+        : `Hello! I'm ${assignedLoanOfficerName}'s Direct AI Mortgage Assistant for ${property.formattedAddress}.\n\n` +
+          `• Price: ${formatUSD(property.price)}\n` +
+          `• Summary: ${prescreen.recommendationSummary}\n` +
+          `• Initial Listing Notes: "${property.propertyNotes}"\n\n` +
+          `Select a quick question button below or type a custom inquiry. In Solo Mode, all notes, DTI questions, and pre-qualification requests route 100% directly to ${assignedLoanOfficerName} with zero agent intermediary.`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
     setMessages([initialGreeting]);
-  }, [property.id, buyerProfile, property]);
+  }, [property.id, buyerProfile, property, hasPairedAgent, assignedAgentName, assignedLoanOfficerName]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -321,14 +335,37 @@ Thank you!`;
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h4 className="text-xs font-bold text-white tracking-wide">Mike Ford LO Assistant</h4>
+              <h4 className="text-xs font-bold text-white tracking-wide">
+                {hasPairedAgent && assignedAgentName
+                  ? `${assignedLoanOfficerName} & ${assignedAgentName} Partner Portal`
+                  : `${assignedLoanOfficerName} Direct Loan Officer Desk`}
+              </h4>
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-stone-900 border border-stone-700 text-stone-300">
+                {hasPairedAgent ? 'Co-Branded Live Relay' : 'Solo LO • 0 Agent Relay'}
+              </span>
             </div>
-            <p className="text-[10px] text-stone-400">Two-Way Listing Notes & Automated Q&A</p>
+            <p className="text-[10px] text-stone-400">
+              {hasPairedAgent
+                ? 'Two-Way Listing Notes Relay & Automated Q&A'
+                : 'Direct Mortgage Inquiries & Loan Notes (Zero Agent Intermediary)'}
+            </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
+          {onOpenLeadCapture && (
+            <button
+              type="button"
+              onClick={() => onOpenLeadCapture(inputText || messages.filter(m => m.sender === 'user').map(m => m.text).join('\n') || property.propertyNotes)}
+              className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/40 transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+              title="Open Lead Capture Form with Automatic AI 2nd Brain Triage & Dual LO+Agent Email Dispatch"
+            >
+              <Sparkles className="w-3 h-3 text-indigo-400" />
+              <span>Lead Form & AI Triage</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => setShowInquiryModal(true)}

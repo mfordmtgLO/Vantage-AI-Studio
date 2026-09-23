@@ -81,6 +81,7 @@ const DEFAULT_LO_PROFILES: LoanOfficerProfileCard[] = [
     title: 'Managing Loan Officer & Principal Architect',
     email: 'fordmj@gmail.com',
     phone: '+1 (503) 555-0192',
+    photoUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=400&q=80',
     specialties: ['USDA 100% Rural', 'Lakeview National DPA', 'Fannie Mae HomeReady', 'OHCS Flex Lending'],
     primaryState: 'OR',
     status: 'Verified',
@@ -88,8 +89,15 @@ const DEFAULT_LO_PROFILES: LoanOfficerProfileCard[] = [
     activePreapprovalsCount: 24,
     lastSyncedAt: new Date().toISOString(),
     syncedFromApp: 'first-time-homebuyer_ai_studio (Cloud Run)',
-    pairedAgentIds: ['agent-rebecca-vance', 'agent-elena-rodriguez'],
+    pairedAgentIds: ['agent-kanndice-mclean', 'agent-rebecca-vance', 'agent-elena-rodriguez'],
     pairedAgents: [
+      {
+        agentId: 'agent-kanndice-mclean',
+        agentName: 'Kanndice McLean',
+        agentBrokerage: 'Cascade Premier Realty & Associates',
+        coBrandedListingsCount: 18,
+        pairingStatus: 'Active Partner'
+      },
       {
         agentId: 'agent-rebecca-vance',
         agentName: 'Rebecca Vance',
@@ -170,6 +178,36 @@ const DEFAULT_LO_PROFILES: LoanOfficerProfileCard[] = [
 
 const DEFAULT_AGENT_PROFILES: AgentProfileCard[] = [
   {
+    id: 'agent-kanndice-mclean',
+    name: 'Kanndice McLean',
+    licenseNumber: 'OR-201889423',
+    brokerage: 'Cascade Premier Realty & Associates',
+    title: 'Top Producing Principal Broker & Lead Buyer Strategist',
+    email: 'kanndice@cascadepremier.com',
+    phone: '+1 (503) 555-0188',
+    photoUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80',
+    targetMarkets: ['Portland Metro', 'Scappoose', 'Columbia County', 'St. Helens', 'Beaverton', 'Lake Oswego'],
+    primaryState: 'OR',
+    status: 'Verified',
+    activeListingsCount: 18,
+    lastSyncedAt: new Date().toISOString(),
+    syncedFromApp: 'first-time-homebuyer_ai_studio (Cloud Run)',
+    pairedLoIds: ['lo-mike-ford'],
+    pairedLoanOfficers: [
+      {
+        loId: 'lo-mike-ford',
+        loName: 'Mike Ford',
+        loCompany: 'Vantage AI Mortgage & Loan Services',
+        pairedPreapprovalsCount: 24,
+        pairingStatus: 'Active Partner'
+      }
+    ],
+    secondBrainLevel: 'Level 3: Ultra Executive Quarterly',
+    purchasedAddons: ['Ingestion Daemon RSS Auto-Scrape', 'Google Workspace AI Agent Suite', 'Real Estate GeoMap & DPA Combo Pack'],
+    deliveryCadence: 'quarterly',
+    assignedCronJobIds: ['cron-gmail-synthesis', 'cron-calendar-timeblock', 'cron-sheets-rollup']
+  },
+  {
     id: 'agent-rebecca-vance',
     name: 'Rebecca Vance',
     licenseNumber: 'OR-201283941',
@@ -177,6 +215,7 @@ const DEFAULT_AGENT_PROFILES: AgentProfileCard[] = [
     title: 'Principal Buyer Specialist & Realtor®',
     email: 'rebecca@cascadepremier.com',
     phone: '+1 (503) 555-0177',
+    photoUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=400&q=80',
     targetMarkets: ['Portland Metro', 'Beaverton', 'Hillsboro', 'Lake Oswego'],
     primaryState: 'OR',
     status: 'Verified',
@@ -209,6 +248,7 @@ const DEFAULT_AGENT_PROFILES: AgentProfileCard[] = [
     title: 'First-Time Homebuyer Director',
     email: 'mbrooks@soundregroup.com',
     phone: '+1 (206) 555-0133',
+    photoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80',
     targetMarkets: ['Seattle', 'Tacoma', 'Bellevue', 'Renton'],
     primaryState: 'WA',
     status: 'Active',
@@ -234,6 +274,7 @@ const DEFAULT_AGENT_PROFILES: AgentProfileCard[] = [
     title: 'Rural & USDA Property Specialist',
     email: 'elena@willamettevalleyhomes.com',
     phone: '+1 (541) 555-0166',
+    photoUrl: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=400&q=80',
     targetMarkets: ['Salem', 'Eugene', 'Corvallis', 'Albany'],
     primaryState: 'OR',
     status: 'Verified',

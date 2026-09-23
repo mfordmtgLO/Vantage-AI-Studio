@@ -26,6 +26,7 @@ import {
   X,
   Shield,
   ShieldCheck,
+  UserCheck,
   Key,
   Smartphone,
   Share2
@@ -58,6 +59,7 @@ import { CoBorrowerCanvasModal } from './CoBorrowerCanvasModal';
 import { ExecutivePreApprovalDossierModal } from './ExecutivePreApprovalDossierModal';
 import { DeepThinkPreMortemModal } from './DeepThinkPreMortemModal';
 import { ProactiveGeofenceAlertBanner } from './ProactiveGeofenceAlertBanner';
+import { RealEstateLeadCaptureForm } from './RealEstateLeadCaptureForm';
 
 const DEFAULT_MASTER_SEED_LISTINGS: SyncedPropertyListing[] = [
   {
@@ -221,6 +223,8 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
   const [showCoBorrowerModal, setShowCoBorrowerModal] = useState<boolean>(false);
   const [showDossierModal, setShowDossierModal] = useState<boolean>(false);
   const [showPreMortemModal, setShowPreMortemModal] = useState<boolean>(false);
+  const [showLeadCaptureModal, setShowLeadCaptureModal] = useState<boolean>(false);
+  const [leadCaptureInitialNote, setLeadCaptureInitialNote] = useState<string>('');
 
   // Area Request Modal State
   const [showAreaModal, setShowAreaModal] = useState(false);
@@ -301,10 +305,26 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
     }, 1200);
   };
 
+  // Check URL parameters for runtime co-branding routing
+  const queryParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const urlAgent = queryParams?.get('agent');
+  const urlLo = queryParams?.get('lo');
+
+  // Determine paired agent:
+  // If explicitly provided in masterConfig.assignedAgentName, use it.
+  // Otherwise, inspect URL query (?agent=...) — if absent, 'none', or 'solo', default to Solo LO Mode (no agent).
+  const resolvedAgentName: string | undefined = masterConfig.assignedAgentName !== undefined
+    ? (masterConfig.assignedAgentName || undefined)
+    : (urlAgent && urlAgent !== 'none' && urlAgent !== 'solo'
+        ? (urlAgent.toLowerCase().includes('kanndice') ? 'Kanndice McLean' : urlAgent)
+        : undefined);
+
+  const hasPairedAgent = Boolean(resolvedAgentName && resolvedAgentName.trim().length > 0);
+
   const mergedConfig: MasterFeedSyncConfig = {
     adminContactEmail: masterConfig.adminContactEmail || 'fordmj@gmail.com',
-    assignedLoanOfficerName: masterConfig.assignedLoanOfficerName || 'Mike Ford',
-    assignedAgentName: masterConfig.assignedAgentName || 'Kanndice Ford',
+    assignedLoanOfficerName: masterConfig.assignedLoanOfficerName || (urlLo ? (urlLo.toLowerCase().includes('ford') ? 'Mike Ford' : urlLo) : 'Mike Ford'),
+    assignedAgentName: resolvedAgentName,
     autoSyncOnLoad: masterConfig.autoSyncOnLoad ?? true,
     enableAreaListingRequests: masterConfig.enableAreaListingRequests ?? true,
     masterFeedEndpointUrl: masterConfig.masterFeedEndpointUrl
@@ -371,12 +391,20 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-950 text-emerald-300 border border-emerald-800">
                 Managed Master Feed Sync
               </span>
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold inline-flex items-center gap-1 shadow-sm">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Verified Pair
-              </span>
+              {hasPairedAgent ? (
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold inline-flex items-center gap-1 shadow-sm">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Verified Pair ({mergedConfig.assignedLoanOfficerName} &amp; {mergedConfig.assignedAgentName})
+                </span>
+              ) : (
+                <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/40 text-[10px] font-bold inline-flex items-center gap-1 shadow-sm">
+                  <UserCheck className="w-3.5 h-3.5 text-blue-400" /> Direct Originator Mode (Solo LO)
+                </span>
+              )}
             </div>
             <p className="text-xs text-stone-400 mt-0.5">
-              Curated by Mike Ford ({mergedConfig.assignedLoanOfficerName} & {mergedConfig.assignedAgentName}) • USDA 100% RD Rural • LMI Census Grants
+              {hasPairedAgent
+                ? `Curated by Mike Ford (${mergedConfig.assignedLoanOfficerName} & ${mergedConfig.assignedAgentName}) • USDA 100% RD Rural • LMI Census Grants`
+                : `Curated by ${mergedConfig.assignedLoanOfficerName || 'Mike Ford'} (Managing Loan Officer, NMLS #288455) • Direct Homebuyer Advisory • USDA & CRA Grants`}
             </p>
           </div>
         </div>
@@ -894,11 +922,46 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                 );
               })()}
 
+              {/* LEAD CAPTURE & AI 2ND BRAIN TRIAGE ACTION CALLOUT */}
+              <div className="p-3.5 bg-gradient-to-r from-blue-950 via-indigo-950 to-purple-950 rounded-2xl border border-indigo-500/40 shadow-md flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="space-y-0.5 text-center sm:text-left">
+                  <div className="flex items-center justify-center sm:justify-start gap-2">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                      Co-Branded Inquiry
+                    </span>
+                    <span className="text-xs font-bold text-white">
+                      Ask LO+Agent Team About This Property
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-300">
+                    Submit questions or request a private tour. Our AI 2nd Brain segments your questions and simultaneously emails {mergedConfig.assignedLoanOfficerName} & {hasPairedAgent ? mergedConfig.assignedAgentName : 'Direct Originator'}.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLeadCaptureInitialNote(selectedProperty.propertyNotes || '');
+                    setShowLeadCaptureModal(true);
+                  }}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-black text-xs rounded-xl shadow-md transition cursor-pointer flex items-center gap-1.5 shrink-0 active:scale-95"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-blue-200" />
+                  <span>Lead Form & AI Triage</span>
+                </button>
+              </div>
+
               {/* Two-Way Communication Notes & Interactive Chat Bot */}
               <ListingChatBotNotesPanel
                 property={selectedProperty}
                 buyerProfile={buyerProfile}
                 prequalResult={prequalResult}
+                assignedLoanOfficerName={mergedConfig.assignedLoanOfficerName}
+                assignedAgentName={mergedConfig.assignedAgentName}
+                hasPairedAgent={hasPairedAgent}
+                onOpenLeadCapture={(note) => {
+                  setLeadCaptureInitialNote(note);
+                  setShowLeadCaptureModal(true);
+                }}
                 onUpdatePropertyNotes={(propId, updatedNotes) => {
                   setProperties((prev) =>
                     prev.map((p) => (p.id === propId ? { ...p, propertyNotes: updatedNotes } : p))
@@ -1021,6 +1084,9 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
             listing={selectedProperty}
             buyerProfile={buyerProfile}
             isOpen={showDossierModal}
+            assignedLoanOfficerName={mergedConfig.assignedLoanOfficerName}
+            assignedAgentName={mergedConfig.assignedAgentName}
+            hasPairedAgent={hasPairedAgent}
             onClose={() => setShowDossierModal(false)}
           />
 
@@ -1049,6 +1115,28 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
         onClose={() => setIsIosGuideOpen(false)}
         pluginName="First-Time Homebuyer GeoMap & DPA Tool"
       />
+
+      {/* Customizable Real Estate Lead Capture & AI 2nd Brain Triage Modal */}
+      {showLeadCaptureModal && (
+        <div
+          className="fixed inset-0 z-60 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-in fade-in"
+          onClick={() => setShowLeadCaptureModal(false)}
+        >
+          <div
+            className="max-w-4xl w-full max-h-[92vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <RealEstateLeadCaptureForm
+              property={selectedProperty || undefined}
+              initialNote={leadCaptureInitialNote}
+              onClose={() => setShowLeadCaptureModal(false)}
+              onLeadCaptured={(record) => {
+                console.log('Lead successfully captured and triaged:', record);
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Footer & Copyright */}
       <div className="pt-3 border-t border-stone-800 flex flex-col sm:flex-row items-center justify-between text-[10px] text-stone-500 font-mono">

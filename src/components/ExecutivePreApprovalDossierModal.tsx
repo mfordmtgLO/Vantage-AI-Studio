@@ -34,13 +34,19 @@ interface ExecutivePreApprovalDossierModalProps {
   buyerProfile: BuyerDtiProfile;
   isOpen: boolean;
   onClose: () => void;
+  assignedLoanOfficerName?: string;
+  assignedAgentName?: string;
+  hasPairedAgent?: boolean;
 }
 
 export const ExecutivePreApprovalDossierModal: React.FC<ExecutivePreApprovalDossierModalProps> = ({
   listing,
   buyerProfile,
   isOpen,
-  onClose
+  onClose,
+  assignedLoanOfficerName = 'Mike Ford (NMLS #288455)',
+  assignedAgentName,
+  hasPairedAgent = false
 }) => {
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -60,7 +66,9 @@ export const ExecutivePreApprovalDossierModal: React.FC<ExecutivePreApprovalDoss
           <div className="flex items-center gap-2">
             <Award className="w-5 h-5 text-amber-400" />
             <h3 className="text-sm sm:text-base font-black uppercase tracking-wider">
-              Executive Pre-Approval & Grant Qualification Dossier
+              {hasPairedAgent && assignedAgentName 
+                ? 'Executive Co-Branded Pre-Approval & Grant Dossier' 
+                : 'Direct Executive Mortgage Pre-Approval Dossier'}
             </h3>
           </div>
           <div className="flex items-center gap-2">
@@ -92,7 +100,9 @@ export const ExecutivePreApprovalDossierModal: React.FC<ExecutivePreApprovalDoss
                 Vantage AI Mortgage & Loan Services
               </h1>
               <p className="text-xs text-slate-500">
-                Co-Branded First-Time Homebuyer Property Underwriting Dossier
+                {hasPairedAgent && assignedAgentName
+                  ? `Co-Branded Partnership Dossier • Mike Ford & ${assignedAgentName}`
+                  : 'Direct Single-Originator Property Underwriting Dossier (Zero Agent Intermediary)'}
               </p>
             </div>
             <div className="text-left sm:text-right space-y-0.5">
@@ -103,7 +113,7 @@ export const ExecutivePreApprovalDossierModal: React.FC<ExecutivePreApprovalDoss
           </div>
 
           {/* Borrower & Property Summary Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className={`grid grid-cols-1 ${hasPairedAgent && assignedAgentName ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-4`}>
             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
               <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
                 Target Property Details
@@ -123,14 +133,30 @@ export const ExecutivePreApprovalDossierModal: React.FC<ExecutivePreApprovalDoss
                 Assigned Mortgage Originator
               </span>
               <h4 className="text-sm font-black text-slate-900 dark:text-slate-100">
-                Mike Ford (NMLS #992014)
+                {assignedLoanOfficerName}
               </h4>
               <div className="text-xs space-y-1 text-slate-600 dark:text-slate-300">
                 <div>Company: <strong>Vantage AI Lending Hub</strong></div>
-                <div>Direct Phone: <strong>+1 (503) 555-0199</strong></div>
+                <div>Direct Phone: <strong>+1 (503) 555-0192</strong></div>
                 <div>Email: <strong>fordmj@gmail.com</strong></div>
               </div>
             </div>
+
+            {hasPairedAgent && assignedAgentName && (
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
+                  Partner Real Estate Agent
+                </span>
+                <h4 className="text-sm font-black text-slate-900 dark:text-slate-100">
+                  {assignedAgentName}
+                </h4>
+                <div className="text-xs space-y-1 text-slate-600 dark:text-slate-300">
+                  <div>Status: <strong>Co-Branded Representative</strong></div>
+                  <div>Showing Inquiries: <strong>In-App Relayed</strong></div>
+                  <div>Partner Portal: <strong>Active Live Pair</strong></div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Grant Qualification Certificate Box */}

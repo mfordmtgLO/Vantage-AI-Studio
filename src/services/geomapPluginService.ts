@@ -21,6 +21,11 @@ It equips mortgage originators, real estate brokers, and home buyers with an int
 3. **Neighborhood Demographics & School Ratings**: Census tract median income ratios, school ratings, and walk scores.
 4. **Boundary Overlays**: USDA rural eligibility zoning, CRA LMI subsidy census tracts, and municipal tax districts.
 
+## Solo LO & Unpaired Export Mode Behavior
+- **Zero Agent Coupling**: When exported without an active LO+Agent pairing, all Realtor-specific modules (agent two-way SMS relay, agent showing dispatch, and dual co-branded HUDs) are completely deactivated.
+- **Direct Mortgage Inquiries**: All borrower questions, DTI simulations, and grant inquiries route 100% directly and exclusively to the Loan Officer (Mike Ford, NMLS #288455) with 0 agent notification relay.
+- **Clean Single-Originator Dossier**: The exported executive pre-approval dossier renders as a single-originator certificate with zero unpopulated agent placeholders.
+
 ## Packaging Specification
 - Component Name: \`${config.pluginName}\`
 - API Base Path: \`${config.apiBasePath}\`

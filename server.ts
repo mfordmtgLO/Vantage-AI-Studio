@@ -1218,6 +1218,237 @@ function startBuildSimulation(targetState: 'SUCCESS' | 'FAILED' = 'SUCCESS', com
   }, 10000); // 10 seconds simulation build time
 }
 
+// In-memory store for real estate leads with AI 2nd brain triage
+const capturedRealEstateLeadsStore: Array<any> = [];
+
+// Real Estate GeoMap Lead Capture Form & AI 2nd Brain Email Triage Endpoint
+app.post("/api/realestate/lead-capture-email", async (req, res) => {
+  try {
+    const { lead, property, config } = req.body;
+    if (!lead || !property) {
+      return res.status(400).json({ error: "Missing required lead or property payload" });
+    }
+
+    const loName = config?.loRecipientName || "Mike Ford";
+    const loEmail = config?.loRecipientEmail || "fordmj@gmail.com";
+    const loNmls = config?.loNmls || "288455";
+    const loCompany = config?.loCompany || "Vantage AI Mortgage";
+
+    const agentName = config?.agentRecipientName || "Kanndice McLean";
+    const agentEmail = config?.agentRecipientEmail || "kanndice@cascadepremier.com";
+    const agentBrokerage = config?.agentBrokerage || "Cascade Premier Realty";
+    const agentLicense = config?.agentLicense || "OR-201889423";
+    const isSoloLoMode = Boolean(config?.isSoloLoMode);
+
+    const systemInstruction = `You are the Vantage AI 2nd Brain Cognitive Real Estate & Mortgage Lead Triage Engine.
+Your job is to analyze an incoming property listing inquiry or note submitted by a prospective buyer through the Real Estate GeoMap module.
+You must break down the visitor's submitted comment, questions, and notes into two distinct professional domains:
+
+1. LOAN OFFICER RESPONSIBILITIES (Financial, Mortgage, & Underwriting Domain):
+Topics recommended exclusively for the Loan Officer (${loName}, NMLS #${loNmls}):
+- Loan programs (USDA 100% Rural, FHA 3.5%, Fannie Mae HomeReady, Lakeview National DPA, OHCS Flex Lending, VA, Jumbo)
+- Down payment options and down payment assistance (DPA grants, CRA $5k–$10k LMI grants, forgivable seconds, $0 down)
+- Credit, credit scores, credit repair, and minimum score requirements
+- Pre-approval process, prequalification status, pre-approval letter timing
+- Monthly payment calculations (Principal & Interest, property taxes, homeowner's hazard insurance, PMI / MIP, HOA dues)
+- Debts, debt-to-income (DTI front-end and back-end ratios), student loans, car notes, credit card debt, collections
+- Loan process, loan underwriting requirements, automated underwriting (DU/LP)
+- Documentation requirements (W-2s, 1040 tax returns, paystubs, bank statements, gift funds)
+- Income verification, overtime, self-employment, 1099, side-hustles
+- Taxes, escrows, closing timelines, and rate locks
+- Interest rates, discount points, APR, buydowns (2-1 buydowns)
+- Mortgage process and mortgage qualification
+
+2. REAL ESTATE AGENT RESPONSIBILITIES (Property, Showing, & Transactional Domain):
+Topics recommended exclusively for the Real Estate Agent (${isSoloLoMode ? 'Deactivated - Direct Pipeline' : `${agentName}, Lic #${agentLicense}`}):
+- Specific property address and location nuances
+- Property listing characteristics: bedrooms, bathrooms, square footage, lot size, architectural design, year built, garage, yard condition, heating/cooling, HOA rules
+- Days on market (DOM), price history, price drops, market velocity
+- List price, valuation, comparable market analysis (CMA)
+- Tour scheduling, walk-through, open house, private showing, meetup, coffee appointment
+- Home search criteria, nearby neighborhoods, school districts, commute times
+- Offer strategy, negotiation tactics, escalation clauses, inspection contingencies, appraisal contingencies
+- Seller credits, seller contributions, seller concessions (closing cost assistance paid by seller)
+- Purchase agreement, earnest money deposit, closing date coordination
+
+Given the visitor's notes/questions: "${lead.notesAndQuestions || ''}"
+Property: ${property.formattedAddress} ($${property.price})
+Bedrooms/Baths/SqFt: ${property.bedrooms}bd / ${property.bathrooms}ba / ${property.squareFootage} sqft, ${property.daysOnMarket} days on market.
+Tour Requested: ${lead.tourRequested ? `Yes (Date: ${lead.preferredTourDate || 'Flexible'})` : 'No'}
+Grants Interest: ${lead.interestedInGrants ? 'Yes ($15,400+ DPA Grants)' : 'Standard'}
+Pre-Approval Status: ${lead.preApprovalStatus}
+
+Perform deep cognitive analysis:
+1. Summarize the inquiry in 1 concise sentence.
+2. Determine urgency ('high', 'medium', or 'low').
+3. Recommend who should make first contact ('Loan Officer', 'Realtor Agent', or 'Joint / Simultaneous') with rationale.
+4. Extract the exact text fragments / questions that belong to the Loan Officer, list 2-3 recommended action response points, and draft a high-converting LO response.
+5. Extract the exact text fragments / questions that belong to the Real Estate Agent, list 2-3 recommended action response points, and draft a high-converting Agent response.
+6. Provide joint coordination advice for the pair.
+7. Generate email subject, formatted HTML email body, and plaintext email body to be dispatched to ${loEmail}${isSoloLoMode ? '' : ` & ${agentEmail}`}.`;
+
+    const apiConfig: any = {
+      systemInstruction,
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          summary: { type: Type.STRING },
+          urgencyLevel: { type: Type.STRING, enum: ['high', 'medium', 'low'] },
+          firstContactRecommendation: { type: Type.STRING, enum: ['Loan Officer', 'Realtor Agent', 'Joint / Simultaneous'] },
+          firstContactRationale: { type: Type.STRING },
+          loResponsibilities: {
+            type: Type.OBJECT,
+            properties: {
+              category: { type: Type.STRING },
+              identifiedTopics: { type: Type.ARRAY, items: { type: Type.STRING } },
+              extractedSnippets: { type: Type.ARRAY, items: { type: Type.STRING } },
+              recommendedResponsePoints: { type: Type.ARRAY, items: { type: Type.STRING } },
+              draftResponse: { type: Type.STRING }
+            },
+            required: ["identifiedTopics", "extractedSnippets", "recommendedResponsePoints", "draftResponse"]
+          },
+          agentResponsibilities: {
+            type: Type.OBJECT,
+            properties: {
+              category: { type: Type.STRING },
+              identifiedTopics: { type: Type.ARRAY, items: { type: Type.STRING } },
+              extractedSnippets: { type: Type.ARRAY, items: { type: Type.STRING } },
+              recommendedResponsePoints: { type: Type.ARRAY, items: { type: Type.STRING } },
+              draftResponse: { type: Type.STRING }
+            },
+            required: ["identifiedTopics", "extractedSnippets", "recommendedResponsePoints", "draftResponse"]
+          },
+          jointCoordinationNote: { type: Type.STRING },
+          emailSubject: { type: Type.STRING },
+          emailHtml: { type: Type.STRING },
+          emailText: { type: Type.STRING }
+        },
+        required: [
+          "summary",
+          "urgencyLevel",
+          "firstContactRecommendation",
+          "firstContactRationale",
+          "loResponsibilities",
+          "agentResponsibilities",
+          "jointCoordinationNote",
+          "emailSubject",
+          "emailHtml",
+          "emailText"
+        ]
+      }
+    };
+
+    const userPrompt = `Analyze lead note for property ${property.formattedAddress} ($${property.price}):
+Visitor: ${lead.visitorName} (${lead.visitorEmail}, ${lead.visitorPhone || 'no phone'})
+Contact Preference: ${lead.preferredContactMethod}
+Timeframe: ${lead.timeframe}
+Pre-Approval Status: ${lead.preApprovalStatus}
+Tour Requested: ${lead.tourRequested ? `Yes - preferred date: ${lead.preferredTourDate || 'flexible'}` : 'No'}
+DPA Grants Interest: ${lead.interestedInGrants ? 'Yes' : 'No'}
+Visitor Notes & Questions:
+"""
+${lead.notesAndQuestions || 'No notes submitted'}
+"""`;
+
+    let triageResult: any = null;
+    let modelUsed = "gemini-3.8-flash";
+
+    try {
+      const response = await generateResilientGeminiContent(userPrompt, apiConfig);
+      const text = response.text || "{}";
+      triageResult = JSON.parse(text);
+      triageResult.analyzedAt = new Date().toISOString();
+      triageResult.modelUsed = modelUsed;
+    } catch (aiErr: any) {
+      console.warn("Gemini lead triage error, falling back to cognitive structured parsing:", aiErr);
+      // Fallback structured generation
+      triageResult = {
+        summary: `${lead.visitorName} inquired regarding ${property.formattedAddress}.`,
+        urgencyLevel: lead.tourRequested ? 'high' : 'medium',
+        firstContactRecommendation: lead.tourRequested ? 'Realtor Agent' : 'Loan Officer',
+        firstContactRationale: lead.tourRequested 
+          ? `${agentName} should lock in property showing availability first.`
+          : `${loName} should verify financing and down payment assistance numbers first.`,
+        loResponsibilities: {
+          category: 'Loan Officer (Financing & Underwriting)',
+          identifiedTopics: ['Monthly Payment & Escrows', 'DPA Grant Eligibility', 'Pre-Approval Timeline'],
+          extractedSnippets: [lead.notesAndQuestions || 'Inquiry on listing financing.'],
+          recommendedResponsePoints: [
+            `Provide exact monthly P&I breakdown for $${property.price.toLocaleString()} purchase price.`,
+            'Check qualification for $15,400 OHCS / Lakeview 100% grant assistance.',
+            'Initiate digital pre-approval intake.'
+          ],
+          draftResponse: `Hi ${lead.visitorName}, this is ${loName} with ${loCompany} (NMLS #${loNmls}). I saw your note on ${property.formattedAddress} and am running the grant numbers for you now. When is a good time for a 5-minute pre-approval review?`
+        },
+        agentResponsibilities: {
+          category: 'Realtor Agent (Property & Showing)',
+          identifiedTopics: ['Property Characteristics', 'Tour / Walk-Through', 'Seller Concessions'],
+          extractedSnippets: [lead.notesAndQuestions || 'Property showing inquiry.'],
+          recommendedResponsePoints: [
+            `Confirm property availability at ${property.formattedAddress} (${property.bedrooms}bd/${property.bathrooms}ba).`,
+            lead.tourRequested ? `Coordinate showing schedule for ${lead.preferredTourDate || 'this week'}.` : 'Provide seller disclosures and comparable home sales.',
+            'Discuss seller credit strategies to offset closing costs.'
+          ],
+          draftResponse: `Hi ${lead.visitorName}! I'm ${agentName} with ${agentBrokerage}. Thanks for reaching out regarding ${property.formattedAddress}! I would love to schedule a tour and answer any questions about the home.`
+        },
+        jointCoordinationNote: `${agentName} confirms showing time and physical home details; ${loName} provides pre-approval letter and payment scenario.`,
+        emailSubject: `[NEW LEAD ALERT] 📍 ${property.formattedAddress} — ${lead.visitorName}`,
+        emailHtml: `<p>Lead submission for ${property.formattedAddress} from ${lead.visitorName}</p>`,
+        emailText: `Lead submission for ${property.formattedAddress} from ${lead.visitorName}`,
+        analyzedAt: new Date().toISOString(),
+        modelUsed: "fallback-resilient"
+      };
+    }
+
+    const dispatchedRecord = {
+      id: `lead_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      timestamp: new Date().toISOString(),
+      lead,
+      property: {
+        id: property.id,
+        address: property.formattedAddress,
+        price: property.price,
+        bedrooms: property.bedrooms,
+        bathrooms: property.bathrooms,
+        squareFootage: property.squareFootage,
+        daysOnMarket: property.daysOnMarket
+      },
+      triage: triageResult,
+      recipients: {
+        loEmail,
+        agentEmail: isSoloLoMode ? undefined : agentEmail,
+        isSoloLoMode
+      },
+      deliveryStatus: "dispatched_simulated"
+    };
+
+    capturedRealEstateLeadsStore.unshift(dispatchedRecord);
+    if (capturedRealEstateLeadsStore.length > 100) {
+      capturedRealEstateLeadsStore.pop();
+    }
+
+    console.log(`[Vantage Lead Email Dispatched] Lead from ${lead.visitorName} for ${property.formattedAddress} routed to LO: ${loEmail}${isSoloLoMode ? '' : ` & Agent: ${agentEmail}`}`);
+
+    return res.json({
+      status: "success",
+      triage: triageResult,
+      record: dispatchedRecord
+    });
+  } catch (err: any) {
+    console.error("Error processing real estate lead capture email:", err);
+    return res.status(500).json({ error: err.message || "Failed to process lead capture email" });
+  }
+});
+
+// GET all captured leads with AI triage records
+app.get("/api/realestate/captured-leads", (req, res) => {
+  return res.json({
+    status: "success",
+    leads: capturedRealEstateLeadsStore
+  });
+});
+
 app.post("/api/github/webhook", (req, res) => {
   const event = req.headers['x-github-event'] || 'push';
   const delivery = req.headers['x-github-delivery'] || 'test-delivery-id';

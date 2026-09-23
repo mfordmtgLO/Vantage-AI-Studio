@@ -36,7 +36,31 @@ export function getDefaultLiveBaseUrl(): string {
 }
 
 export const LEAD_MOBILE_PLUGIN_MODULES: LeadPluginModuleUrlInfo[] = [
-
+  {
+    id: 'plugin_cobranded_agent_pack',
+    pluginParam: 'geomap&lo=lo-mike-ford&agent=agent-kanndice-mclean&pack=geomap_brain_combo',
+    tabTarget: 'real_estate',
+    name: 'Co-Branded LO+Agent GeoMap & 2nd Brain Combo Pack',
+    shortName: 'Mike Ford + Kanndice McLean Pack',
+    badge: 'Agent Attraction • Co-Branded PWA',
+    iconName: 'Home',
+    tagline: 'Dual LO + Agent Co-Branded Portal with 2-Way Live SMS Relay & $0-Down Radar',
+    description: 'Turnkey co-branded partnership portal featuring Mike Ford (NMLS #288455) and Kanndice McLean (Realtor®). Includes interactive DPA grant waterfall, proactive geofence alerts, live 2-way text note relays with reply response function, and 2nd Brain cognitive mortgage/real estate memory.',
+    targetAudience: 'Top-Producing Realtors, Referral Agent Partners, First-Time Homebuyer Clients',
+    highlights: [
+      '🤝 Co-Branded LO (Mike Ford) & Realtor (Kanndice McLean) Dual Header HUD',
+      '📱 2-Way SMS Lead Notes Relay with In-App Text Reply Function',
+      '🚗 Proactive Geofence Proximity Radar (Alerts when lead drives near listings)',
+      '📊 Real-Time DTI, Max Payment, and $0-Down Grant Waterfall Simulations',
+      '🗺️ 1-Click Custom Low/No-Down Payment Saved Zillow Map Generation',
+      '🧠 2nd Brain AI Ingestion of Kanndice\'s MLS Listings & Showing Rules'
+    ],
+    smsPitchTemplate: 'Hi Kanndice! I customized our co-branded First-Time Homebuyer AI GeoMap & 2nd Brain Portal with your name, photo, and brokerage. All our listings have zero-down grant checkers and live 2-way text alert routing for both of us. Open this link and tap "Add to Home Screen" to install it: {URL}',
+    emailPitchTemplate: {
+      subject: 'Your Co-Branded AI Homebuyer & $0-Down Grant Portal is Live (Kanndice McLean + Mike Ford)',
+      body: 'Hi Kanndice,\n\nI built a custom-branded First-Time Homebuyer AI GeoMap & 2nd Brain Portal for you and your buyers:\n{URL}\n\nKey Capabilities Loaded for Your Business:\n• Co-Branded with your headshot, brokerage license, and direct showing buttons\n• Live USDA 100% Zero-Down and $5,000-$15,400 State DPA Grant Calculators\n• Instant 2-way SMS notification whenever a lead favorites a home, runs a DTI simulation, or drives near your listings\n• Text-back reply feature that posts your response straight into the buyer\'s app screen\n• 24/7 AI 2nd Brain answering buyer questions on your active inventory\n\nOpen the link on your phone to install it in 1 tap, or embed it on your website!\n\nBest regards,\nMike Ford (NMLS #288455)\nVantage AI Mortgage Services | fordmj@gmail.com'
+    }
+  },
   {
     id: 'plugin_suite_combo',
     pluginParam: 'suite',
@@ -167,12 +191,45 @@ export const LEAD_MOBILE_PLUGIN_MODULES: LeadPluginModuleUrlInfo[] = [
 export function buildLeadPluginUrl(
   pluginParam: string,
   baseUrl?: string,
-  options: { leadMode?: boolean; standalone?: boolean; bypassAuth?: boolean } = {}
+  options: {
+    leadMode?: boolean;
+    standalone?: boolean;
+    bypassAuth?: boolean;
+    lo?: string;
+    agent?: string;
+    pack?: string;
+  } = {}
 ): string {
   const targetBase = baseUrl || getDefaultLiveBaseUrl();
   const cleanBase = targetBase.replace(/\/+$/, '');
   const params = new URLSearchParams();
-  params.set('plugin', pluginParam);
+
+  // If pluginParam contains multiple query arguments (e.g. 'geomap&lo=lo-mike-ford&agent=agent-kanndice-mclean')
+  if (pluginParam.includes('&') || pluginParam.includes('=')) {
+    const rawParts = pluginParam.split('&');
+    rawParts.forEach((part, idx) => {
+      if (idx === 0 && !part.includes('=')) {
+        params.set('plugin', part);
+      } else if (part.includes('=')) {
+        const [k, ...vParts] = part.split('=');
+        params.set(k, vParts.join('='));
+      }
+    });
+  } else {
+    params.set('plugin', pluginParam);
+  }
+
+  // Explicit LO / Agent / Pack overrides take precedence
+  if (options.lo) {
+    params.set('lo', options.lo);
+  }
+  if (options.agent) {
+    params.set('agent', options.agent);
+  }
+  if (options.pack) {
+    params.set('pack', options.pack);
+  }
+
   if (options.leadMode ?? true) {
     params.set('lead', '1');
   }

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FirstTimeHomebuyerGeoPlugin } from './FirstTimeHomebuyerGeoPlugin';
 import { LeadDpaGrantStackerStudio } from './LeadDpaGrantStackerStudio';
 import { RealEstateLeadCaptureStudio } from './RealEstateLeadCaptureStudio';
+import { RealEstateLeadCaptureForm } from './RealEstateLeadCaptureForm';
 import { MortgageLoanProductManager } from './MortgageLoanProductManager';
 import { 
   Home, 
@@ -36,6 +37,7 @@ export const RealEstateMortgageView: React.FC<RealEstateMortgageViewProps> = ({
   onOpenByokDrawer
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'geomap' | 'loan_products' | 'dpa_stacker' | 'lead_capture'>('geomap');
+  const [leadCaptureMode, setLeadCaptureMode] = useState<'form' | 'crm'>('form');
   const [copiedEmbed, setCopiedEmbed] = useState(false);
   const isAdmin = isMikeFordAdmin(auth.currentUser);
 
@@ -182,7 +184,47 @@ export const RealEstateMortgageView: React.FC<RealEstateMortgageViewProps> = ({
       )}
 
       {activeSubTab === 'lead_capture' && (
-        <RealEstateLeadCaptureStudio />
+        <div className="space-y-4">
+          <div className="flex items-center justify-between bg-slate-900/60 p-2.5 rounded-2xl border border-slate-800">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setLeadCaptureMode('form')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                  leadCaptureMode === 'form'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Visitor Lead Capture Form & AI Email Triage</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setLeadCaptureMode('crm')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                  leadCaptureMode === 'crm'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Pre-Approval Intake & Pipeline CRM</span>
+              </button>
+            </div>
+
+            <div className="text-[11px] text-slate-400 hidden sm:flex items-center gap-1 font-medium">
+              <span>Simultaneous LO+Agent Email Dispatch with 2nd Brain Cognitive Parsing</span>
+            </div>
+          </div>
+
+          {leadCaptureMode === 'form' ? (
+            <RealEstateLeadCaptureForm embedded={true} />
+          ) : (
+            <RealEstateLeadCaptureStudio />
+          )}
+        </div>
       )}
 
       {/* Turnkey Commercial Distribution Bar */}
