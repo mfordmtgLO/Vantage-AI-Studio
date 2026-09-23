@@ -337,36 +337,38 @@ export default function App() {
     return (
       <ThemeProvider>
         <AccountPathwayProvider>
-          <MobileAdminDashboard 
-            onOpenDesktopView={() => {
-              const newUrl = window.location.pathname;
-              window.history.replaceState({}, document.title, newUrl);
-              setIsMobileAdminMode(false);
-              setViewMode('dashboard');
-            }}
-            onOpenPluginVault={() => {
-              const newUrl = window.location.pathname + '?tab=admin_plugins';
-              window.history.replaceState({}, document.title, newUrl);
-              setActiveTab('admin_plugins');
-              setIsMobileAdminMode(false);
-              setViewMode('dashboard');
-            }} 
-            onOpenShareLinksModal={() => setIsShareLinksModalOpen(true)}
-            onOpenPublicWebsite={() => {
-              setIsMobileAdminMode(false);
-              setViewMode('public');
-              try {
-                localStorage.setItem('vantage_view_mode', 'public');
-                window.history.replaceState({}, document.title, window.location.pathname + '?view=public');
-              } catch {}
-            }}
-            onLogout={handleLogout}
-          />
-          <ConnectWorkspaceModal />
-          <LeadMobileShareLinksModal
-            isOpen={isShareLinksModalOpen}
-            onClose={() => setIsShareLinksModalOpen(false)}
-          />
+          <div className="max-w-[100vw] w-full overflow-x-hidden min-h-screen">
+            <MobileAdminDashboard 
+              onOpenDesktopView={() => {
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+                setIsMobileAdminMode(false);
+                setViewMode('dashboard');
+              }}
+              onOpenPluginVault={() => {
+                const newUrl = window.location.pathname + '?tab=admin_plugins';
+                window.history.replaceState({}, document.title, newUrl);
+                setActiveTab('admin_plugins');
+                setIsMobileAdminMode(false);
+                setViewMode('dashboard');
+              }} 
+              onOpenShareLinksModal={() => setIsShareLinksModalOpen(true)}
+              onOpenPublicWebsite={() => {
+                setIsMobileAdminMode(false);
+                setViewMode('public');
+                try {
+                  localStorage.setItem('vantage_view_mode', 'public');
+                  window.history.replaceState({}, document.title, window.location.pathname + '?view=public');
+                } catch {}
+              }}
+              onLogout={handleLogout}
+            />
+            <ConnectWorkspaceModal />
+            <LeadMobileShareLinksModal
+              isOpen={isShareLinksModalOpen}
+              onClose={() => setIsShareLinksModalOpen(false)}
+            />
+          </div>
         </AccountPathwayProvider>
       </ThemeProvider>
     );
@@ -442,7 +444,7 @@ export default function App() {
     <ThemeProvider>
       <AccountPathwayProvider>
         <MemoryProvider>
-          <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased transition-colors duration-200">
+          <div className="min-h-screen max-w-[100vw] w-full overflow-x-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased transition-colors duration-200">
             {/* Mobile PWA Add-to-Home-Screen Dynamic Header Banner */}
             <MobileAddToHomeScreenBanner
               currentPluginName={getCurrentPluginTitle()}

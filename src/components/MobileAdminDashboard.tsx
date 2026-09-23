@@ -102,78 +102,83 @@ export const MobileAdminDashboard: React.FC<{
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-blue-600 overflow-x-hidden max-w-full w-full">
       {/* iPhone Dynamic Island & Top Bar */}
-      <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-2.5 sm:px-4 pt-3 sm:pt-4 pb-3 w-full max-w-full overflow-hidden">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 w-full max-w-full min-w-0">
-          <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto min-w-0">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20 shrink-0">
-                <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
+      <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-2.5 sm:px-4 pt-2.5 sm:pt-3 pb-2.5 w-full max-w-full overflow-hidden">
+        {/* Row 1: Top Bar Title + Immediately Visible Desktop & Logout Controls */}
+        <div className="flex items-center justify-between gap-2 w-full max-w-full min-w-0">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20 shrink-0">
+              <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
+            </div>
+            <div className="truncate min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                <span className="text-xs sm:text-sm font-bold tracking-tight text-white truncate max-w-[120px] xs:max-w-none">Mike Ford Admin</span>
+                <span className="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-semibold shrink-0">NMLS 288455</span>
               </div>
-              <div className="truncate min-w-0">
-                <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-                  <span className="text-xs sm:text-sm font-bold tracking-tight text-white truncate max-w-[130px] xs:max-w-none">Mike Ford Admin</span>
-                  <span className="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-semibold shrink-0">NMLS 288455</span>
-                </div>
-                <p className="text-[10px] sm:text-[11px] text-slate-400 truncate">Mobile Command Center</p>
-              </div>
+              <p className="text-[10px] sm:text-[11px] text-slate-400 truncate">Mobile Command Center</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none w-full max-w-full shrink-0 min-w-0">
-            {onOpenPublicWebsite && (
-              <button
-                onClick={onOpenPublicWebsite}
-                className="text-[10px] sm:text-[11px] font-semibold text-blue-300 hover:text-white bg-blue-950/70 hover:bg-blue-900/80 px-2 py-1.5 rounded-lg border border-blue-800/80 transition flex items-center gap-1 cursor-pointer shrink-0"
-                title="View Live Public Customer Facing Website"
-              >
-                <Globe className="w-3.5 h-3.5 text-blue-400" />
-                <span>Public Site</span>
-              </button>
-            )}
-            {onOpenPluginVault && (
-              <button
-                onClick={onOpenPluginVault}
-                className="text-[10px] sm:text-[11px] font-semibold text-purple-300 hover:text-white bg-purple-950/70 px-2 py-1.5 rounded-lg border border-purple-800/80 transition flex items-center gap-1 cursor-pointer shrink-0"
-                title="Open Plugin Archetypes Generator"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                <span>Plugins</span>
-              </button>
-            )}
-            {onOpenShareLinksModal && (
-              <button
-                onClick={onOpenShareLinksModal}
-                className="text-[10px] sm:text-[11px] font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 px-2 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1 cursor-pointer shrink-0"
-                title="Open Live Lead Mobile URLs & PWA Launchers"
-              >
-                <Share2 className="w-3.5 h-3.5 text-amber-300" />
-                <span>Lead URLs</span>
-              </button>
-            )}
+          {/* Right side controls: Desktop view + Logout permanently visible on screen! */}
+          <div className="flex items-center gap-1.5 shrink-0">
             {onOpenDesktopView && (
               <button
                 onClick={onOpenDesktopView}
-                className="text-[10px] sm:text-[11px] font-semibold text-slate-400 hover:text-white bg-slate-800/80 px-2 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1 cursor-pointer shrink-0"
+                className="text-[10px] sm:text-[11px] font-semibold text-slate-300 hover:text-white bg-slate-800/90 hover:bg-slate-700 px-2 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1 cursor-pointer shrink-0"
+                title="Switch to Desktop Mode"
               >
-                <Eye className="w-3.5 h-3.5" />
-                <span>Desktop</span>
+                <Eye className="w-3.5 h-3.5 text-slate-400" />
+                <span className="hidden xs:inline">Desktop</span>
               </button>
             )}
             {onLogout && (
               <button
                 onClick={onLogout}
-                className="text-[10px] sm:text-[11px] font-semibold text-rose-300 hover:text-white bg-rose-950/70 hover:bg-rose-900/80 px-2 py-1.5 rounded-lg border border-rose-800/80 transition flex items-center gap-1 cursor-pointer shrink-0"
+                className="text-[10px] sm:text-[11px] font-bold text-rose-200 hover:text-white bg-rose-950/80 hover:bg-rose-900 px-2.5 py-1.5 rounded-lg border border-rose-800/80 transition flex items-center gap-1 cursor-pointer shrink-0 shadow-xs"
                 title="Sign Out of Dashboard"
               >
-                <LogOut className="w-3.5 h-3.5" />
+                <LogOut className="w-3.5 h-3.5 text-rose-400" />
                 <span>Logout</span>
               </button>
             )}
           </div>
         </div>
 
+        {/* Row 2: Quick Launch Action Buttons in a non-overflowing 3-column grid */}
+        <div className="grid grid-cols-3 gap-1.5 mt-2 w-full max-w-full">
+          {onOpenPublicWebsite && (
+            <button
+              onClick={onOpenPublicWebsite}
+              className="text-[10px] sm:text-[11px] font-semibold text-blue-300 hover:text-white bg-blue-950/70 hover:bg-blue-900/80 py-1.5 px-1.5 sm:px-2.5 rounded-lg border border-blue-800/80 transition flex items-center justify-center gap-1 cursor-pointer truncate"
+              title="View Live Public Customer Facing Website"
+            >
+              <Globe className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+              <span className="truncate">Public Site</span>
+            </button>
+          )}
+          {onOpenPluginVault && (
+            <button
+              onClick={onOpenPluginVault}
+              className="text-[10px] sm:text-[11px] font-semibold text-purple-300 hover:text-white bg-purple-950/70 hover:bg-purple-900/80 py-1.5 px-1.5 sm:px-2.5 rounded-lg border border-purple-800/80 transition flex items-center justify-center gap-1 cursor-pointer truncate"
+              title="Open Plugin Archetypes Generator"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+              <span className="truncate">Plugins</span>
+            </button>
+          )}
+          {onOpenShareLinksModal && (
+            <button
+              onClick={onOpenShareLinksModal}
+              className="text-[10px] sm:text-[11px] font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 py-1.5 px-1.5 sm:px-2.5 rounded-lg shadow-xs transition flex items-center justify-center gap-1 cursor-pointer truncate"
+              title="Open Live Lead Mobile URLs & PWA Launchers"
+            >
+              <Share2 className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+              <span className="truncate">Lead URLs</span>
+            </button>
+          )}
+        </div>
+
         {/* Mobile Sub-Nav Pills */}
-        <div className="flex items-center gap-1.5 mt-2.5 overflow-x-auto pb-1 scrollbar-none w-full max-w-full min-w-0">
+        <div className="flex items-center gap-1.5 mt-2 overflow-x-auto pb-1 scrollbar-none w-full max-w-full min-w-0 touch-pan-x">
           <button
             onClick={() => setActiveTab('notes')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 shrink-0 ${

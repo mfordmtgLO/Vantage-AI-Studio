@@ -92,20 +92,20 @@ export const Navbar: React.FC<NavbarProps> = ({
   ];
 
   return (
-    <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 transition-colors duration-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+    <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 transition-colors duration-200 max-w-[100vw] overflow-x-hidden w-full">
+      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 max-w-[100vw] overflow-x-hidden">
+        <div className="flex items-center justify-between h-16 gap-2 max-w-[100vw] min-w-0">
+          <div className="flex items-center gap-2 shrink-0 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-blue-500/20 shrink-0">
               <Sparkles className="w-5 h-5" />
             </div>
-            <div>
-              <h1 className="text-base font-bold text-slate-900 dark:text-slate-100 leading-tight">Vantage AI Studio</h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Autonomous Plugin Modules & Commercial Suite</p>
+            <div className="min-w-0">
+              <h1 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100 leading-tight truncate">Vantage AI Studio</h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400 hidden md:block truncate">Autonomous Plugin Modules & Commercial Suite</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-none touch-pan-x whitespace-nowrap min-w-0 max-w-full py-1">
             {/* Dual Pathway Switcher & Workspace Connection Pill */}
             <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
               <button
@@ -383,8 +383,8 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Prominent Google Workspace 7-Apps Launcher Bar */}
-        <div className="pt-2 pb-1.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5">
+        <div className="pt-2 pb-1.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 max-w-full min-w-0">
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none touch-pan-x whitespace-nowrap py-0.5 max-w-full min-w-0">
             <span className="hidden xl:inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mr-1 shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
               7 Google Apps:
@@ -397,7 +397,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   key={app.id}
                   onClick={() => setActiveTab(app.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer shadow-2xs border ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer shadow-2xs border shrink-0 ${
                     isActive
                       ? `${app.activeClass} shadow-xs scale-[1.02]`
                       : 'bg-white dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200/90 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
@@ -418,7 +418,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Secondary Navigation: Autonomous AI Studios & Engines */}
-        <nav className="flex space-x-1 overflow-x-auto pb-2 scrollbar-none border-t border-slate-100/80 dark:border-slate-800/60 pt-1.5">
+        <nav className="flex items-center gap-1 overflow-x-auto pb-2 scrollbar-none touch-pan-x whitespace-nowrap border-t border-slate-100/80 dark:border-slate-800/60 pt-1.5 max-w-full min-w-0">
           <span className="hidden xl:inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mr-1 my-auto shrink-0">
             <Sparkles className="w-3 h-3 text-blue-500" />
             AI Studios:
