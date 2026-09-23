@@ -102,16 +102,16 @@ export const MobileAdminDashboard: React.FC<{
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-blue-600 overflow-x-hidden max-w-full w-full">
       {/* iPhone Dynamic Island & Top Bar */}
-      <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-3 sm:px-4 pt-3 sm:pt-4 pb-3 max-w-full overflow-hidden">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 max-w-full">
-          <div className="flex items-center justify-between sm:justify-start gap-2">
-            <div className="flex items-center gap-2">
+      <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-2.5 sm:px-4 pt-3 sm:pt-4 pb-3 w-full max-w-full overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 w-full max-w-full min-w-0">
+          <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
               <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20 shrink-0">
                 <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <div className="truncate">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-xs sm:text-sm font-bold tracking-tight text-white truncate">Mike Ford Admin</span>
+              <div className="truncate min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                  <span className="text-xs sm:text-sm font-bold tracking-tight text-white truncate max-w-[130px] xs:max-w-none">Mike Ford Admin</span>
                   <span className="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-semibold shrink-0">NMLS 288455</span>
                 </div>
                 <p className="text-[10px] sm:text-[11px] text-slate-400 truncate">Mobile Command Center</p>
@@ -119,7 +119,7 @@ export const MobileAdminDashboard: React.FC<{
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none max-w-full shrink-0">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none w-full max-w-full shrink-0 min-w-0">
             {onOpenPublicWebsite && (
               <button
                 onClick={onOpenPublicWebsite}
@@ -173,10 +173,10 @@ export const MobileAdminDashboard: React.FC<{
         </div>
 
         {/* Mobile Sub-Nav Pills */}
-        <div className="flex items-center gap-1.5 mt-2.5 overflow-x-auto pb-1 scrollbar-none max-w-full">
+        <div className="flex items-center gap-1.5 mt-2.5 overflow-x-auto pb-1 scrollbar-none w-full max-w-full min-w-0">
           <button
             onClick={() => setActiveTab('notes')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 shrink-0 ${
               activeTab === 'notes' ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-800/70 text-slate-400'
             }`}
           >
@@ -185,7 +185,7 @@ export const MobileAdminDashboard: React.FC<{
           </button>
           <button
             onClick={() => setActiveTab('customers')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 shrink-0 ${
               activeTab === 'customers' ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-800/70 text-slate-400'
             }`}
           >
@@ -194,7 +194,7 @@ export const MobileAdminDashboard: React.FC<{
           </button>
           <button
             onClick={() => setActiveTab('profile-cards')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 shrink-0 ${
               activeTab === 'profile-cards' ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-800/70 text-slate-400'
             }`}
           >
@@ -203,7 +203,7 @@ export const MobileAdminDashboard: React.FC<{
           </button>
           <button
             onClick={() => setActiveTab('quick-sms')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 shrink-0 ${
               activeTab === 'quick-sms' ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-800/70 text-slate-400'
             }`}
           >
@@ -212,7 +212,7 @@ export const MobileAdminDashboard: React.FC<{
           </button>
           <button
             onClick={() => setActiveTab('workspace')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 shrink-0 ${
               activeTab === 'workspace' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-800/70 text-slate-400'
             }`}
           >
@@ -221,7 +221,7 @@ export const MobileAdminDashboard: React.FC<{
           </button>
           <button
             onClick={() => setActiveTab('morph-suite')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 shrink-0 ${
               activeTab === 'morph-suite' ? 'bg-purple-600 text-white shadow-sm' : 'bg-slate-800/70 text-slate-400'
             }`}
           >
@@ -230,7 +230,7 @@ export const MobileAdminDashboard: React.FC<{
           </button>
           <button
             onClick={() => setActiveTab('commercial-releases')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 shrink-0 ${
               activeTab === 'commercial-releases' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-800/70 text-slate-400'
             }`}
           >
@@ -239,7 +239,7 @@ export const MobileAdminDashboard: React.FC<{
           </button>
           <button
             onClick={() => setActiveTab('cicd-status')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 shrink-0 ${
               activeTab === 'cicd-status' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-800/70 text-slate-400'
             }`}
           >
@@ -248,7 +248,7 @@ export const MobileAdminDashboard: React.FC<{
           </button>
           <button
             onClick={() => setActiveTab('settings')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 shrink-0 ${
               activeTab === 'settings' ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-800/70 text-slate-400'
             }`}
           >
@@ -258,14 +258,14 @@ export const MobileAdminDashboard: React.FC<{
         </div>
 
         {/* Quick Pathway Mobile Banner */}
-        <div className="flex items-center justify-between gap-2 mt-2.5 pt-2 border-t border-slate-800/80">
-          <div className="flex items-center gap-1.5">
-            <span className={`w-2 h-2 rounded-full ${pathway === 'workspace' ? 'bg-indigo-400' : 'bg-emerald-400 animate-pulse'}`}></span>
-            <span className="text-[11px] font-semibold text-slate-300">
+        <div className="flex items-center justify-between gap-2 mt-2.5 pt-2 border-t border-slate-800/80 w-full max-w-full min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className={`w-2 h-2 rounded-full shrink-0 ${pathway === 'workspace' ? 'bg-indigo-400' : 'bg-emerald-400 animate-pulse'}`}></span>
+            <span className="text-[11px] font-semibold text-slate-300 truncate">
               {pathway === 'workspace' ? 'Workspace Active' : 'Google Apps (Free)'}
             </span>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={() => syncData()}
               disabled={isSyncing}
