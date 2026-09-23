@@ -23,19 +23,29 @@ export const LeadMobileShareLinksModal: React.FC<LeadMobileShareLinksModalProps>
   onClose,
   initialPluginId
 }) => {
-  const [selectedBaseUrlType, setSelectedBaseUrlType] = useState<'shared' | 'dev' | 'custom'>('shared');
-  const [customBaseUrl, setCustomBaseUrl] = useState<string>('');
+  const [selectedBaseUrlType, setSelectedBaseUrlType] = useState<'current' | 'dev' | 'custom'>('current');
+  const [customBaseUrl, setCustomBaseUrl] = useState<string>(() => {
+    try {
+      return localStorage.getItem('vantage_custom_cloudrun_url') || '';
+    } catch {
+      return '';
+    }
+  });
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [expandedQrId, setExpandedQrId] = useState<string | null>(null);
-  const [activeTabFilter, setActiveTabFilter] = useState<string>('all');
+  const [activeTabFilter, setActiveTabFilter] = useState<string>(initialPluginId || 'all');
 
   if (!isOpen) return null;
 
-  const currentBaseUrl = selectedBaseUrlType === 'shared' 
-    ? SHARED_BASE_URL 
+  const liveOrigin = typeof window !== 'undefined' && window.location && window.location.origin
+    ? window.location.origin
+    : DEV_BASE_URL;
+
+  const currentBaseUrl = selectedBaseUrlType === 'current' 
+    ? liveOrigin 
     : selectedBaseUrlType === 'dev' 
     ? DEV_BASE_URL 
-    : (customBaseUrl || SHARED_BASE_URL);
+    : (customBaseUrl.trim() || liveOrigin);
 
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -44,6 +54,7 @@ export const LeadMobileShareLinksModal: React.FC<LeadMobileShareLinksModalProps>
       setCopiedKey(null);
     }, 2500);
   };
+
 
   const getIcon = (iconName: LeadPluginModuleUrlInfo['iconName']) => {
     switch (iconName) {
@@ -122,14 +133,15 @@ export const LeadMobileShareLinksModal: React.FC<LeadMobileShareLinksModalProps>
             </div>
             <div className="flex items-center gap-1.5 bg-white/10 p-1 rounded-xl border border-white/20">
               <button
-                onClick={() => setSelectedBaseUrlType('shared')}
-                className={`px-2.5 py-1 rounded-lg font-semibold transition cursor-pointer ${
-                  selectedBaseUrlType === 'shared' 
+                onClick={() => setSelectedBaseUrlType('current')}
+                className={`px-2.5 py-1 rounded-lg font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+                  selectedBaseUrlType === 'current' 
                     ? 'bg-white text-slate-900 shadow-xs' 
                     : 'text-white hover:bg-white/10'
                 }`}
               >
-                Shared App (Production)
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                Current Live URL (Active)
               </button>
               <button
                 onClick={() => setSelectedBaseUrlType('dev')}
@@ -149,7 +161,7 @@ export const LeadMobileShareLinksModal: React.FC<LeadMobileShareLinksModalProps>
                     : 'text-white hover:bg-white/10'
                 }`}
               >
-                Custom Domain
+                Cloud Run / Custom Domain
               </button>
             </div>
           </div>
@@ -159,12 +171,16 @@ export const LeadMobileShareLinksModal: React.FC<LeadMobileShareLinksModalProps>
               <input
                 type="text"
                 value={customBaseUrl}
-                onChange={(e) => setCustomBaseUrl(e.target.value)}
-                placeholder="https://yourdomain.com or https://app.vantageai.com"
+                onChange={(e) => {
+                  setCustomBaseUrl(e.target.value);
+                  try { localStorage.setItem('vantage_custom_cloudrun_url', e.target.value); } catch {}
+                }}
+                placeholder="https://vantage-ai-workspace-xxxx-uw.a.run.app or https://yourdomain.com"
                 className="w-full px-3 py-1.5 bg-white/10 border border-white/30 rounded-xl text-xs text-white placeholder-blue-200/60 focus:outline-none focus:ring-2 focus:ring-white"
               />
             </div>
           )}
+
         </div>
 
         {/* Filter Pills */}

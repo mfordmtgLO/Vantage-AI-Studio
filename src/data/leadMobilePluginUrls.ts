@@ -25,10 +25,18 @@ export interface LeadPluginModuleUrlInfo {
   };
 }
 
-export const SHARED_BASE_URL = 'https://ais-pre-ytqtpwssj6gdvjvqbsrbyo-427099073161.us-east5.run.app';
 export const DEV_BASE_URL = 'https://ais-dev-ytqtpwssj6gdvjvqbsrbyo-427099073161.us-east5.run.app';
+export const SHARED_BASE_URL = 'https://ais-pre-ytqtpwssj6gdvjvqbsrbyo-427099073161.us-east5.run.app';
+
+export function getDefaultLiveBaseUrl(): string {
+  if (typeof window !== 'undefined' && window.location && window.location.origin) {
+    return window.location.origin;
+  }
+  return DEV_BASE_URL;
+}
 
 export const LEAD_MOBILE_PLUGIN_MODULES: LeadPluginModuleUrlInfo[] = [
+
   {
     id: 'plugin_suite_combo',
     pluginParam: 'suite',
@@ -158,10 +166,11 @@ export const LEAD_MOBILE_PLUGIN_MODULES: LeadPluginModuleUrlInfo[] = [
 
 export function buildLeadPluginUrl(
   pluginParam: string,
-  baseUrl: string = SHARED_BASE_URL,
+  baseUrl?: string,
   options: { leadMode?: boolean; standalone?: boolean; bypassAuth?: boolean } = {}
 ): string {
-  const cleanBase = baseUrl.replace(/\/+$/, '');
+  const targetBase = baseUrl || getDefaultLiveBaseUrl();
+  const cleanBase = targetBase.replace(/\/+$/, '');
   const params = new URLSearchParams();
   params.set('plugin', pluginParam);
   if (options.leadMode ?? true) {
@@ -175,3 +184,4 @@ export function buildLeadPluginUrl(
   }
   return `${cleanBase}/?${params.toString()}`;
 }
+
