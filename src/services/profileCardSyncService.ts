@@ -40,6 +40,10 @@ export interface LoanOfficerProfileCard {
   syncedFromApp: string;
   pairedAgentIds?: string[];
   pairedAgents?: PairedAgentInfo[];
+  secondBrainLevel?: 'Level 1: Core Knowledge' | 'Level 2: Pro Investable Monthly' | 'Level 3: Ultra Executive Quarterly';
+  purchasedAddons?: string[];
+  deliveryCadence?: 'monthly' | 'quarterly' | 'bi_weekly' | 'daily';
+  assignedCronJobIds?: string[];
 }
 
 export interface AgentProfileCard {
@@ -59,6 +63,10 @@ export interface AgentProfileCard {
   syncedFromApp: string;
   pairedLoIds?: string[];
   pairedLoanOfficers?: PairedLoInfo[];
+  secondBrainLevel?: 'Level 1: Core Knowledge' | 'Level 2: Pro Investable Monthly' | 'Level 3: Ultra Executive Quarterly';
+  purchasedAddons?: string[];
+  deliveryCadence?: 'monthly' | 'quarterly' | 'bi_weekly' | 'daily';
+  assignedCronJobIds?: string[];
 }
 
 const LO_STORAGE_KEY = 'vantage_synced_lo_profiles_v2';
@@ -96,7 +104,11 @@ const DEFAULT_LO_PROFILES: LoanOfficerProfileCard[] = [
         coBrandedListingsCount: 8,
         pairingStatus: 'Preferred'
       }
-    ]
+    ],
+    secondBrainLevel: 'Level 3: Ultra Executive Quarterly',
+    purchasedAddons: ['Ingestion Daemon RSS Auto-Scrape', 'Google Workspace AI Agent Suite', 'Monthly Investable Asset Briefing'],
+    deliveryCadence: 'quarterly',
+    assignedCronJobIds: ['cron-gmail-synthesis', 'cron-calendar-timeblock']
   },
   {
     id: 'lo-sarah-jenkins',
@@ -122,7 +134,11 @@ const DEFAULT_LO_PROFILES: LoanOfficerProfileCard[] = [
         coBrandedListingsCount: 8,
         pairingStatus: 'Active Partner'
       }
-    ]
+    ],
+    secondBrainLevel: 'Level 2: Pro Investable Monthly',
+    purchasedAddons: ['Ingestion Daemon RSS Auto-Scrape', 'Monthly Investable Asset Briefing'],
+    deliveryCadence: 'monthly',
+    assignedCronJobIds: ['cron-sheets-rollup']
   },
   {
     id: 'lo-david-chen',

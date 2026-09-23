@@ -467,7 +467,29 @@ export const ProfileCardsAdminPortal: React.FC = () => {
                   </a>
                 </div>
 
-                <div className="flex justify-between items-center text-[10px] text-slate-500 font-mono">
+                {/* 2nd Brain Subscription Level & Add-ons Badge */}
+                <div className="mt-2 p-2.5 rounded-xl bg-indigo-950/40 border border-indigo-800/60 space-y-1">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="font-bold text-indigo-300 flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-amber-400" />
+                      {lo.secondBrainLevel || 'Level 1: Core Knowledge'}
+                    </span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-indigo-900/60 text-indigo-200 uppercase font-mono font-bold">
+                      {lo.deliveryCadence || 'monthly'}
+                    </span>
+                  </div>
+                  {lo.purchasedAddons && lo.purchasedAddons.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {lo.purchasedAddons.map(addon => (
+                        <span key={addon} className="text-[9px] px-1.5 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-800 font-mono">
+                          +{addon}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-between items-center text-[10px] text-slate-500 font-mono pt-1">
                   <span>Preapprovals: {lo.activePreapprovalsCount}</span>
                   <span>Synced: {new Date(lo.lastSyncedAt).toLocaleDateString()}</span>
                 </div>
@@ -607,7 +629,29 @@ export const ProfileCardsAdminPortal: React.FC = () => {
                   </a>
                 </div>
 
-                <div className="flex justify-between items-center text-[10px] text-slate-500 font-mono">
+                {/* 2nd Brain Subscription Level & Add-ons Badge */}
+                <div className="mt-2 p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-800/60 space-y-1">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="font-bold text-emerald-300 flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-amber-400" />
+                      {agent.secondBrainLevel || 'Level 1: Core Knowledge'}
+                    </span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-900/60 text-emerald-200 uppercase font-mono font-bold">
+                      {agent.deliveryCadence || 'monthly'}
+                    </span>
+                  </div>
+                  {agent.purchasedAddons && agent.purchasedAddons.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {agent.purchasedAddons.map(addon => (
+                        <span key={addon} className="text-[9px] px-1.5 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-800 font-mono">
+                          +{addon}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-between items-center text-[10px] text-slate-500 font-mono pt-1">
                   <span>Listings: {agent.activeListingsCount}</span>
                   <span>Synced: {new Date(agent.lastSyncedAt).toLocaleDateString()}</span>
                 </div>
