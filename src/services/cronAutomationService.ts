@@ -320,7 +320,7 @@ export function skipNextInstanceCronJob(id: string): ActiveCronJob[] {
           {
             id: `log_skip_${Date.now()}`,
             timestamp: 'Just now',
-            status: 'success',
+            status: 'success' as const,
             message: 'User skipped soonest instance. Future recurring schedule remains intact.'
           },
           ...job.executionLogs

@@ -55,6 +55,61 @@ export const GoogleAppsCronAutomationDeck: React.FC<GoogleAppsCronAutomationDeck
   // Selected App Filter
   const [selectedApp, setSelectedApp] = useState<GoogleAppId | 'all'>(initialAppId);
   
+  // Accordion & Sidebar Tabbed State
+  const [sidebarTab, setSidebarTab] = useState<'active' | 'catalog' | 'quota'>('active');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [expandedApps, setExpandedApps] = useState<Record<GoogleAppId, boolean>>({
+    gmail: true,
+    calendar: false,
+    drive: false,
+    sheets: false,
+    docs: false,
+    tasks: false,
+    contacts: false
+  });
+
+  const toggleAppAccordion = (appId: GoogleAppId) => {
+    setExpandedApps(prev => ({
+      ...prev,
+      [appId]: !prev[appId]
+    }));
+  };
+
+  const handleExpandAllApps = () => {
+    setExpandedApps({
+      gmail: true,
+      calendar: true,
+      drive: true,
+      sheets: true,
+      docs: true,
+      tasks: true,
+      contacts: true
+    });
+  };
+
+  const handleCollapseAllApps = () => {
+    setExpandedApps({
+      gmail: false,
+      calendar: false,
+      drive: false,
+      sheets: false,
+      docs: false,
+      tasks: false,
+      contacts: false
+    });
+  };
+
+  // Automatically expand target app when top tab selected
+  const handleSelectAppTab = (appId: GoogleAppId | 'all') => {
+    setSelectedApp(appId);
+    if (appId !== 'all') {
+      setExpandedApps(prev => ({
+        ...prev,
+        [appId]: true
+      }));
+    }
+  };
+  
   // Active Cron Jobs & Quota State
   const [activeJobs, setActiveJobs] = useState<ActiveCronJob[]>(() => getActiveCronJobs());
   const [quotaStatus, setQuotaStatus] = useState<DailyQuotaStatus>(() => getDailyQuotaStatus());
@@ -84,7 +139,7 @@ export const GoogleAppsCronAutomationDeck: React.FC<GoogleAppsCronAutomationDeck
   const [executingJobId, setExecutingJobId] = useState<string | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
-  const activeIndustryId = activePersona?.personalityPreset;
+  const activeIndustryId = activePersona?.title;
 
   // Resolve current ghost ideas based on selected app and active 2nd brain industry
   const effectiveAppForGhost: GoogleAppId = selectedApp === 'all' ? 'gmail' : selectedApp;
@@ -374,7 +429,7 @@ export const GoogleAppsCronAutomationDeck: React.FC<GoogleAppsCronAutomationDeck
       {/* 7 GOOGLE APPS SELECTOR TAB BAR */}
       <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-2">
         <button
-          onClick={() => setSelectedApp('all')}
+          onClick={() => handleSelectAppTab('all')}
           className={`px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border ${
             selectedApp === 'all'
               ? 'bg-slate-900 text-white border-slate-900 shadow-md dark:bg-white dark:text-slate-900'
@@ -392,7 +447,7 @@ export const GoogleAppsCronAutomationDeck: React.FC<GoogleAppsCronAutomationDeck
           return (
             <button
               key={appKey}
-              onClick={() => setSelectedApp(appKey)}
+              onClick={() => handleSelectAppTab(appKey)}
               className={`px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border ${
                 isSelected
                   ? `${meta.bgLight} ${meta.color} ${meta.borderColor} ring-2 ring-indigo-500/20 shadow-xs font-black`
@@ -595,34 +650,49 @@ export const GoogleAppsCronAutomationDeck: React.FC<GoogleAppsCronAutomationDeck
             )}
           </div>
 
-          {/* 3. PRE-CANNED READY-MADE CRON JOBS DROPDOWN & ACCORDION */}
+          {/* 3. PRE-CANNED ACCORDION DIRECTORY (ALL 7 INTEGRATED GOOGLE APPS) */}
           <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   <Clock className="w-4 h-4 text-blue-600" />
-                  Ready-Made Plug-and-Play Cron Jobs ({filteredReadyJobs.length})
+                  Google Workspace Apps Cron Templates Catalog (7 Apps)
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Pre-configured typical daily, weekly, and monthly jobs for all 7 Google Apps.
+                  Organized by Google App with ready-to-schedule typical daily, weekly, and monthly jobs.
                 </p>
               </div>
 
-              {/* Cadence Filter Tabs */}
-              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-                {(['All', 'Daily', 'Weekly', 'Monthly'] as const).map(cad => (
-                  <button
-                    key={cad}
-                    onClick={() => setReadyCadenceFilter(cad)}
-                    className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition cursor-pointer ${
-                      readyCadenceFilter === cad
-                        ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-                    }`}
-                  >
-                    {cad}
-                  </button>
-                ))}
+              {/* Controls & Cadence Filter Tabs */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={handleExpandAllApps}
+                  className="px-2.5 py-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 rounded-lg transition cursor-pointer"
+                >
+                  Expand All
+                </button>
+                <button
+                  onClick={handleCollapseAllApps}
+                  className="px-2.5 py-1 text-[11px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded-lg transition cursor-pointer"
+                >
+                  Collapse All
+                </button>
+                
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                  {(['All', 'Daily', 'Weekly', 'Monthly'] as const).map(cad => (
+                    <button
+                      key={cad}
+                      onClick={() => setReadyCadenceFilter(cad)}
+                      className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition cursor-pointer ${
+                        readyCadenceFilter === cad
+                          ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                      }`}
+                    >
+                      {cad}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -630,330 +700,494 @@ export const GoogleAppsCronAutomationDeck: React.FC<GoogleAppsCronAutomationDeck
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 p-3.5 rounded-xl border border-blue-200 dark:border-blue-900/60 flex items-start gap-2.5">
               <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
               <div className="text-xs text-slate-600 dark:text-slate-300">
-                <strong className="text-blue-900 dark:text-blue-200">AI Assistant Tip:</strong> You can enable any of these pre-canned jobs with one click. Vantage AI will automatically run the task in the background on your schedule, keeping your workspace synced.
+                <strong className="text-blue-900 dark:text-blue-200">AI Assistant Tip:</strong> Expand any Google App below to enable pre-canned jobs with one click. Vantage AI will automatically run tasks in the background on your schedule!
               </div>
             </div>
 
-            {/* Ready-Made Job Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {filteredReadyJobs.slice(0, 6).map(template => {
-                const meta = GOOGLE_APPS_METADATA[template.appId];
-                const Icon = getAppIcon(template.appId);
-                return (
-                  <div
-                    key={template.id}
-                    className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700 bg-slate-50/50 dark:bg-slate-950/50 transition flex flex-col justify-between space-y-3"
-                  >
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <span className={`p-1 rounded-md text-xs ${meta?.bgLight} ${meta?.color}`}>
-                            <Icon className="w-3.5 h-3.5" />
+            {/* Search Filter Box */}
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search templates across Gmail, Calendar, Drive, Sheets, Docs, Tasks, Contacts..."
+                className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+              />
+            </div>
+
+            {/* ACCORDIONS DIRECTORY FOR ALL 7 GOOGLE APPS */}
+            <div className="space-y-3 pt-1">
+              {(Object.keys(GOOGLE_APPS_METADATA) as GoogleAppId[])
+                .filter(appId => selectedApp === 'all' || selectedApp === appId)
+                .map(appId => {
+                  const meta = GOOGLE_APPS_METADATA[appId];
+                  const Icon = getAppIcon(appId);
+                  const appTemplates = READY_MADE_CRON_JOBS.filter(t => {
+                    const matchesApp = t.appId === appId;
+                    const matchesCadence = readyCadenceFilter === 'All' || t.cadence === readyCadenceFilter;
+                    const matchesSearch = !searchTerm || 
+                      t.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                      t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      t.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+                    return matchesApp && matchesCadence && matchesSearch;
+                  });
+
+                  if (appTemplates.length === 0 && searchTerm) return null;
+
+                  const isExpanded = !!expandedApps[appId];
+
+                  return (
+                    <div 
+                      key={appId}
+                      className="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-slate-50/40 dark:bg-slate-950/40 transition-all shadow-xs"
+                    >
+                      {/* Accordion Header */}
+                      <button
+                        onClick={() => toggleAppAccordion(appId)}
+                        className="w-full px-4 py-3.5 flex items-center justify-between bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition cursor-pointer"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className={`p-2 rounded-xl text-sm ${meta.bgLight} ${meta.color} border ${meta.borderColor}`}>
+                            <Icon className="w-4 h-4" />
                           </span>
-                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
-                            {template.appName}
+                          <div className="text-left">
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                                {meta.name}
+                              </h4>
+                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400">
+                                {appTemplates.length} Template{appTemplates.length === 1 ? '' : 's'}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                              {meta.tagline}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
+                            {isExpanded ? 'Collapse' : 'Expand templates'}
+                          </span>
+                          <span className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500">
+                            {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                           </span>
                         </div>
-                        <span className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 rounded-md text-[10px] font-bold">
-                          {template.cadence}
-                        </span>
-                      </div>
-                      <h4 className="text-xs font-bold text-slate-900 dark:text-white line-clamp-1">
-                        {template.title}
-                      </h4>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
-                        {template.description}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800/80">
-                      <span className="text-[10px] text-slate-400 font-medium">
-                        🕒 {template.defaultScheduleLabel}
-                      </span>
-                      <button
-                        onClick={() => handleScheduleReadyMade(template)}
-                        className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold rounded-lg shadow-xs transition flex items-center gap-1 cursor-pointer"
-                      >
-                        <Plus className="w-3 h-3" />
-                        <span>Schedule</span>
                       </button>
+
+                      {/* Accordion Content Grid */}
+                      {isExpanded && (
+                        <div className="p-4 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-950/70 grid grid-cols-1 md:grid-cols-3 gap-3">
+                          {appTemplates.map(template => (
+                            <div
+                              key={template.id}
+                              className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-indigo-400 dark:hover:border-indigo-600 transition flex flex-col justify-between space-y-3 shadow-xs"
+                            >
+                              <div className="space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                  <span className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 rounded-md text-[10px] font-bold">
+                                    {template.cadence}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 font-medium">
+                                    🕒 {template.defaultScheduleLabel}
+                                  </span>
+                                </div>
+                                <h5 className="text-xs font-bold text-slate-900 dark:text-white line-clamp-1">
+                                  {template.title}
+                                </h5>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                                  {template.description}
+                                </p>
+                              </div>
+
+                              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-1">
+                                <div className="flex flex-wrap gap-1">
+                                  {template.tags.slice(0, 2).map(tag => (
+                                    <span key={tag} className="text-[9px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded">
+                                      #{tag}
+                                    </span>
+                                  ))}
+                                </div>
+                                <button
+                                  onClick={() => handleScheduleReadyMade(template)}
+                                  className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold rounded-lg shadow-xs transition flex items-center gap-1 cursor-pointer shrink-0"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                  <span>Schedule</span>
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
             </div>
           </div>
         </div>
 
-        {/* RIGHT COLUMN (5 COLS): SCROLLABLE SIDEBAR-STYLE ACTIVE CRON JOBS & EXECUTION DECK */}
+        {/* RIGHT COLUMN (5 COLS): REFACTORED TABBED AUTOMATION SIDEBAR */}
         <div className="lg:col-span-5 space-y-4">
           
-          {/* VISUAL PROGRESS BAR & DAILY AGENT API QUOTA CARD */}
-          <div className="bg-white dark:bg-slate-900 p-4.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400">
-                  <Zap className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                    Agent API Daily Usage & Guardrails
-                  </h4>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                    Gemini & DeepSeek daily quota tracking
-                  </p>
-                </div>
-              </div>
-
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
-                quotaStatus.isExceeded
-                  ? 'bg-red-100 text-red-800 dark:bg-red-950/80 dark:text-red-300 animate-pulse'
-                  : quotaStatus.isApproaching
-                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300'
-                  : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300'
-              }`}>
-                {quotaStatus.isExceeded ? 'Limit Reached' : quotaStatus.isApproaching ? 'Approaching Limit' : 'Quota Active'}
-              </span>
-            </div>
-
-            {/* Meter 1: Personal User Daily Quota (Max 20) */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1 text-[11px]">
-                  👤 Your Personal Agent Calls
-                </span>
-                <span className="font-extrabold text-slate-900 dark:text-white text-xs">
-                  {quotaStatus.usedCount} <span className="text-slate-400 font-normal text-[10px]">/ 20 max</span>
-                </span>
-              </div>
-              <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden p-0.5 border border-slate-200/60 dark:border-slate-700/60">
-                <div 
-                  className={`h-full rounded-full transition-all duration-500 ${
-                    quotaStatus.usedCount >= 20
-                      ? 'bg-red-600'
-                      : quotaStatus.usedCount >= 15
-                      ? 'bg-amber-500'
-                      : 'bg-emerald-500'
-                  }`}
-                  style={{ width: `${Math.min(100, (quotaStatus.usedCount / 20) * 100)}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Meter 2: Total Combined Users System Usage (Max 50) */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1 text-[11px]">
-                  🌐 Combined Total System Usage
-                </span>
-                <span className="font-extrabold text-slate-900 dark:text-white text-xs">
-                  {quotaStatus.globalUsedCount} <span className="text-slate-400 font-normal text-[10px]">/ 50 max</span>
-                </span>
-              </div>
-              <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden p-0.5 border border-slate-200/60 dark:border-slate-700/60">
-                <div 
-                  className={`h-full rounded-full transition-all duration-500 ${
-                    quotaStatus.globalUsedCount >= 50
-                      ? 'bg-red-600'
-                      : quotaStatus.globalUsedCount >= 40
-                      ? 'bg-amber-500'
-                      : 'bg-indigo-500'
-                  }`}
-                  style={{ width: `${Math.min(100, (quotaStatus.globalUsedCount / 50) * 100)}%` }}
-                />
-              </div>
-            </div>
-
-            {/* ALERT NOTIFICATION BANNERS */}
-            {quotaStatus.isExceeded ? (
-              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900/60 flex items-start gap-2 text-xs text-red-800 dark:text-red-200">
-                <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-                <div className="space-y-0.5">
-                  <strong className="font-bold block text-red-900 dark:text-red-100">
-                    Max for the day reached — try again tomorrow!
-                  </strong>
-                  <p className="text-[11px] leading-snug opacity-90">
-                    {quotaStatus.isGlobalExceeded 
-                      ? "Total combined users daily API limit reached (50/50 calls used today). Max for the day, please try again tomorrow!"
-                      : "Your personal daily task limit reached (20/20 tasks used). Max for the day, please try again tomorrow!"}
-                  </p>
-                </div>
-              </div>
-            ) : quotaStatus.isApproaching ? (
-              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-900/60 flex items-start gap-2 text-xs text-amber-800 dark:text-amber-200">
-                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <div className="space-y-0.5">
-                  <strong className="font-bold block text-amber-900 dark:text-amber-100">
-                    Approaching Daily Quota Capacity
-                  </strong>
-                  <p className="text-[11px] leading-snug opacity-90">
-                    {quotaStatus.usedCount >= 15
-                      ? `You are approaching your personal daily limit (${quotaStatus.usedCount}/20 tasks used).`
-                      : `System is approaching total combined daily capacity (${quotaStatus.globalUsedCount}/50 calls used).`}
-                  </p>
-                </div>
-              </div>
-            ) : null}
-          </div>
-
-          <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col h-[620px]">
+          <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col min-h-[660px]">
             
-            {/* Sidebar Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 shrink-0">
-              <div>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-emerald-600" />
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                    Active Cron Jobs ({filteredActiveJobs.length})
-                  </h3>
-                </div>
-                <p className="text-[11px] text-slate-500 mt-0.5">
-                  Live monitoring, execution logs & scope controls
-                </p>
-              </div>
+            {/* SIDEBAR NAVIGATION TAB BAR */}
+            <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl mb-4 shrink-0">
+              <button
+                onClick={() => setSidebarTab('active')}
+                className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                  sidebarTab === 'active'
+                    ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                }`}
+              >
+                <Clock className="w-3.5 h-3.5" />
+                <span>Active ({filteredActiveJobs.length})</span>
+              </button>
 
-              <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 rounded-md">
-                {activeJobs.filter(j => j.status === 'active').length} Running
-              </span>
+              <button
+                onClick={() => setSidebarTab('catalog')}
+                className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                  sidebarTab === 'catalog'
+                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>Templates (21)</span>
+              </button>
+
+              <button
+                onClick={() => setSidebarTab('quota')}
+                className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                  sidebarTab === 'quota'
+                    ? 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                }`}
+              >
+                <Zap className="w-3.5 h-3.5" />
+                <span>Guardrails</span>
+              </button>
             </div>
 
-            {/* Scrollable Active Jobs List */}
-            <div className="flex-1 overflow-y-auto pr-1 space-y-3 mt-3">
-              {filteredActiveJobs.length === 0 ? (
-                <div className="p-8 text-center text-slate-400 space-y-2">
-                  <Clock className="w-8 h-8 mx-auto text-slate-300" />
-                  <p className="text-xs">No active cron jobs found for this filter.</p>
-                  <p className="text-[11px] text-slate-500">Pick a ready-made job on the left or submit a custom request!</p>
+            {/* TAB CONTENT 1: LIVE ACTIVE CRON JOBS */}
+            {sidebarTab === 'active' && (
+              <div className="flex-1 flex flex-col min-h-0">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 shrink-0">
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                      Live Active Automations
+                    </h3>
+                    <p className="text-[10px] text-slate-500 mt-0.5">
+                      Real-time triggers, logs & scope editing
+                    </p>
+                  </div>
+                  <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 rounded-md">
+                    {activeJobs.filter(j => j.status === 'active').length} Running
+                  </span>
                 </div>
-              ) : (
-                filteredActiveJobs.map(job => {
-                  const meta = GOOGLE_APPS_METADATA[job.appId];
-                  const Icon = getAppIcon(job.appId);
-                  const isExecuting = executingJobId === job.id;
 
-                  return (
-                    <div
-                      key={job.id}
-                      className={`p-4 rounded-xl border transition space-y-3 ${
-                        job.status === 'paused'
-                          ? 'bg-slate-50 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800 opacity-60'
-                          : job.status === 'skipped_next'
-                          ? 'bg-amber-50/40 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800'
-                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-xs hover:border-indigo-300'
-                      }`}
-                    >
-                      {/* Job Header */}
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-start gap-2">
-                          <span className={`p-1.5 rounded-lg text-xs mt-0.5 ${meta?.bgLight} ${meta?.color}`}>
-                            <Icon className="w-3.5 h-3.5" />
-                          </span>
-                          <div>
-                            <h4 className="text-xs font-bold text-slate-900 dark:text-white leading-tight">
-                              {job.title}
-                            </h4>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-[10px] text-slate-500 font-medium">
-                                📅 {job.scheduleDescription}
+                <div className="flex-1 overflow-y-auto pr-1 space-y-3 mt-3 max-h-[540px]">
+                  {filteredActiveJobs.length === 0 ? (
+                    <div className="p-8 text-center text-slate-400 space-y-2">
+                      <Clock className="w-8 h-8 mx-auto text-slate-300" />
+                      <p className="text-xs font-bold text-slate-700 dark:text-slate-300">No active cron jobs found.</p>
+                      <p className="text-[11px] text-slate-500">Select a template from the Catalog tab or submit a request on the left!</p>
+                      <button
+                        onClick={() => setSidebarTab('catalog')}
+                        className="mt-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition cursor-pointer"
+                      >
+                        Browse Pre-Canned Catalog
+                      </button>
+                    </div>
+                  ) : (
+                    filteredActiveJobs.map(job => {
+                      const meta = GOOGLE_APPS_METADATA[job.appId];
+                      const Icon = getAppIcon(job.appId);
+                      const isExecuting = executingJobId === job.id;
+
+                      return (
+                        <div
+                          key={job.id}
+                          className={`p-3.5 rounded-xl border transition space-y-2.5 ${
+                            job.status === 'paused'
+                              ? 'bg-slate-50 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800 opacity-60'
+                              : job.status === 'skipped_next'
+                              ? 'bg-amber-50/40 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800'
+                              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-xs hover:border-indigo-300'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-start gap-2">
+                              <span className={`p-1.5 rounded-lg text-xs mt-0.5 ${meta?.bgLight} ${meta?.color}`}>
+                                <Icon className="w-3.5 h-3.5" />
                               </span>
-                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md uppercase tracking-wider ${
-                                job.status === 'active'
-                                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                                  : job.status === 'skipped_next'
-                                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                                  : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                              }`}>
-                                {job.status === 'skipped_next' ? 'Skipped Soonest' : job.status}
+                              <div>
+                                <h4 className="text-xs font-bold text-slate-900 dark:text-white leading-tight">
+                                  {job.title}
+                                </h4>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="text-[10px] text-slate-500 font-medium">
+                                    📅 {job.scheduleDescription}
+                                  </span>
+                                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md uppercase tracking-wider ${
+                                    job.status === 'active'
+                                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                      : job.status === 'skipped_next'
+                                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                                      : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                  }`}>
+                                    {job.status === 'skipped_next' ? 'Skipped Soonest' : job.status}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <p className="text-[10px] text-slate-600 dark:text-slate-300 line-clamp-2 bg-slate-50 dark:bg-slate-950 p-2 rounded-lg border border-slate-100 dark:border-slate-800 font-mono">
+                            "{job.prompt}"
+                          </p>
+
+                          <div className="flex items-center justify-between text-[10px] text-slate-400">
+                            <span>Next: <strong className="text-slate-700 dark:text-slate-200">{job.nextRunTime}</strong></span>
+                            {job.lastRunTime && (
+                              <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                                Last: {job.lastRunTime}
                               </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center justify-between gap-1 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                            <button
+                              onClick={() => handleTriggerRunNow(job.id)}
+                              disabled={isExecuting}
+                              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-[10px] font-bold rounded-lg transition flex items-center gap-1 cursor-pointer"
+                              title="Trigger immediate test execution of this cron job"
+                            >
+                              {isExecuting ? (
+                                <RefreshCw className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Play className="w-3 h-3 fill-current" />
+                              )}
+                              <span>Run Now</span>
+                            </button>
+
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleTogglePause(job.id)}
+                                className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-white bg-slate-100 dark:bg-slate-800 rounded-lg transition cursor-pointer"
+                                title={job.status === 'active' ? 'Pause cron job' : 'Resume cron job'}
+                              >
+                                {job.status === 'active' ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                              </button>
+
+                              <button
+                                onClick={() => handleSkipNext(job.id)}
+                                className="p-1.5 text-amber-600 hover:text-amber-800 bg-amber-50 dark:bg-amber-950/50 rounded-lg transition cursor-pointer"
+                                title="Skip the soonest run instance"
+                              >
+                                <SkipForward className="w-3.5 h-3.5" />
+                              </button>
+
+                              <button
+                                onClick={() => handleOpenEdit(job)}
+                                className="p-1.5 text-blue-600 hover:text-blue-800 bg-blue-50 dark:bg-blue-950/50 rounded-lg transition cursor-pointer"
+                                title="Edit prompt scope and schedule parameters"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+
+                              <button
+                                onClick={() => setViewingLogsJob(job)}
+                                className="p-1.5 text-indigo-600 hover:text-indigo-800 bg-indigo-50 dark:bg-indigo-950/50 rounded-lg transition cursor-pointer"
+                                title="View execution logs & audit history"
+                              >
+                                <Info className="w-3.5 h-3.5" />
+                              </button>
+
+                              <button
+                                onClick={() => handleDelete(job.id)}
+                                className="p-1.5 text-red-500 hover:text-red-700 bg-red-50 dark:bg-red-950/50 rounded-lg transition cursor-pointer"
+                                title="Delete cron job"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           </div>
                         </div>
-                      </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
 
-                      {/* Prompt Summary */}
-                      <p className="text-[11px] text-slate-600 dark:text-slate-300 line-clamp-2 bg-slate-50 dark:bg-slate-950 p-2 rounded-lg border border-slate-100 dark:border-slate-800 font-mono text-[10px]">
-                        "{job.prompt}"
-                      </p>
+            {/* TAB CONTENT 2: SIDEBAR GOOGLE APPS CATALOG ACCORDIONS */}
+            {sidebarTab === 'catalog' && (
+              <div className="flex-1 flex flex-col min-h-0">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 shrink-0">
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <Layers className="w-3.5 h-3.5 text-indigo-600" />
+                      Quick Pre-Canned Catalog
+                    </h3>
+                    <p className="text-[10px] text-slate-500 mt-0.5">
+                      1-click schedule templates directly from sidebar
+                    </p>
+                  </div>
+                  <span className="px-2 py-0.5 text-[10px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 rounded-md">
+                    21 Pre-Canned Jobs
+                  </span>
+                </div>
 
-                      {/* Next / Last Run Indicators */}
-                      <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1">
-                        <span>Next: <strong className="text-slate-700 dark:text-slate-200">{job.nextRunTime}</strong></span>
-                        {job.lastRunTime && (
-                          <span className="text-emerald-600 dark:text-emerald-400">
-                            Last: {job.lastRunTime} (Success)
-                          </span>
-                        )}
-                      </div>
+                <div className="flex-1 overflow-y-auto pr-1 space-y-2 mt-3 max-h-[540px]">
+                  {(Object.keys(GOOGLE_APPS_METADATA) as GoogleAppId[]).map(appId => {
+                    const meta = GOOGLE_APPS_METADATA[appId];
+                    const Icon = getAppIcon(appId);
+                    const templates = READY_MADE_CRON_JOBS.filter(t => t.appId === appId);
+                    const isOpen = !!expandedApps[appId];
 
-                      {/* Action Controls Bar */}
-                      <div className="flex items-center justify-between gap-1 pt-2 border-t border-slate-100 dark:border-slate-800/80">
-                        {/* Run Now Button */}
+                    return (
+                      <div key={appId} className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-slate-50/50 dark:bg-slate-950/50">
                         <button
-                          onClick={() => handleTriggerRunNow(job.id)}
-                          disabled={isExecuting}
-                          className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-[10px] font-bold rounded-lg transition flex items-center gap-1 cursor-pointer"
-                          title="Trigger immediate test execution of this cron job"
+                          onClick={() => toggleAppAccordion(appId)}
+                          className="w-full p-2.5 flex items-center justify-between bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition cursor-pointer"
                         >
-                          {isExecuting ? (
-                            <RefreshCw className="w-3 h-3 animate-spin" />
-                          ) : (
-                            <Play className="w-3 h-3 fill-current" />
-                          )}
-                          <span>Run Now</span>
+                          <div className="flex items-center gap-2">
+                            <span className={`p-1 rounded-md text-xs ${meta.bgLight} ${meta.color}`}>
+                              <Icon className="w-3.5 h-3.5" />
+                            </span>
+                            <span className="text-xs font-bold text-slate-900 dark:text-white">
+                              {meta.name}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded font-semibold">
+                              3 Templates
+                            </span>
+                            {isOpen ? <ChevronDown className="w-3.5 h-3.5 text-slate-400" /> : <ChevronRight className="w-3.5 h-3.5 text-slate-400" />}
+                          </div>
                         </button>
 
-                        <div className="flex items-center gap-1">
-                          {/* Pause / Resume */}
-                          <button
-                            onClick={() => handleTogglePause(job.id)}
-                            className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-white bg-slate-100 dark:bg-slate-800 rounded-lg transition cursor-pointer"
-                            title={job.status === 'active' ? 'Pause cron job' : 'Resume cron job'}
-                          >
-                            {job.status === 'active' ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                          </button>
-
-                          {/* Skip Next Instance */}
-                          <button
-                            onClick={() => handleSkipNext(job.id)}
-                            className="p-1.5 text-amber-600 hover:text-amber-800 bg-amber-50 dark:bg-amber-950/50 rounded-lg transition cursor-pointer"
-                            title="Skip the soonest run instance (leaves future recurring runs intact)"
-                          >
-                            <SkipForward className="w-3.5 h-3.5" />
-                          </button>
-
-                          {/* Edit Scope */}
-                          <button
-                            onClick={() => handleOpenEdit(job)}
-                            className="p-1.5 text-blue-600 hover:text-blue-800 bg-blue-50 dark:bg-blue-950/50 rounded-lg transition cursor-pointer"
-                            title="Edit prompt scope and schedule parameters"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
-
-                          {/* View Logs */}
-                          <button
-                            onClick={() => setViewingLogsJob(job)}
-                            className="p-1.5 text-indigo-600 hover:text-indigo-800 bg-indigo-50 dark:bg-indigo-950/50 rounded-lg transition cursor-pointer"
-                            title="View execution logs & audit history"
-                          >
-                            <Info className="w-3.5 h-3.5" />
-                          </button>
-
-                          {/* Delete */}
-                          <button
-                            onClick={() => handleDelete(job.id)}
-                            className="p-1.5 text-red-500 hover:text-red-700 bg-red-50 dark:bg-red-950/50 rounded-lg transition cursor-pointer"
-                            title="Delete cron job"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                        {isOpen && (
+                          <div className="p-2 space-y-2 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800">
+                            {templates.map(tpl => (
+                              <div key={tpl.id} className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                  <h5 className="text-[11px] font-bold text-slate-900 dark:text-white line-clamp-1">
+                                    {tpl.title}
+                                  </h5>
+                                  <span className="text-[9px] font-bold px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-300 rounded">
+                                    {tpl.cadence}
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-2">
+                                  {tpl.description}
+                                </p>
+                                <div className="pt-1 flex items-center justify-between">
+                                  <span className="text-[9px] text-slate-400">🕒 {tpl.defaultScheduleLabel}</span>
+                                  <button
+                                    onClick={() => handleScheduleReadyMade(tpl)}
+                                    className="px-2 py-0.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold rounded transition cursor-pointer flex items-center gap-1"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                    <span>Schedule</span>
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* TAB CONTENT 3: QUOTA & GUARDRAILS METRICS */}
+            {sidebarTab === 'quota' && (
+              <div className="flex-1 flex flex-col min-h-0 space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 shrink-0">
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5 text-amber-500" />
+                      API Daily Quota Guardrails
+                    </h3>
+                    <p className="text-[10px] text-slate-500 mt-0.5">
+                      Enforced hard limits to prevent runaway API pulls
+                    </p>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase ${
+                    quotaStatus.isExceeded ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'
+                  }`}>
+                    {quotaStatus.isExceeded ? 'Limit Reached' : 'Quota Active'}
+                  </span>
+                </div>
+
+                <div className="space-y-4 text-xs">
+                  {/* Meter 1: Personal User Daily Quota (Max 20) */}
+                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1 text-xs">
+                        👤 Your Personal Daily Quota
+                      </span>
+                      <span className="font-extrabold text-slate-900 dark:text-white">
+                        {quotaStatus.usedCount} / 20 calls
+                      </span>
                     </div>
-                  );
-                })
-              )}
-            </div>
+                    <div className="w-full bg-slate-200 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          quotaStatus.usedCount >= 20 ? 'bg-red-600' : quotaStatus.usedCount >= 15 ? 'bg-amber-500' : 'bg-emerald-500'
+                        }`}
+                        style={{ width: `${Math.min(100, (quotaStatus.usedCount / 20) * 100)}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-500">
+                      Resets automatically every 24 hours at midnight UTC.
+                    </p>
+                  </div>
+
+                  {/* Meter 2: Total Combined System Daily Quota (Max 50) */}
+                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1 text-xs">
+                        🌐 Combined System-Wide Quota
+                      </span>
+                      <span className="font-extrabold text-slate-900 dark:text-white">
+                        {quotaStatus.globalUsedCount} / 50 calls
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-200 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          quotaStatus.globalUsedCount >= 50 ? 'bg-red-600' : quotaStatus.globalUsedCount >= 40 ? 'bg-amber-500' : 'bg-indigo-500'
+                        }`}
+                        style={{ width: `${Math.min(100, (quotaStatus.globalUsedCount / 50) * 100)}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-500">
+                      System-wide hard stop protecting against overall project limit exhaustion.
+                    </p>
+                  </div>
+
+                  {/* Alerts */}
+                  {quotaStatus.isExceeded && (
+                    <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900 text-red-800 dark:text-red-200 space-y-1">
+                      <strong className="font-bold block text-xs">Quota Reached — Try Again Tomorrow!</strong>
+                      <p className="text-[11px] leading-relaxed opacity-90">
+                        {quotaStatus.warningMessage || "Daily limit reached. Please try again tomorrow!"}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
           </div>
         </div>
 
