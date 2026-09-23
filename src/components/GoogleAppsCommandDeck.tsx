@@ -258,6 +258,15 @@ export const GoogleAppsCommandDeck: React.FC<GoogleAppsCommandDeckProps> = ({
             </button>
           </div>
 
+          <button
+            onClick={() => onSelectTab('scheduler')}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 rounded-xl transition cursor-pointer border border-indigo-200 dark:border-indigo-800 shadow-xs"
+            title="Open Autonomous Cron Automation Deck for all 7 Google Apps"
+          >
+            <Zap className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+            <span>Cron Automations (7 Apps)</span>
+          </button>
+
           {onRefresh && (
             <button
               onClick={onRefresh}

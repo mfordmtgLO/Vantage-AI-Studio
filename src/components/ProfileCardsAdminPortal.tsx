@@ -208,13 +208,13 @@ export const ProfileCardsAdminPortal: React.FC = () => {
   return (
     <div className="space-y-5 antialiased text-slate-100">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 p-5 rounded-3xl border border-slate-800 shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 p-4 sm:p-5 rounded-3xl border border-slate-800 shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 max-w-full overflow-hidden">
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="p-2 rounded-xl bg-blue-600/30 text-blue-400 border border-blue-500/40">
-              <Users className="w-5 h-5" />
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="p-1.5 sm:p-2 rounded-xl bg-blue-600/30 text-blue-400 border border-blue-500/40">
+              <Users className="w-4 h-4 sm:w-5 sm:h-5" />
             </span>
-            <h2 className="text-lg font-bold text-white tracking-tight">
+            <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
               Profile Cards Admin Portal
             </h2>
             <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[10px] font-bold">
@@ -227,34 +227,34 @@ export const ProfileCardsAdminPortal: React.FC = () => {
         </div>
 
         {/* Sync Action Buttons */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="grid grid-cols-3 sm:flex items-center gap-2 shrink-0 w-full sm:w-auto">
           <button
             type="button"
             onClick={handleSyncLos}
             disabled={isSyncingLos}
-            className="px-3.5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-blue-600/30 cursor-pointer disabled:opacity-50"
+            className="px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-[11px] sm:text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-lg shadow-blue-600/30 cursor-pointer disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isSyncingLos ? 'animate-spin' : ''}`} />
-            <span>{isSyncingLos ? 'Syncing LOs...' : 'Sync LOs'}</span>
+            <span className="truncate">{isSyncingLos ? 'Syncing...' : 'Sync LOs'}</span>
           </button>
 
           <button
             type="button"
             onClick={handleSyncAgents}
             disabled={isSyncingAgents}
-            className="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-emerald-600/30 cursor-pointer disabled:opacity-50"
+            className="px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] sm:text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/30 cursor-pointer disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isSyncingAgents ? 'animate-spin' : ''}`} />
-            <span>{isSyncingAgents ? 'Syncing Agents...' : 'Sync Agents'}</span>
+            <span className="truncate">{isSyncingAgents ? 'Syncing...' : 'Sync Agents'}</span>
           </button>
 
           <button
             type="button"
             onClick={() => setShowAddModal(true)}
-            className="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+            className="px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] sm:text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5 text-blue-400" />
-            <span>Add Card</span>
+            <span className="truncate">Add Card</span>
           </button>
         </div>
       </div>

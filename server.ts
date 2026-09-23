@@ -967,6 +967,159 @@ Generate 2 to 3 logical next steps. For each recommendation:
   }
 });
 
+// Server-side Global Combined API Daily Usage Tracker (Max 50 total across all users)
+let globalApiDailyCount = 14; // Default starting count for server session
+let globalApiDateKey = new Date().toISOString().split('T')[0];
+
+function getGlobalServerQuota() {
+  const today = new Date().toISOString().split('T')[0];
+  if (globalApiDateKey !== today) {
+    globalApiDateKey = today;
+    globalApiCountReset();
+  }
+  return {
+    dateKey: today,
+    globalUsedCount: globalApiDailyCount,
+    globalMaxLimit: 50,
+    isGlobalExceeded: globalApiDailyCount >= 50,
+    isApproaching: globalApiDailyCount >= 40
+  };
+}
+
+function globalApiCountReset() {
+  globalApiDailyCount = 0;
+}
+
+function incrementGlobalServerQuota(amount = 1) {
+  getGlobalServerQuota();
+  globalApiDailyCount = Math.min(50, globalApiDailyCount + amount);
+  return getGlobalServerQuota();
+}
+
+app.get("/api/cron/quota", (req, res) => {
+  res.json(getGlobalServerQuota());
+});
+
+// Vantage Google Apps Cron Automation Decomposition Endpoint
+app.post("/api/cron/decompose", async (req, res) => {
+  try {
+    const { userRequest, activeAppId = 'gmail', activeIndustryId, quotaUsed = 0 } = req.body;
+    const customGeminiKey = (req.headers["x-gemini-api-key"] as string) || (req.headers["authorization"]?.replace(/^Bearer\s+/i, "")) || undefined;
+
+    if (!userRequest || typeof userRequest !== 'string' || !userRequest.trim()) {
+      return res.status(400).json({ error: "userRequest string is required" });
+    }
+
+    const globalQuota = getGlobalServerQuota();
+
+    // Check global combined users quota (50 max)
+    if (globalQuota.isGlobalExceeded) {
+      return res.status(429).json({ 
+        error: "Total combined users daily API limit reached (50/50 calls used today). Max for the day, please try again tomorrow!",
+        isGlobalExceeded: true,
+        quotaExceeded: true,
+        globalUsedCount: globalQuota.globalUsedCount,
+        globalMaxLimit: globalQuota.globalMaxLimit
+      });
+    }
+
+    // Check user daily quota (20 max)
+    if (quotaUsed >= 20) {
+      return res.status(429).json({ 
+        error: "Your personal daily quota limit reached (20/20 tasks used). Max for the day, please try again tomorrow!",
+        isExceeded: true,
+        quotaExceeded: true
+      });
+    }
+
+    // Increment global server quota
+    incrementGlobalServerQuota(1);
+
+    const appMap: Record<string, string> = {
+      gmail: 'Gmail',
+      calendar: 'Google Calendar',
+      drive: 'Google Drive',
+      sheets: 'Google Sheets',
+      docs: 'Google Docs',
+      tasks: 'Google Tasks',
+      contacts: 'Google Contacts'
+    };
+
+    const systemInstruction = `You are the Vantage AI 2nd Brain Workflow Automation & Cron Job Architect.
+A user provides a natural language automation request for their Google Workspace environment (which includes: Gmail, Google Calendar, Google Drive, Google Sheets, Google Docs, Google Tasks, Google Contacts).
+
+Your task:
+1. Formulate 3 to 5 discrete, concrete, highly valuable recurring cron jobs / scheduled tasks that fulfill different aspects of their automation request.
+2. Ensure the primary task utilizes the user's preferred app (${appMap[activeAppId] || 'Gmail'}).
+3. Distribute the remaining tasks across synergistic Google Workspace apps (e.g. Sheets for audit logging, Calendar for review holds, Tasks for deliverables, Docs for executive briefings, Contacts for lead enrichment).
+4. For each task, provide:
+   - id: unique string (e.g. "cron_task_1")
+   - title: concise, executive title
+   - appId: one of 'gmail', 'calendar', 'drive', 'sheets', 'docs', 'tasks', 'contacts'
+   - appName: full app name
+   - scheduleType: 'daily', 'weekly', 'monthly', or 'hourly'
+   - scheduleDescription: human readable schedule (e.g. "Every Day at 8:00 AM", "Every Monday at 9:00 AM", "1st of Every Month at 10:00 AM")
+   - cronExpression: standard cron syntax (e.g. "0 8 * * *", "0 9 * * 1", "0 10 1 * *")
+   - prompt: clear, executable instruction for the AI agent to execute on schedule
+   - whyHelpful: 1-sentence value proposition of this specific automated task
+   - searchGroundingRecommended: boolean (true if latest external market/rate/web research is needed)
+   - selected: boolean (true for the top 2-3 most essential tasks, false for optional supplementary tasks)
+`;
+
+    const apiConfig: any = {
+      systemInstruction,
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          reasoningSummary: { type: Type.STRING, description: "Executive summary explaining how the 2nd Brain formulated these cron tasks" },
+          groundSearchRequired: { type: Type.BOOLEAN, description: "Whether external web search is recommended" },
+          proposedTasks: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                id: { type: Type.STRING },
+                title: { type: Type.STRING },
+                appId: { type: Type.STRING, enum: ['gmail', 'calendar', 'drive', 'sheets', 'docs', 'tasks', 'contacts'] },
+                appName: { type: Type.STRING },
+                scheduleType: { type: Type.STRING, enum: ['hourly', 'daily', 'weekly', 'monthly'] },
+                scheduleDescription: { type: Type.STRING },
+                cronExpression: { type: Type.STRING },
+                prompt: { type: Type.STRING },
+                whyHelpful: { type: Type.STRING },
+                searchGroundingRecommended: { type: Type.BOOLEAN },
+                selected: { type: Type.BOOLEAN }
+              },
+              required: ["id", "title", "appId", "appName", "scheduleType", "scheduleDescription", "cronExpression", "prompt", "whyHelpful", "searchGroundingRecommended", "selected"]
+            }
+          }
+        },
+        required: ["reasoningSummary", "proposedTasks"]
+      }
+    };
+
+    const promptText = `User Automation Request: "${userRequest}"
+Preferred Google App: ${appMap[activeAppId] || 'Gmail'}
+${activeIndustryId ? `Active Industry Context: ${activeIndustryId}` : ''}
+Generate 3 to 5 multi-action cron job proposals.`;
+
+    const response = await generateResilientGeminiContent(promptText, apiConfig, customGeminiKey);
+    const text = response.text || "{}";
+    const parsed = JSON.parse(text);
+    return res.json({
+      userRequest,
+      reasoningSummary: parsed.reasoningSummary || `Vantage AI 2nd Brain formulated ${parsed.proposedTasks?.length || 4} cron tasks for your request.`,
+      proposedTasks: parsed.proposedTasks || [],
+      groundSearchRequired: !!parsed.groundSearchRequired
+    });
+  } catch (err: any) {
+    console.error("Cron decomposition error:", err);
+    res.status(500).json({ error: err.message || "Failed to decompose cron automation request" });
+  }
+});
+
+
 // Voice Macro Orchestration: Compound Intent Decomposition Endpoint
 app.post("/api/voice/decompose-intent", async (req, res) => {
   try {
