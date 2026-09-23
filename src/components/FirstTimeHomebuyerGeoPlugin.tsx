@@ -48,6 +48,16 @@ import {
   submitAreaListingRequest
 } from '../services/geomapMortgageEngine';
 import mortgageEligibilityService from '../services/mortgageEligibility';
+import {
+  calculateClimateHazardEnvelope,
+  calculateAduHouseHackOffset,
+  checkSituationalMemoryContext
+} from '../services/geomapCognitiveEngine';
+import { DpaGrantWaterfallModal } from './DpaGrantWaterfallModal';
+import { CoBorrowerCanvasModal } from './CoBorrowerCanvasModal';
+import { ExecutivePreApprovalDossierModal } from './ExecutivePreApprovalDossierModal';
+import { DeepThinkPreMortemModal } from './DeepThinkPreMortemModal';
+import { ProactiveGeofenceAlertBanner } from './ProactiveGeofenceAlertBanner';
 
 const DEFAULT_MASTER_SEED_LISTINGS: SyncedPropertyListing[] = [
   {
@@ -200,9 +210,17 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
   const [properties, setProperties] = useState<SyncedPropertyListing[]>(initialProperties);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>(initialProperties[0]?.id || '');
   const [activeFilter, setActiveFilter] = useState<'all' | 'lakeview_national' | 'ohcs_flex_firsthome' | 'usda' | 'homeready' | 'nhf_fallback' | 'lmi_cra' | 'price_drops' | 'prequalified'>('all');
+  const [isochroneFilter, setIsochroneFilter] = useState<'all' | '15m' | '30m' | '45m'>('all');
+  const [projectedAduRent, setProjectedAduRent] = useState<number>(0);
   const [zillowInputUrl, setZillowInputUrl] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
+
+  // GeoMap 3.0 Cognitive Modal States
+  const [showWaterfallModal, setShowWaterfallModal] = useState<boolean>(false);
+  const [showCoBorrowerModal, setShowCoBorrowerModal] = useState<boolean>(false);
+  const [showDossierModal, setShowDossierModal] = useState<boolean>(false);
+  const [showPreMortemModal, setShowPreMortemModal] = useState<boolean>(false);
 
   // Area Request Modal State
   const [showAreaModal, setShowAreaModal] = useState(false);
@@ -379,6 +397,16 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
 
           <button
             type="button"
+            onClick={() => setShowCoBorrowerModal(true)}
+            className="px-3.5 py-2 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+            title="Open Collaborative Co-Borrower Canvas"
+          >
+            <Sliders className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Co-Borrower Canvas</span>
+          </button>
+
+          <button
+            type="button"
             onClick={handleSyncMasterFeed}
             disabled={isSyncing}
             className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
@@ -408,6 +436,19 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
           )}
         </div>
       </div>
+
+      {/* Proactive Geofence Interest Radius Notification Radar */}
+      <ProactiveGeofenceAlertBanner 
+        onSelectAlertArea={(area) => {
+          if (area.toLowerCase().includes('scappoose') || area.toLowerCase().includes('columbia')) {
+            const match = properties.find(p => p.id === 'geo-102');
+            if (match) setSelectedPropertyId(match.id);
+          } else if (area.toLowerCase().includes('hawthorne') || area.toLowerCase().includes('portland')) {
+            const match = properties.find(p => p.id === 'geo-101');
+            if (match) setSelectedPropertyId(match.id);
+          }
+        }}
+      />
 
       {syncStatus && (
         <div className="bg-emerald-950/60 border border-emerald-800/80 rounded-xl p-3 text-xs text-emerald-300 flex items-center gap-2">
@@ -493,15 +534,43 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
             </div>
           </div>
 
+          {/* ADU & House-Hack Income Offset Simulator */}
+          <div className="p-3.5 rounded-xl bg-stone-900 border border-indigo-900/40 space-y-2">
+            <div className="flex justify-between items-center text-xs">
+              <span className="font-bold text-indigo-300 flex items-center gap-1">
+                <Building className="w-3.5 h-3.5 text-indigo-400" /> ADU Rental Income Offset
+              </span>
+              <span className="font-mono text-emerald-400 font-bold">+{formatUSD(projectedAduRent)}/mo</span>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={2500}
+              step={100}
+              value={projectedAduRent}
+              onChange={(e) => setProjectedAduRent(Number(e.target.value))}
+              className="w-full accent-indigo-500 cursor-pointer"
+            />
+            <div className="flex justify-between text-[10px] text-stone-400">
+              <span>$0 (No ADU)</span>
+              <span>Fannie Mae 75% Rule: +{formatUSD(projectedAduRent * 0.75)}/mo credit</span>
+              <span>$2,500/mo</span>
+            </div>
+          </div>
+
           {/* Real-time Calculated Prequal Envelope */}
           <div className="bg-stone-900 border border-stone-800 rounded-xl p-4 space-y-2.5">
             <div className="flex justify-between items-center">
               <span className="text-xs text-stone-400">Max Purchase Price:</span>
-              <span className="text-base font-bold font-mono text-emerald-400">{formatUSD(prequalResult.estimatedMaxPurchasePrice)}</span>
+              <span className="text-base font-bold font-mono text-emerald-400">
+                {formatUSD(prequalResult.estimatedMaxPurchasePrice + Math.round((projectedAduRent * 0.75 * 0.45 * 0.8 * 140)))}
+              </span>
             </div>
             <div className="flex justify-between items-center text-xs">
               <span className="text-stone-400">Max Monthly Housing Pmt:</span>
-              <span className="font-mono font-bold text-white">{formatUSD(prequalResult.maxAllowableMonthlyHousingPayment)}/mo</span>
+              <span className="font-mono font-bold text-white">
+                {formatUSD(prequalResult.maxAllowableMonthlyHousingPayment + Math.round(projectedAduRent * 0.75 * 0.45))}/mo
+              </span>
             </div>
             <div className="flex justify-between items-center text-xs">
               <span className="text-stone-400">Resulting DTI (Front / Back):</span>
@@ -760,6 +829,71 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                 );
               })()}
 
+              {/* VANTAGE GEOMAP 3.0 COGNITIVE ACTION ACCELERATOR BAR */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowWaterfallModal(true)}
+                  className="p-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-[11px] shadow-sm flex flex-col items-center gap-1 text-center cursor-pointer"
+                >
+                  <DollarSign className="w-4 h-4 text-emerald-200" />
+                  <span>DPA Grant Waterfall</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowCoBorrowerModal(true)}
+                  className="p-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold text-[11px] shadow-sm flex flex-col items-center gap-1 text-center cursor-pointer"
+                >
+                  <Sliders className="w-4 h-4 text-indigo-200" />
+                  <span>Co-Borrower Canvas</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowDossierModal(true)}
+                  className="p-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-[11px] shadow-sm flex flex-col items-center gap-1 text-center cursor-pointer"
+                >
+                  <ShieldCheck className="w-4 h-4 text-amber-200" />
+                  <span>Executive Dossier</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowPreMortemModal(true)}
+                  className="p-2.5 rounded-xl bg-gradient-to-r from-rose-700 to-pink-700 hover:from-rose-600 hover:to-pink-600 text-white font-bold text-[11px] shadow-sm flex flex-col items-center gap-1 text-center cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4 text-rose-200" />
+                  <span>DeepThink Pre-Mortem</span>
+                </button>
+              </div>
+
+              {/* Climate, FEMA Flood & Hazard Insurance Escrow Envelope */}
+              {(() => {
+                const hazard = calculateClimateHazardEnvelope(selectedProperty);
+                return (
+                  <div className="bg-stone-900/90 p-3 rounded-xl border border-stone-800 text-xs space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] uppercase font-bold text-stone-400">
+                        Climate & Hazard Insurance Escrow Envelope
+                      </span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                        hazard.wildfireRiskTier === 'High (WUI)' ? 'bg-rose-950 text-rose-300 border border-rose-800' : 'bg-stone-800 text-stone-300'
+                      }`}>
+                        {hazard.floodZone} • Wildfire: {hazard.wildfireRiskTier}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-stone-300">Est. Insurance Escrow: <strong>${hazard.totalMonthlyInsuranceEscrow}/mo</strong></span>
+                      <span className="text-[11px] text-stone-400">({hazard.insuranceImpactOnMonthlyPaymentDelta >= 0 ? '+' : ''}${hazard.insuranceImpactOnMonthlyPaymentDelta}/mo vs generic est.)</span>
+                    </div>
+                    <p className="text-[10px] text-stone-400 leading-tight">
+                      {hazard.hazardRiskSummary}
+                    </p>
+                  </div>
+                );
+              })()}
+
               {/* Two-Way Communication Notes & Interactive Chat Bot */}
               <ListingChatBotNotesPanel
                 property={selectedProperty}
@@ -872,6 +1006,42 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
           </div>
         </div>
       )}
+
+      {/* GeoMap 3.0 Cognitive & Underwriting Modals */}
+      {selectedProperty && (
+        <>
+          <DpaGrantWaterfallModal
+            listing={selectedProperty}
+            buyerProfile={buyerProfile}
+            isOpen={showWaterfallModal}
+            onClose={() => setShowWaterfallModal(false)}
+          />
+
+          <ExecutivePreApprovalDossierModal
+            listing={selectedProperty}
+            buyerProfile={buyerProfile}
+            isOpen={showDossierModal}
+            onClose={() => setShowDossierModal(false)}
+          />
+
+          <DeepThinkPreMortemModal
+            listing={selectedProperty}
+            isOpen={showPreMortemModal}
+            onClose={() => setShowPreMortemModal(false)}
+          />
+        </>
+      )}
+
+      <CoBorrowerCanvasModal
+        isOpen={showCoBorrowerModal}
+        onClose={() => setShowCoBorrowerModal(false)}
+        onApplyProfile={(jointMaxPrice, jointDown) => {
+          setBuyerProfile(prev => ({
+            ...prev,
+            availableDownPayment: jointDown
+          }));
+        }}
+      />
 
       {/* iOS Step-by-Step Installation Modal */}
       <IosInstallGuideModal

@@ -16,10 +16,16 @@ import {
   Calendar,
   Flame,
   Search,
-  Filter
+  Filter,
+  RefreshCw,
+  FileCheck2,
+  Layers,
+  Archive,
+  Compass
 } from 'lucide-react';
 import { UserMemory } from '../types';
 import { calculateTemporalDecayScore, getHalfLifeDays, getLambdaForHalfLife } from '../utils/temporalMemoryEngine';
+import { scanAndPruneKnowledge, KnowledgeHygieneReport } from '../services/knowledgePruning';
 
 interface TemporalMemoryDecayStudioProps {
   memories: UserMemory[];
@@ -36,6 +42,20 @@ export const TemporalMemoryDecayStudio: React.FC<TemporalMemoryDecayStudioProps>
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [selectedMemoryId, setSelectedMemoryId] = useState<string | null>(null);
   const [localMemoryState, setLocalMemoryState] = useState<UserMemory[]>(memories);
+  const [isRunningHygiene, setIsRunningHygiene] = useState<boolean>(false);
+  const [lastHygieneReport, setLastHygieneReport] = useState<KnowledgeHygieneReport | null>(null);
+
+  const handleRunHygiene = async () => {
+    setIsRunningHygiene(true);
+    try {
+      const report = await scanAndPruneKnowledge();
+      setLastHygieneReport(report);
+    } catch (err) {
+      console.error('Failed to run knowledge hygiene pass:', err);
+    } finally {
+      setIsRunningHygiene(false);
+    }
+  };
 
   // Keep in sync with incoming memories if length changes
   React.useEffect(() => {
@@ -168,7 +188,66 @@ export const TemporalMemoryDecayStudio: React.FC<TemporalMemoryDecayStudioProps>
             </div>
           </div>
         </div>
+
+        {/* Knowledge Hygiene & Circadian Consolidation Action Bar */}
+        <div className="mt-4 pt-4 border-t border-indigo-800/40 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-xs text-indigo-200">
+            <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>
+              <strong>Circadian Memory Consolidation:</strong> Scan for stale data (&lt;18% salience), recalibrate confidence, and synthesize cross-domain dream insights.
+            </span>
+          </div>
+
+          <button
+            onClick={handleRunHygiene}
+            disabled={isRunningHygiene}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-600 hover:to-indigo-700 text-white text-xs font-bold shadow-md transition cursor-pointer disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isRunningHygiene ? 'animate-spin' : ''}`} />
+            <span>{isRunningHygiene ? 'Consolidating Memories...' : 'Run Nightly Consolidation Pass'}</span>
+          </button>
+        </div>
       </div>
+
+      {/* Live Knowledge Hygiene Audit Report Banner */}
+      {lastHygieneReport && (
+        <div className="p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 space-y-3 animate-in fade-in">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FileCheck2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-950 dark:text-indigo-200">
+                Latest Memory Consolidation Report ({new Date(lastHygieneReport.timestamp).toLocaleTimeString()})
+              </h4>
+            </div>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300">
+              {lastHygieneReport.durationMs}ms
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+            <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-900/40">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Scanned</span>
+              <span className="text-sm font-black text-slate-900 dark:text-slate-100">{lastHygieneReport.scannedCount}</span>
+            </div>
+            <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-900/40">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Low-Salience</span>
+              <span className="text-sm font-black text-amber-600 dark:text-amber-400">{lastHygieneReport.lowSalienceCount}</span>
+            </div>
+            <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-900/40">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Confidence Updates</span>
+              <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">{lastHygieneReport.confidenceRecalibratedCount}</span>
+            </div>
+            <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-900/40">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Dream Insights</span>
+              <span className="text-sm font-black text-indigo-600 dark:text-indigo-400">{lastHygieneReport.dreamReport.length}</span>
+            </div>
+          </div>
+
+          <p className="text-xs text-slate-600 dark:text-slate-300 bg-white/60 dark:bg-slate-900/60 p-2.5 rounded-xl border border-indigo-100/60 dark:border-indigo-900/20 leading-relaxed">
+            {lastHygieneReport.executiveSummary}
+          </p>
+        </div>
+      )}
 
       {/* Interactive Sliders & Curve Preview */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">

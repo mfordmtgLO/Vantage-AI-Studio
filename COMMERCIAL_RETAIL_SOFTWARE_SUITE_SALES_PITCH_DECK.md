@@ -45,19 +45,42 @@
 ## 2. MODULE 1: VANTAGE 2ND BRAIN COGNITIVE CORE PLUGIN
 
 ### 🪝 The Hook:
-> **"Stop Building AI Chatbots That Forget Everything. Give Your AI a Permanent, Vector-Indexed Brain in 60 Seconds."**
+> **"Stop Building AI Chatbots That Forget Everything. Give Your AI a Permanent, Vector-Indexed Brain with Circadian Memory Hygiene & Hippocampal Consolidation in 60 Seconds."**
 
 ### 📦 What It Does:
-The **Vantage 2nd Brain Cognitive Core** is a drop-in memory infrastructure that adds long-term hierarchical vector recall, client persona indexing, procedural workflow recall, and operational airgapped guardrails to any AI application or chat interface.
+The **Vantage 2nd Brain Cognitive Core** is a drop-in cognitive memory infrastructure that adds long-term hierarchical vector recall, client persona indexing, procedural workflow recall, airgapped guardrails, and **autonomous circadian memory hygiene** to any AI application or enterprise portal.
 
-### 🌟 Core Capabilities:
-- **Multi-Engine Hybrid Recall**: Seamlessly toggles between Hybrid keyword matching, DeepSeek semantic vectors, and Gemini embeddings.
-- **Dynamic Persona & Client Memory Indexing**: Automatically anchors user preferences, tone of voice, past decisions, and biographical constraints.
-- **Airgapped Boundary & Safety Guardrails**: Evaluates actions before external dispatch, preventing unauthorized sends, data leaks, or catastrophic hallucinations.
-- **Scenario Simulator Testing Studio**: Test and benchmark memory recall across simulated complex conversations before deploying live.
+---
+
+### 🧠 The Big Breakthrough: Hippocampal Replay & Circadian Memory Hygiene
+Standard vector databases and RAG memory solutions degrade over time into bloated, contradictory garbage. Vantage AI solves this by introducing biological **Hippocampal Replay and Memory Hygiene Cycles**:
+
+| Standard AI / RAG Memory (Flawed) | Vantage AI Memory Consolidation (Our Solution) |
+| :--- | :--- |
+| **Context Window Pollution**: Old, outdated facts (e.g., *"Rates are at 7.5% from 6 months ago"*) compete equally with new facts during retrieval, causing hallucinations. | **Dynamic Salience & Confidence Filtering**: Stale data has its `confidenceScore` decayed and is suppressed from active LLM prompts, keeping reasoning pristine. |
+| **Destructive Overwriting**: New information silently overwrites older notes, destroying the historical audit trail and decision context. | **Provenance & State Tracking**: Preserves historical reasoning in `consolidationHistory` while cleanly archiving stale items with explicit timestamps. |
+| **Linear Database Bloat**: Vector stores grow indefinitely with trivial, one-off conversational noise, driving up query costs and latency. | **Automated Low-Salience Archival**: Items below the synaptic threshold ($<18\%$ synaptic strength after 21+ days) are safely soft-archived. |
+
+---
+
+### 🌟 The 4 Major Commercial Benefits:
+1. **Eliminates LLM Prompt Poisoning**: When Gemini or DeepThink queries your 2nd Brain, only active, high-confidence memories ($>0.70$) are injected into the reasoning prompt. Stale or contradictory data is automatically filtered out.
+2. **Dramatic Cost & Latency Reductions**: Passing fewer irrelevant tokens to Gemini 3.7 or DeepSeek R1 lowers API consumption costs by up to **45%** and drastically accelerates response times.
+3. **Biological Parity ("Circadian Sleep Cycles")**: A background cron engine executes a nightly memory consolidation pass at 2:00 AM—reinforcing frequently recalled knowledge, decaying unvisited trivia, detecting guideline contradictions, and synthesizing serendipitous cross-domain **"Dream Reports"**.
+4. **Complete Audit Trail & Reversibility**: Because low-salience memories are marked `isArchived: true` rather than hard-deleted, users retain complete historical provenance and can inspect why a belief or guideline changed over time.
+
+---
+
+### 🛡️ Built-In Commercial Safeguards:
+- **Immortal Pins (`isPinnedImmortal`)**: Core executive personas, NMLS compliance boundaries, and critical business rules are permanently shielded from temporal decay.
+- **Reinforcement Bonuses**: Frequently accessed guidelines and customer preferences gain confidence boosts up to **0.99**.
+- **Soft Archival by Default**: Memories are moved to an archived tier rather than deleted, guaranteeing zero accidental data loss.
+- **Automated Contradiction Radar**: Flags conflicting guidelines (e.g., mismatched down payment requirements or outdated underwriting limits) before they reach the user.
+
+---
 
 ### ⚡ POWER-USER STACKED BENEFITS: Why Pair With the Vantage Suite?
-1. **Stack With Google Workspace UI** $\rightarrow$ **Hyper-Contextual Zero-Prompt Executive Email**: When drafting messages in Gmail, the AI automatically pulls historical conversation context, client preferences, and past commitments from the 2nd Brain without you typing a single prompt instruction.
+1. **Stack With Google Workspace UI** $\rightarrow$ **Hyper-Contextual Zero-Prompt Executive Email**: When drafting messages in Gmail, the AI automatically pulls historical conversation context, client preferences, and past commitments from high-confidence 2nd Brain nodes without you typing a single prompt instruction.
 2. **Stack With Voice Macro Orchestration** $\rightarrow$ **Verbal Knowledge Base Ingestion on the Fly**: Speak freeform thoughts or client updates into your microphone; the Voice Macro router automatically transcribes, categorizes, and embeds them directly into your 2nd Brain vector vault.
 3. **Stack With Real Estate GeoMap** $\rightarrow$ **Cross-Session Lead Memory Persistence**: When home buyers enter their email, all their favorited listings, custom notes, and calculated DTI affordability envelopes are permanently stored in their 2nd Brain profile, instantly reloaded across any browser session.
 
@@ -107,26 +130,30 @@ Replaces clunky manual typing with an intelligent speech-to-intent pipeline that
 
 ---
 
-## 5. MODULE 4: FLAGSHIP REAL ESTATE GEOMAP & DPA MORTGAGE PLUGIN
+## 5. MODULE 4: FLAGSHIP REAL ESTATE GEOMAP & DPA MORTGAGE PLUGIN (GEOMAP 3.0)
 
 ### 🪝 The Hook:
-> **"Turn Renters into Homebuyers on Your Website. The Only AI Plugin with USDA 100% Zero-Down Area Checkers, Census Tract $5K-$10K Grants, Live DTI Math & RentCast Priority Listings."**
+> **"Turn Renters into Homebuyers on Your Website. The Only AI Plugin with Multi-Layer DPA Grant Stacking, Proactive Geofence $0-Down Driving Radar, DeepThink Adversarial Pre-Mortems & 1-Click Executive Pre-Approval Dossiers."**
 
 ### 📦 What It Does:
-The ultimate real estate and mortgage technology engine. Instantly geocodes properties, matches 11-digit FIPS Census Tracts with low-to-moderate income (LMI) grants, checks USDA Rural Development (RD) 100% financing boundaries, and computes real-time buyer DTI affordability envelopes.
+The ultimate real estate and mortgage cognitive engine. Instantly geocodes properties, stacks multiple government and bank grants into a **True Zero Out-of-Pocket** closing solver, models FEMA climate hazard insurance envelopes, simulates ADU house-hack income offsets, triggers proactive physical geofence alerts while driving, and generates co-branded executive pre-approval dossiers.
 
-### 🌟 Core Capabilities:
+### 🌟 Core Capabilities & GeoMap 3.0 Upgrades:
+- **Multi-Layer DPA Grant Waterfall Stacking Solver**: Automatically stacks Bank CRA Opportunity Grants ($5k-$10k) + State HFA DPA ($15.4k) + County Bond Programs + Negotiated Seller Concessions to calculate **True Zero Out-of-Pocket Closing Cash**.
+- **Proactive Geofenced Interest Radius Alert Radar**: Real-time mobility radar triggers cross-platform push notifications when a buyer physically enters a saved zero-down/grant corridor (e.g. *Sunday Drive USDA 100% boundary*, *Census Tract $10K grant unlock*, *Live LO Field Ping*).
+- **Hyper-Local FEMA Climate & Hazard Insurance Escrow Envelope**: Evaluates FEMA 100-year flood zones and Wildland-Urban Interface (WUI) wildfire hazard tiers to compute accurate monthly insurance escrow adjustments ($PITI$) rather than generic 0.35% estimates.
+- **Fannie Mae ADU "House-Hack" 75% Qualifying Rent Simulator**: Models accessory dwelling unit rental offsets, crediting 75% of projected rent to expand buyer qualifying income and maximize purchasing power envelopes.
+- **Real-Time Collaborative "Co-Borrower Canvas"**: Sliders for joint co-borrower gross income and liabilities dynamically recalculate front/back-end DTI limits with live visual comparisons.
+- **1-Click Executive Pre-Approval Dossier (Print/PDF)**: Co-branded official pre-approval certificate complete with 11-digit FIPS census tract grant certification, loan amortization breakdown, and assigned Loan Officer & Realtor credentials.
+- **DeepThink Prefrontal Adversarial Property Pre-Mortem**: Runs automated risk stress-tests (tax reassessment resets, aging HVAC/roof capital expenditure reserves, HOA reserve fund health) and computes suggested offer discounts.
 - **USDA Rural Development (RD) 100% (0% Down) Checker**: Evaluates coordinates and FIPS GeoIDs to flag properties eligible for zero-down government-guaranteed financing.
-- **Census Tract $5,000–$10,000 CRA Grant Matching**: Detects <80% Area Median Income (AMI) tracts eligible for bank CRA grants, Fannie Mae HomeReady (3% down), and state DPA programs.
-- **RentCast Priority Listing Feed**: Shows active listings with price drop counters, days on market, RentCast valuation/investment scores (e.g. 96/100), and monthly P&I + Tax/Ins estimates.
-- **Live Buyer DTI Affordability Engine**: Sliders for Gross Monthly Income, Monthly Debts, Down Payment, and Interest Rate calculate real-time Front-End / Back-End DTI, Max Housing Payment Caps, and Max Purchase Price Envelopes.
-- **1-Click Zillow URL Geocoder**: Buyers paste any Zillow listing link to import specs, geocode coordinates, and place an interactive map pin with pre-qualification indicators.
-- **Autonomous `dsh-cron` Weekly Price Audits**: Background cron tasks audit active listings every Monday morning, calculate price cuts, and draft automated alert emails.
+- **Autonomous `dsh-cron` Weekly Price Audits & Circadian Dream Matcher**: Background cron tasks audit active listings every Monday morning, correlate buyer pipeline DTIs with new MLS price cuts, and draft automated alert emails.
 
 ### ⚡ POWER-USER STACKED BENEFITS: Why Pair With the Vantage Suite?
-1. **Stack With 2nd Brain** $\rightarrow$ **Permanent Buyer Cross-Session Persistence**: When a lead enters their email, their favorited homes, property notes, and DTI envelopes are stored in vector memory, reloaded whenever they return from any device.
+1. **Stack With 2nd Brain** $\rightarrow$ **Geofenced Situational Memory Recall**: Surfaces past buyer constraints and notes (e.g., *"Memory Reminder: You wanted HOA fees under $250/mo; this property has a $410/mo fee"*) as soon as they view or drive near a listing.
 2. **Stack With Google Workspace** $\rightarrow$ **Automated Price Drop Outreach**: When the weekly `dsh-cron` audit detects a price drop on a buyer's favorite listing, it automatically formats and drafts an outreach email in Gmail Live Drafts for paired loan officers and real estate agents.
 3. **Stack With Voice Macros** $\rightarrow$ **Conversational Pre-Qualification**: Buyers can verbally state their financial situation (*"I make $8,500 a month with a $450 car payment and $20,000 saved"*) and immediately see their purchasing power envelope on screen.
+4. **Stack With Mobile PWA** $\rightarrow$ **Turnkey Field Client Portal**: Homebuyers install the co-branded micro-app on iPhone/Android, enabling offline DPA lookups and live GPS grant alerts during open house tours.
 
 ---
 

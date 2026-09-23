@@ -90,6 +90,17 @@ export interface UserMemory {
   updatedAt?: string;
   aiSummary?: string;
   syncedToCloud?: boolean;
+  confidenceScore?: number; // 0.0 to 1.0 calibration based on verification & consolidation
+  isArchived?: boolean;
+  lastConsolidatedAt?: string;
+  contradictionFlags?: string[];
+  consolidationHistory?: Array<{
+    date: string;
+    action: string;
+    previousConfidence: number;
+    newConfidence: number;
+    reason: string;
+  }>;
   temporal?: {
     accessCount: number;
     lastAccessedAt: string;
