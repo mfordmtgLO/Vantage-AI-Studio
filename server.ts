@@ -344,7 +344,7 @@ ${contextText}
             "Authorization": `Bearer ${effectiveDeepSeekKey}`
           },
           body: JSON.stringify({
-            model: "deepseek-chat",
+            model: "deepseek-flash", // DeepSeek-V4.1-Flash model
             messages: dsMessages,
             temperature: 0.7
           })
@@ -353,7 +353,7 @@ ${contextText}
         if (dsResponse.ok) {
           const dsData = await dsResponse.json();
           responseText = dsData.choices?.[0]?.message?.content || "";
-          usedEngine = "deepseek-deepthink";
+          usedEngine = "deepseek-v4.1-flash-harness-v0.1.1";
         }
       } catch (dsErr) {
         console.warn("Deepseek API call failed, falling back to Gemini:", dsErr);
@@ -437,7 +437,7 @@ Provide an execution trace, step-by-step tool results, and the final synthesized
         "Authorization": `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: "deepseek-chat",
+        model: "deepseek-flash", // DeepSeek-V4.1-Flash API Model
         messages: [
           { role: "system", content: harnessSystemPrompt },
           { role: "user", content: "Execute multi-step harness task with web search and synthesize results." }
@@ -468,7 +468,7 @@ Provide an execution trace, step-by-step tool results, and the final synthesized
       success: true,
       executionTrace: [
         { step: 1, action: "dsh-tool-web: web_search", status: "completed", details: `Queried web for: ${prompt.substring(0, 40)}...` },
-        { step: 2, action: "dsh-agent-sdk: multi-step synthesis", status: "completed", details: "Synthesized insights using DeepSeek reasoner model" },
+        { step: 2, action: "dsh-agent-sdk-v0.1.1: multi-step synthesis", status: "completed", details: "Synthesized insights using DeepSeek-V4.1-Flash reasoning model" },
         { step: 3, action: "dsh-cron: scheduler verification", status: registeredCron ? "registered" : "skipped", details: registeredCron?.expression || "none" }
       ],
       finalAnswer: agentOutput,
@@ -506,7 +506,7 @@ const swarmGlobalCostMetrics = {
   monthlyBudgetCapUsd: 10.00
 };
 
-// DeepSeek Wholesale Pricing (deepseek-chat / deepseek-v3)
+// DeepSeek Wholesale Pricing (deepseek-flash / DeepSeek-V4.1-Flash & Harness v0.1.1)
 const DEEPSEEK_COST_INPUT_PER_1M = 0.27; // $0.27 per 1M input tokens (cache miss)
 const DEEPSEEK_COST_INPUT_CACHED_PER_1M = 0.07; // $0.07 per 1M cached input tokens
 const DEEPSEEK_COST_OUTPUT_PER_1M = 1.10; // $1.10 per 1M output tokens
@@ -684,7 +684,7 @@ Return strictly a JSON object with:
               "Authorization": `Bearer ${apiKey}`
             },
             body: JSON.stringify({
-              model: "deepseek-chat",
+              model: "deepseek-flash", // DeepSeek-V4.1-Flash model
               messages: [
                 { role: "system", content: "You are the DeepSeek Swarm Real Estate & Mortgage Auditor. Respond strictly in valid JSON format without markdown ticks." },
                 { role: "user", content: batchPrompt }
@@ -1078,7 +1078,7 @@ Return a JSON response matching this schema:
             "Authorization": `Bearer ${process.env.DEEPSEEK_API_KEY}`
           },
           body: JSON.stringify({
-            model: "deepseek-chat",
+            model: "deepseek-flash", // DeepSeek-V4.1-Flash model
             messages: [
               { role: "system", content: systemInstruction + "\nRespond strictly in valid JSON format matching the requested schema." },
               { role: "user", content: prompt }

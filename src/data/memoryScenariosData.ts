@@ -46,7 +46,7 @@ export const MEMORY_SCENARIOS: MemoryScenario[] = [
     title: 'Vantage Tier Pricing & Enterprise SLAs',
     payload: `Vantage AI Workspace product pricing structure:
 1. Starter Tier ($29/mo): Up to 1,000 hybrid reasoning queries, local state memory, single workspace integration.
-2. Professional Tier ($99/mo): Unlimited queries, full 2nd Brain vector search, multi-device Firestore sync, DeepSeek R1 reasoning.
+2. Professional Tier ($99/mo): Unlimited queries, full 2nd Brain vector search, multi-device Firestore sync, DeepSeek-V4.1-Flash multimodal reasoning & Harness v0.1.1.
 3. Enterprise Tier ($499/mo): Custom Google Workspace OAuth setup, dedicated Firestore database isolation, 99.9% uptime SLA, priority live agent webhook routing.
 
 Key Contacts:

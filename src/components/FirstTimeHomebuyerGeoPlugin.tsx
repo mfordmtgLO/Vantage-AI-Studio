@@ -50,6 +50,12 @@ import { useBatterySaver } from '../context/BatterySaverContext';
 import { zillowSwarmSweepService } from '../services/zillowSwarmSweepService';
 import { buildLeadPluginUrl } from '../data/leadMobilePluginUrls';
 import {
+  getOregonCensusTractLmiCategory,
+  getAllOregonLmiTractDetails,
+  getCountyNameFromFips,
+  OregonLmiCategory
+} from '../data/oregonLmiMatchedTracts';
+import {
   BuyerDtiProfile,
   FirstTimeHomebuyerGeoPluginProps,
   SyncedPropertyListing,
@@ -343,6 +349,17 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
     'Checkout this house which just had a price reduction and we can reach out to Kanndice to see if seller will consider seller contributions towards your closing costs..what do you think?'
   );
   const [pushSuccessFeedback, setPushSuccessFeedback] = useState<string | null>(null);
+
+  // OHCS Flex Lending FirstHome LMI Census Tract GeoMap Layer State
+  const [showOhcsLmiLayer, setShowOhcsLmiLayer] = useState<boolean>(true);
+  const [lmiCategoryFilter, setLmiCategoryFilter] = useState<'ALL' | 'Low' | 'Moderate'>('ALL');
+  const [lmiCountyFilter, setLmiCountyFilter] = useState<string>('ALL');
+  const [showLmiTractExplorerModal, setShowLmiTractExplorerModal] = useState<boolean>(false);
+  const [lmiTractSearchQuery, setLmiTractSearchQuery] = useState<string>('');
+
+  // USDA RD Rural Development Eligibility Boundary Layer State
+  const [showUsdaRdLayer, setShowUsdaRdLayer] = useState<boolean>(true);
+  const [showUsdaBoundaryModal, setShowUsdaBoundaryModal] = useState<boolean>(false);
 
   // Auto-select and scroll front and center if opened with specific listing param
   useEffect(() => {
@@ -1153,25 +1170,167 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
             ))}
           </div>
 
+          {/* MAP LAYERS MASTER TOGGLE TOOLBAR (OHCS LMI & USDA RD) */}
+          <div className="p-3 bg-gradient-to-r from-emerald-950/60 via-stone-900 to-amber-950/40 rounded-2xl border border-emerald-500/30 shadow-md space-y-2.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* OHCS LMI Layer Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setShowOhcsLmiLayer(!showOhcsLmiLayer)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer shadow-sm ${
+                    showOhcsLmiLayer
+                      ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-stone-950 ring-2 ring-emerald-400'
+                      : 'bg-stone-800 text-stone-400 border border-stone-700'
+                  }`}
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>🌲 OHCS Flex LMI Tracts: {showOhcsLmiLayer ? 'ACTIVE' : 'OFF'}</span>
+                </button>
+
+                {/* USDA RD Boundary Layer Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setShowUsdaRdLayer(!showUsdaRdLayer)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer shadow-sm ${
+                    showUsdaRdLayer
+                      ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 ring-2 ring-amber-300'
+                      : 'bg-stone-800 text-stone-400 border border-stone-700'
+                  }`}
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>🌾 USDA RD Boundaries (Shaded Ineligible): {showUsdaRdLayer ? 'ACTIVE' : 'OFF'}</span>
+                </button>
+
+                {showOhcsLmiLayer && (
+                  <div className="flex items-center gap-1 bg-stone-950 p-1 rounded-xl border border-stone-800 text-[11px] font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setLmiCategoryFilter('ALL')}
+                      className={`px-2 py-0.5 rounded-lg transition ${
+                        lmiCategoryFilter === 'ALL'
+                          ? 'bg-emerald-600 text-white'
+                          : 'text-stone-400 hover:text-white'
+                      }`}
+                    >
+                      All (214)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLmiCategoryFilter('Low')}
+                      className={`px-2 py-0.5 rounded-lg transition flex items-center gap-1 ${
+                        lmiCategoryFilter === 'Low'
+                          ? 'bg-rose-600 text-white font-black'
+                          : 'text-rose-400 hover:text-rose-300'
+                      }`}
+                    >
+                      <span>🔴 Low (&lt;50% AMI)</span>
+                      <span className="text-[9px] opacity-80">(20)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLmiCategoryFilter('Moderate')}
+                      className={`px-2 py-0.5 rounded-lg transition flex items-center gap-1 ${
+                        lmiCategoryFilter === 'Moderate'
+                          ? 'bg-amber-500 text-stone-950 font-black'
+                          : 'text-amber-400 hover:text-amber-300'
+                      }`}
+                    >
+                      <span>🟡 Moderate (50-80% AMI)</span>
+                      <span className="text-[9px] opacity-80">(194)</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1.5 ml-auto">
+                <button
+                  type="button"
+                  onClick={() => setShowLmiTractExplorerModal(true)}
+                  className="px-2.5 py-1.5 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40 rounded-xl text-[11px] font-bold transition flex items-center gap-1 shadow-sm cursor-pointer"
+                >
+                  <Building className="w-3 h-3 text-emerald-400" />
+                  <span>214 LMI Tracts</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowUsdaBoundaryModal(true)}
+                  className="px-2.5 py-1.5 bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-500/40 rounded-xl text-[11px] font-bold transition flex items-center gap-1 shadow-sm cursor-pointer"
+                >
+                  <Shield className="w-3 h-3 text-amber-400" />
+                  <span>USDA Boundaries</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Layer Explanation & Official FFIEC Lookup Disclaimer Banner */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-[10px] text-stone-300 font-mono bg-stone-950/80 p-2.5 rounded-xl border border-stone-800">
+              <div className="flex flex-col space-y-1">
+                <div className="flex items-center gap-2 overflow-x-auto">
+                  <span className="font-bold text-emerald-400 flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-emerald-400" /> OHCS FirstHome Rules:
+                  </span>
+                  <span className="text-emerald-300 font-bold">5.0% DPA Grant</span>
+                  <span>•</span>
+                  <span className="text-amber-300 font-bold">3-Yr FTHB Waiver Active</span>
+                  <span>•</span>
+                  <span className="text-purple-300 font-bold">214 FFIEC LMI Tracts</span>
+                </div>
+                <p className="text-[10px] text-stone-400">
+                  <strong className="text-stone-300">FirstHome Disclaimer:</strong> Cross-reference official 11-digit GEOID census tract designations &amp; LMI status via the FFIEC Geocoding Mapping Tool before locking loans.
+                </p>
+              </div>
+
+              <a
+                href="https://geomap.ffiec.gov/ffiecgeomap/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[11px] font-bold transition flex items-center gap-1.5 shrink-0 shadow-sm cursor-pointer border border-emerald-400/40"
+                title="Open official FFIEC Geocoding System in new window"
+              >
+                <span>Official FFIEC Lookup</span>
+                <ExternalLink className="w-3.5 h-3.5 text-emerald-200" />
+              </a>
+            </div>
+          </div>
+
           {/* Interactive GeoMap Canvas */}
-          <div className="relative bg-stone-950 border border-stone-800 rounded-2xl h-56 w-full overflow-hidden p-4 flex flex-col justify-between">
+          <div className="relative bg-stone-950 border border-stone-800 rounded-2xl h-64 w-full overflow-hidden p-4 flex flex-col justify-between">
+            {/* Background Grid */}
             <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
+
+            {/* USDA RD Ineligible Metro Shading Layer Overlay */}
+            {showUsdaRdLayer && (
+              <div
+                className="absolute inset-x-8 top-12 bottom-12 opacity-30 bg-rose-950/40 border-2 border-dashed border-rose-500/60 rounded-3xl pointer-events-none flex items-center justify-center p-2"
+                style={{
+                  backgroundImage: 'repeating-linear-gradient(45deg, rgba(244, 63, 94, 0.15) 0, rgba(244, 63, 94, 0.15) 10px, transparent 10px, transparent 20px)'
+                }}
+              >
+                <span className="bg-stone-950/90 text-rose-300 text-[9px] font-mono font-black uppercase px-2 py-1 rounded border border-rose-500/60 tracking-wider shadow-lg">
+                  🚫 Shaded Zone = USDA Ineligible Metro Cores (Portland/Eugene/Salem/Bend)
+                </span>
+              </div>
+            )}
 
             <div className="relative z-10 flex justify-between items-start">
               <span className="px-2.5 py-1 bg-stone-900/90 text-stone-300 text-[10px] font-mono rounded-lg border border-stone-800 flex items-center gap-1.5">
-                <MapPin className="w-3 h-3 text-emerald-400" /> GeoSphere Master Layer (Oregon GIS)
+                <MapPin className="w-3 h-3 text-emerald-400" /> GeoSphere Spatial Layer (Oregon GIS • LMI &amp; USDA Boundaries)
               </span>
               <span className="px-2 py-0.5 bg-emerald-950 text-emerald-300 text-[10px] font-mono rounded border border-emerald-800">
                 Managed by Mike Ford
               </span>
             </div>
 
-            {/* Interactive Pins */}
-            <div className="relative z-10 flex items-center justify-around py-4">
+            {/* Interactive Pins with LMI & USDA RD Eligibility Badges */}
+            <div className="relative z-10 flex items-center justify-around py-2">
               {filteredProperties.map((prop) => {
                 const isSelected = prop.id === selectedPropertyId;
                 const isDefault = prop.id === activeDefaultPropertyId;
                 const qualifies = prop.price <= prequalResult.estimatedMaxPurchasePrice;
+                const lmiCat = getOregonCensusTractLmiCategory(prop.geoid);
+                const isUsdaEligible = Boolean(prop.specialPrograms?.usdaRural100Financing || prop.specialPrograms?.usdaRuralEligible);
+
                 return (
                   <button
                     key={prop.id}
@@ -1202,6 +1361,7 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                         </div>
                       )}
                     </div>
+
                     <span className={`mt-1 text-[10px] font-bold font-mono px-1.5 py-0.5 rounded border ${
                       isDefault
                         ? 'bg-amber-500 text-stone-950 border-amber-400 shadow-xs'
@@ -1209,14 +1369,37 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                     }`}>
                       {formatUSD(prop.price)}
                     </span>
+
+                    {/* Program Badges */}
+                    <div className="flex flex-col items-center gap-0.5 mt-0.5">
+                      {showOhcsLmiLayer && lmiCat && (
+                        <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-full border shadow-xs ${
+                          lmiCat === 'Low'
+                            ? 'bg-rose-950 text-rose-300 border-rose-500/80 animate-pulse'
+                            : 'bg-amber-950 text-amber-300 border-amber-500/80'
+                        }`}>
+                          {lmiCat === 'Low' ? '🔴 5% DPA (Low)' : '🟡 5% DPA (Mod)'}
+                        </span>
+                      )}
+
+                      {showUsdaRdLayer && (
+                        <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-full border shadow-xs ${
+                          isUsdaEligible
+                            ? 'bg-emerald-950 text-emerald-300 border-emerald-500/80 ring-1 ring-emerald-500/40'
+                            : 'bg-stone-950 text-stone-400 border-stone-800'
+                        }`}>
+                          {isUsdaEligible ? '🌾 USDA 100%' : '🚫 Ineligible'}
+                        </span>
+                      )}
+                    </div>
                   </button>
                 );
               })}
             </div>
 
             <div className="relative z-10 flex justify-between items-center text-[10px] text-stone-400 font-mono">
-              <span>Census Tract LMI: Active</span>
-              <span>USDA RD Boundary: Active</span>
+              <span>OHCS LMI Layer: {showOhcsLmiLayer ? 'ACTIVE (214 Tracts)' : 'Off'}</span>
+              <span>USDA RD Boundary Layer: {showUsdaRdLayer ? 'ACTIVE (Shaded Metro Core)' : 'Off'}</span>
             </div>
           </div>
 
@@ -1768,7 +1951,7 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                       )}
                       {prop.specialPrograms.ohcsFlexLendingFirstHomeEligible && (
                         <span className="px-1.5 py-0.5 rounded bg-teal-950/80 text-teal-300 border border-teal-800/80">
-                          OHCS FirstHome $15.4k
+                          OHCS FirstHome ${((prop.specialPrograms.ohcsGrantAmountUsd || 18500) / 1000).toFixed(1)}k
                         </span>
                       )}
                       {prop.specialPrograms.lmiCraGrantEligible && (
@@ -2841,6 +3024,380 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
         hasPairedAgent={hasPairedAgent}
         onAppendNotesToProperties={handleAppendNotesToProperties}
       />
+
+      {/* OHCS FLEX FIRSTHOME 214 OREGON LMI CENSUS TRACT EXPLORER MODAL */}
+      {showLmiTractExplorerModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/80 backdrop-blur-md overflow-y-auto">
+          <div className="bg-stone-900 border border-emerald-500/40 rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-stone-800 bg-gradient-to-r from-emerald-950 via-stone-900 to-amber-950/60 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-emerald-500/20 text-emerald-400 rounded-2xl border border-emerald-500/30">
+                  <Layers className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-white flex items-center gap-2">
+                    <span>OHCS Flex FirstHome — 214 Oregon LMI Census Tracts</span>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono">
+                      FFIEC &amp; eHousingPlus Grounded
+                    </span>
+                  </h3>
+                  <p className="text-xs text-stone-400 mt-0.5">
+                    Source: <code className="text-emerald-400">geosphere-map-oregon/lmi-matched-tracts.js</code> • 5.0% DPA Grant • FTHB 3-Yr Waiver Active
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowLmiTractExplorerModal(false)}
+                className="p-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-400 hover:text-white transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Toolbar: Search, Filters & Official FFIEC Disclaimer Link */}
+            <div className="p-4 bg-stone-950 border-b border-stone-800 space-y-3">
+              {/* Official FFIEC Lookup Disclaimer Banner */}
+              <div className="p-3 bg-emerald-950/40 border border-emerald-500/40 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                <div className="space-y-0.5">
+                  <span className="font-bold text-white flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <span>Official FirstHome &amp; FFIEC Property Lookup Disclaimer</span>
+                  </span>
+                  <p className="text-[11px] text-stone-300">
+                    Always cross-reference official 11-digit GEOID census tract designations, low/moderate-income (LMI) level, and OHCS Flex Lending FirstHome program eligibility for a specific street address on the FFIEC Geocoding Mapping System.
+                  </p>
+                </div>
+
+                <a
+                  href="https://geomap.ffiec.gov/ffiecgeomap/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl text-xs transition flex items-center gap-1.5 shrink-0 shadow-md cursor-pointer border border-emerald-400/40"
+                >
+                  <span>Check Official FFIEC Lookup</span>
+                  <ExternalLink className="w-3.5 h-3.5 text-emerald-200" />
+                </a>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-3">
+                {/* Search Input */}
+                <div className="relative flex-1 w-full">
+                  <input
+                    type="text"
+                    value={lmiTractSearchQuery}
+                    onChange={(e) => setLmiTractSearchQuery(e.target.value)}
+                    placeholder="Search by 11-Digit GEOID or County Name (e.g., 41051... or Multnomah)..."
+                    className="w-full bg-stone-900 border border-stone-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-stone-500 outline-none focus:border-emerald-500 font-mono"
+                  />
+                  <Building className="w-4 h-4 text-stone-500 absolute left-3 top-2.5" />
+                </div>
+
+                {/* Category Toggles */}
+                <div className="flex items-center gap-1 bg-stone-900 p-1 rounded-xl border border-stone-800 text-xs font-bold w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={() => setLmiCategoryFilter('ALL')}
+                    className={`px-3 py-1.5 rounded-lg transition ${
+                      lmiCategoryFilter === 'ALL'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-stone-400 hover:text-white'
+                    }`}
+                  >
+                    All (214)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLmiCategoryFilter('Low')}
+                    className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1 ${
+                      lmiCategoryFilter === 'Low'
+                        ? 'bg-rose-600 text-white font-black shadow-sm'
+                        : 'text-rose-400 hover:text-rose-300'
+                    }`}
+                  >
+                    <span>🔴 Low (&lt;50% AMI)</span>
+                    <span className="text-[10px] opacity-80">(20)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLmiCategoryFilter('Moderate')}
+                    className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1 ${
+                      lmiCategoryFilter === 'Moderate'
+                        ? 'bg-amber-500 text-stone-950 font-black shadow-sm'
+                        : 'text-amber-400 hover:text-amber-300'
+                    }`}
+                  >
+                    <span>🟡 Mod (50-80% AMI)</span>
+                    <span className="text-[10px] opacity-80">(194)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* County Quick Filters */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px] font-mono">
+                <span className="text-stone-500 text-[10px] uppercase font-bold mr-1">County:</span>
+                {[
+                  { id: 'ALL', label: 'All Counties' },
+                  { id: '41051', label: 'Multnomah (Portland)' },
+                  { id: '41067', label: 'Washington (Hillsboro)' },
+                  { id: '41005', label: 'Clackamas (Oregon City)' },
+                  { id: '41017', label: 'Deschutes (Bend/Redmond)' },
+                  { id: '41047', label: 'Marion (Salem)' },
+                  { id: '41039', label: 'Lane (Eugene)' },
+                  { id: '41029', label: 'Jackson (Medford)' },
+                  { id: '41011', label: 'Coos County' },
+                  { id: '41035', label: 'Klamath County' }
+                ].map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setLmiCountyFilter(c.id)}
+                    className={`px-2.5 py-1 rounded-lg transition whitespace-nowrap cursor-pointer ${
+                      lmiCountyFilter === c.id
+                        ? 'bg-emerald-950 text-emerald-300 border border-emerald-700 font-bold'
+                        : 'bg-stone-900 text-stone-400 hover:text-white border border-stone-800'
+                    }`}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Modal Body: List of Oregon LMI Census Tracts */}
+            <div className="p-4 overflow-y-auto space-y-2 flex-1 max-h-[50vh]">
+              {(() => {
+                const allTracts = getAllOregonLmiTractDetails();
+                const filtered = allTracts.filter((t) => {
+                  const matchesCat = lmiCategoryFilter === 'ALL' || t.category === lmiCategoryFilter;
+                  const matchesCounty = lmiCountyFilter === 'ALL' || t.geoid.startsWith(lmiCountyFilter);
+                  const q = lmiTractSearchQuery.toLowerCase().trim();
+                  const matchesSearch = !q || t.geoid.includes(q) || t.countyName.toLowerCase().includes(q);
+                  return matchesCat && matchesCounty && matchesSearch;
+                });
+
+                if (filtered.length === 0) {
+                  return (
+                    <div className="p-8 text-center text-stone-500 font-mono text-xs">
+                      No census tracts found matching query "{lmiTractSearchQuery}".
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                    {filtered.map((tract) => {
+                      const matchedProperties = properties.filter((p) => p.geoid === tract.geoid);
+                      return (
+                        <div
+                          key={tract.geoid}
+                          className={`p-3 rounded-2xl border transition ${
+                            tract.category === 'Low'
+                              ? 'bg-rose-950/20 border-rose-500/30 hover:border-rose-500/60'
+                              : 'bg-stone-950 border-stone-800 hover:border-emerald-500/50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase font-mono ${
+                                tract.category === 'Low'
+                                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                                  : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                              }`}>
+                                {tract.category === 'Low' ? '🔴 Low (<50% AMI)' : '🟡 Moderate (50-80% AMI)'}
+                              </span>
+                              <span className="text-xs font-bold text-white font-mono">
+                                FIPS: {tract.geoid}
+                              </span>
+                            </div>
+
+                            <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">
+                              5.0% DPA Boost
+                            </span>
+                          </div>
+
+                          <div className="mt-2 flex items-center justify-between text-xs">
+                            <span className="text-stone-300 font-bold">{tract.countyName}</span>
+                            <span className="text-[10px] text-amber-300 font-mono">3-Yr FTHB Waiver Active</span>
+                          </div>
+
+                          {matchedProperties.length > 0 && (
+                            <div className="mt-2 pt-2 border-t border-stone-800/80 space-y-1">
+                              <span className="text-[10px] font-bold text-emerald-300 flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                                <span>{matchedProperties.length} Saved Property Listing(s) inside this Tract:</span>
+                              </span>
+                              <div className="flex flex-wrap gap-1">
+                                {matchedProperties.map((p) => (
+                                  <button
+                                    key={p.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedPropertyId(p.id);
+                                      setShowLmiTractExplorerModal(false);
+                                    }}
+                                    className="px-2 py-0.5 bg-emerald-950 hover:bg-emerald-900 text-white rounded text-[10px] font-mono border border-emerald-800 transition cursor-pointer"
+                                  >
+                                    {p.addressLine1} ({formatUSD(p.price)})
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-stone-800 bg-stone-950 flex items-center justify-between text-xs text-stone-400">
+              <span className="font-mono text-[11px]">
+                Showing {getAllOregonLmiTractDetails().length} total FFIEC Oregon Census Tracts for OHCS FirstHome
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowLmiTractExplorerModal(false)}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* USDA RD BOUNDARY & INELIGIBILITY ZONE INSPECTOR MODAL */}
+      {showUsdaBoundaryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/80 backdrop-blur-md overflow-y-auto">
+          <div className="bg-stone-900 border border-amber-500/40 rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-stone-800 bg-gradient-to-r from-amber-950 via-stone-900 to-emerald-950/60 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-amber-500/20 text-amber-400 rounded-2xl border border-amber-500/30">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-white flex items-center gap-2">
+                    <span>USDA RD Rural Development Boundary Inspector</span>
+                    <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-mono">
+                      100% Zero Down
+                    </span>
+                  </h3>
+                  <p className="text-xs text-stone-400 mt-0.5">
+                    Shaded Areas = Ineligible Metro Cores • <strong className="text-emerald-400">Everything Outside Shaded Areas = 100% USDA Eligible</strong>
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowUsdaBoundaryModal(false)}
+                className="p-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-400 hover:text-white transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 overflow-y-auto space-y-4 text-xs">
+              {/* Core Principle Banner */}
+              <div className="p-4 bg-emerald-950/40 border border-emerald-500/40 rounded-2xl space-y-2">
+                <h4 className="text-sm font-black text-emerald-300 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span>The Fundamental USDA RD Rule:</span>
+                </h4>
+                <p className="text-stone-300 leading-relaxed">
+                  USDA Rural Development (RD) Guaranteed Housing loans do <strong className="text-white">NOT</strong> publish a list of eligible towns. Instead, USDA defines strict <strong className="text-rose-300">Ineligible Urbanized Boundaries</strong> (shaded metropolitan cores).
+                </p>
+                <p className="text-emerald-300 font-bold leading-relaxed bg-stone-950/80 p-2.5 rounded-xl border border-emerald-800 font-mono">
+                  👉 Rule: ANY single-family home or condo located OUTSIDE of the shaded urban metro boundary qualifies for 100% USDA Zero-Down financing!
+                </p>
+              </div>
+
+              {/* Shaded Ineligible Metro Cores in Oregon */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-rose-400 uppercase tracking-wider flex items-center gap-1">
+                  <X className="w-4 h-4 text-rose-400" />
+                  <span>Shaded Ineligible Urban Metro Cores (Population &gt; 35k / Metro Density):</span>
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-stone-300">
+                  <div className="p-3 bg-stone-950 rounded-xl border border-rose-500/30">
+                    <span className="font-bold text-white block">Portland Metro Core (Ineligible Zone)</span>
+                    <span className="text-[11px] text-stone-400">Portland, Beaverton, Hillsboro, Gresham, Tigard, Lake Oswego, Tualatin city centers.</span>
+                  </div>
+                  <div className="p-3 bg-stone-950 rounded-xl border border-rose-500/30">
+                    <span className="font-bold text-white block">Eugene / Springfield Core (Ineligible Zone)</span>
+                    <span className="text-[11px] text-stone-400">Eugene city limits &amp; urbanized Springfield core.</span>
+                  </div>
+                  <div className="p-3 bg-stone-950 rounded-xl border border-rose-500/30">
+                    <span className="font-bold text-white block">Salem / Keizer Core (Ineligible Zone)</span>
+                    <span className="text-[11px] text-stone-400">Salem city core &amp; Keizer metropolitan area.</span>
+                  </div>
+                  <div className="p-3 bg-stone-950 rounded-xl border border-rose-500/30">
+                    <span className="font-bold text-white block">Bend Core (Ineligible Zone)</span>
+                    <span className="text-[11px] text-stone-400">Bend urban growth boundary &amp; central municipality.</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* High-Demand 100% USDA Eligible Surrounding Oregon Communities */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span>Popular 100% USDA Eligible Towns (Outside Shaded Zones):</span>
+                </h4>
+
+                <div className="p-3 bg-stone-950 rounded-xl border border-emerald-500/30 space-y-2 text-stone-300">
+                  <div className="flex flex-wrap gap-1.5 font-mono text-[11px]">
+                    {[
+                      'Scappoose', 'St. Helens', 'Molalla', 'Estacada', 'Sandy', 'Canby', 'Vernonia',
+                      'Silverton', 'Stayton', 'Sublimity', 'Monmouth', 'Independence', 'Dallas',
+                      'Cottage Grove', 'Junction City', 'Creswell', 'Oakridge',
+                      'Redmond', 'La Pine', 'Sisters', 'Prineville', 'Madras',
+                      'Central Point', 'Talent', 'Phoenix', 'Eagle Point', 'Shady Cove',
+                      'Dayton', 'Carlton', 'Yamhill', 'Sheridan', 'Willamina', 'Dundee',
+                      'Lebanon', 'Sweet Home', 'Philomath', 'Brownsville'
+                    ].map((city) => (
+                      <span
+                        key={city}
+                        className="px-2 py-0.5 rounded-lg bg-emerald-950 text-emerald-300 border border-emerald-800/80 font-bold"
+                      >
+                        ✓ {city}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Key Income & Underwriting Guidelines */}
+              <div className="p-3 bg-stone-950 rounded-xl border border-stone-800 space-y-1 text-stone-300 font-mono text-[11px]">
+                <span className="text-white font-bold block">USDA 100% Underwriting Guidelines:</span>
+                <div>• Household Income Cap: Up to 115% Area Median Income (AMI) (e.g., $110,000–$125,000+ depending on household size).</div>
+                <div>• Minimum Credit Score: 620 FICO (Standard automated approval).</div>
+                <div>• Upfront Guarantee Fee: 1.00% (Financed into loan) + 0.35% Annual Guarantee Fee.</div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-stone-800 bg-stone-950 flex items-center justify-between text-xs text-stone-400">
+              <span className="font-mono text-[11px]">USDA Rural Development Guaranteed Housing Program</span>
+              <button
+                type="button"
+                onClick={() => setShowUsdaBoundaryModal(false)}
+                className="px-4 py-2 bg-amber-500 text-stone-950 font-black rounded-xl transition cursor-pointer hover:bg-amber-400"
+              >
+                Got It
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer & Copyright */}
       <div className="pt-3 border-t border-stone-800 flex flex-col sm:flex-row items-center justify-between text-[10px] text-stone-500 font-mono">

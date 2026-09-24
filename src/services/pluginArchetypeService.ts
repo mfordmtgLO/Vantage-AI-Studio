@@ -1291,7 +1291,7 @@ vantageHarnessRouter.post('/recall', async (req, res) => {
             'Authorization': \`Bearer \${effectiveDeepSeekKey}\`
           },
           body: JSON.stringify({
-            model: 'deepseek-chat',
+            model: 'deepseek-flash', // DeepSeek-V4.1-Flash API Model
             messages: [
               { role: 'system', content: 'You are Vantage 2nd Brain AI. Provide precise, deepthink reasoning with memory grounding.' },
               ...history.map((h: any) => ({ role: h.sender === 'user' ? 'user' : 'assistant', content: h.text || h.content })),
@@ -1302,7 +1302,7 @@ vantageHarnessRouter.post('/recall', async (req, res) => {
         if (dsRes.ok) {
           const dsData = await dsRes.json();
           answer = dsData.choices?.[0]?.message?.content || '';
-          engineUsed = 'deepseek-r1-harness';
+          engineUsed = 'deepseek-v4.1-flash-harness-v0.1.1';
         }
       } catch (e) {
         console.warn('DeepSeek recall failed, falling back to Gemini:', e);
@@ -1342,9 +1342,9 @@ vantageHarnessRouter.post('/harness-agent', async (req, res) => {
           'Authorization': \`Bearer \${apiKey}\`
         },
         body: JSON.stringify({
-          model: 'deepseek-chat',
+          model: 'deepseek-flash', // DeepSeek-V4.1-Flash API Model
           messages: [
-            { role: 'system', content: 'You are the DeepSeek Harness Agent. Perform autonomous multi-step research and return clear conclusions.' },
+            { role: 'system', content: 'You are the DeepSeek Harness Agent (v0.1.1). Perform autonomous multi-step research and return clear conclusions.' },
             { role: 'user', content: prompt }
           ]
         })
@@ -1367,7 +1367,7 @@ vantageHarnessRouter.post('/harness-agent', async (req, res) => {
       success: true,
       executionTrace: [
         { step: 1, action: 'dsh-tool-web: web_search', status: 'completed', details: \`Queried web for: \${prompt.slice(0, 30)}...\` },
-        { step: 2, action: 'dsh-agent-sdk: synthesis', status: 'completed', details: 'Synthesized insights with deep reasoning' },
+        { step: 2, action: 'dsh-agent-sdk-v0.1.1: synthesis', status: 'completed', details: 'Synthesized insights with DeepSeek-V4.1-Flash multimodal reasoning' },
         { step: 3, action: 'dsh-cron: schedule', status: cronSchedule ? 'registered' : 'skipped', details: cronSchedule || 'none' }
       ],
       finalAnswer,
@@ -1400,18 +1400,19 @@ vantageHarnessRouter.post('/ingest', async (req, res) => {
  * Generates DeepSeek Harness (dsh) CLI & ACP Configuration YAML/JSON
  */
 export function generateDshCliConfig(config: PluginPackagingConfig): string {
-  return `# DeepSeek Harness (dsh) Plugin Specification & Profile
-# Run with: npx @deepseek-ai/dsh web --port 3080
-# Or headless: npx @deepseek-ai/dsh run --profile vantage-profile.yaml
+  return `# DeepSeek Harness (dsh v0.1.1) Plugin Specification & Profile
+# Run with: npx @deepseek-ai/dsh@0.1.1 web --port 3080
+# Or headless: npx @deepseek-ai/dsh@0.1.1 run --profile vantage-profile.yaml
 
 name: "${config.pluginName}"
-version: "2.5.0"
-description: "Vantage AI Hybrid 2nd Brain + DeepSeek Harness Agent with Cron & Web Search"
+version: "2.6.0"
+description: "Vantage AI Hybrid 2nd Brain + DeepSeek-V4.1-Flash Harness v0.1.1 Agent with Cron & Web Search"
 author: "Vantage AI Workspace"
 license: "MIT"
 
 runtime:
-  model: "deepseek-chat"
+  model: "deepseek-flash" # DeepSeek-V4.1-Flash API Model
+  harnessVersion: "v0.1.1"
   temperature: 0.7
   sandbox: true
   maxIterations: 10

@@ -131,14 +131,14 @@ export const LeadDpaGrantStackerStudio: React.FC = () => {
     },
     {
       id: 'dpa-7',
-      name: 'OHCS Flex Lending FirstHome 100% / 3.5% DPA Assistance',
+      name: 'OHCS Flex Lending FirstHome (4.0%–5.0% Cash Assistance)',
       category: 'ohcs_flex_firsthome',
-      grantAmount: 15400,
+      grantAmount: 19300,
       isGrantNonRepayable: true,
       requiredDownPercent: 0,
       interestRate: 6.00,
-      description: 'Oregon Housing and Community Services (OHCS) Flex Lending FirstHome offering up to 3.5% to 5% cash assistance for down payment & closing costs.',
-      eligibilityRequirements: 'First-time homebuyer or targeted area purchaser; household income within regional OHCS limits.',
+      description: 'Oregon Housing and Community Services (OHCS) Flex Lending FirstHome offering 4.0% standard or 5.0% LMI/Targeted Area cash assistance.',
+      eligibilityRequirements: '620 FICO minimum; primary residence in Oregon; First-Time Homebuyer rule WAIVED in Targeted Census Tracts.',
       enabled: true
     }
   ]);

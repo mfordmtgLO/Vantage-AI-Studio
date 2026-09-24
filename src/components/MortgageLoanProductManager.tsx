@@ -793,82 +793,132 @@ export const MortgageLoanProductManager: React.FC<MortgageLoanProductManagerProp
           </div>
 
           {/* INPUT FORM */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase">Annual Income</label>
-              <input
-                type="number"
-                value={testBuyer.grossAnnualIncome}
-                onChange={(e) => setTestBuyer({ ...testBuyer, grossAnnualIncome: Number(e.target.value) })}
-                className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700"
-              />
+          <div className="space-y-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Annual Income</label>
+                <input
+                  type="number"
+                  value={testBuyer.grossAnnualIncome}
+                  onChange={(e) => setTestBuyer({ ...testBuyer, grossAnnualIncome: Number(e.target.value) })}
+                  className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Credit Score</label>
+                <input
+                  type="number"
+                  value={testBuyer.creditScore}
+                  onChange={(e) => setTestBuyer({ ...testBuyer, creditScore: Number(e.target.value) })}
+                  className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Household Size</label>
+                <select
+                  value={testBuyer.householdSize || 1}
+                  onChange={(e) => setTestBuyer({ ...testBuyer, householdSize: Number(e.target.value) })}
+                  className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700"
+                >
+                  <option value={1}>1-2 Persons</option>
+                  <option value={3}>3+ Persons</option>
+                  <option value={4}>4 Persons</option>
+                  <option value={5}>5+ Persons</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">State & County</label>
+                <select
+                  value={testBuyer.countyFipsOrName || '41051'}
+                  onChange={(e) => setTestBuyer({ ...testBuyer, propertyState: 'OR', countyFipsOrName: e.target.value })}
+                  className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700"
+                >
+                  <option value="41051">OR - Multnomah (Portland)</option>
+                  <option value="41067">OR - Washington (Beaverton)</option>
+                  <option value="41005">OR - Clackamas (Oregon City)</option>
+                  <option value="41017">OR - Deschutes (Bend/Redmond)</option>
+                  <option value="41047">OR - Marion (Salem)</option>
+                  <option value="41039">OR - Lane (Eugene)</option>
+                  <option value="41029">OR - Jackson (Medford)</option>
+                  <option value="41000">OR - Rural / Balance of State</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Home Price</label>
+                <input
+                  type="number"
+                  value={testBuyer.propertyPrice}
+                  onChange={(e) => setTestBuyer({ ...testBuyer, propertyPrice: Number(e.target.value) })}
+                  className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Down Payment</label>
+                <input
+                  type="number"
+                  value={testBuyer.liquidDownPayment}
+                  onChange={(e) => setTestBuyer({ ...testBuyer, liquidDownPayment: Number(e.target.value) })}
+                  className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Back-End DTI %</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={testBuyer.dtiPercent || 38.0}
+                  onChange={(e) => setTestBuyer({ ...testBuyer, dtiPercent: Number(e.target.value) })}
+                  className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700"
+                />
+              </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase">Credit Score</label>
-              <input
-                type="number"
-                value={testBuyer.creditScore}
-                onChange={(e) => setTestBuyer({ ...testBuyer, creditScore: Number(e.target.value) })}
-                className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700"
-              />
-            </div>
+            {/* OHCS QUALIFICATION TOGGLES */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-slate-200 dark:border-slate-700 text-xs font-bold">
+              <label className="flex items-center gap-1.5 cursor-pointer text-slate-700 dark:text-slate-300">
+                <input
+                  type="checkbox"
+                  checked={testBuyer.isFirstTimeHomebuyer ?? true}
+                  onChange={(e) => setTestBuyer({ ...testBuyer, isFirstTimeHomebuyer: e.target.checked })}
+                  className="rounded text-teal-600 focus:ring-teal-500"
+                />
+                First-Time Homebuyer
+              </label>
 
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase">AMI Standard</label>
-              <input
-                type="number"
-                value={testBuyer.areaMedianIncomeUsd}
-                onChange={(e) => setTestBuyer({ ...testBuyer, areaMedianIncomeUsd: Number(e.target.value) })}
-                className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700"
-              />
-            </div>
+              <label className="flex items-center gap-1.5 cursor-pointer text-slate-700 dark:text-slate-300">
+                <input
+                  type="checkbox"
+                  checked={testBuyer.isVeteranBorrower ?? false}
+                  onChange={(e) => setTestBuyer({ ...testBuyer, isVeteranBorrower: e.target.checked })}
+                  className="rounded text-teal-600 focus:ring-teal-500"
+                />
+                Qualified Veteran (FTHB Waiver)
+              </label>
 
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase">State</label>
-              <select
-                value={testBuyer.propertyState}
-                onChange={(e) => setTestBuyer({ ...testBuyer, propertyState: e.target.value })}
-                className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700"
-              >
-                <option value="OR">Oregon (OR)</option>
-                <option value="WA">Washington (WA)</option>
-                <option value="CA">California (CA)</option>
-                <option value="AZ">Arizona (AZ)</option>
-                <option value="TX">Texas (TX)</option>
-                <option value="FL">Florida (FL)</option>
-              </select>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase">Home Price</label>
-              <input
-                type="number"
-                value={testBuyer.propertyPrice}
-                onChange={(e) => setTestBuyer({ ...testBuyer, propertyPrice: Number(e.target.value) })}
-                className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase">Down Payment</label>
-              <input
-                type="number"
-                value={testBuyer.liquidDownPayment}
-                onChange={(e) => setTestBuyer({ ...testBuyer, liquidDownPayment: Number(e.target.value) })}
-                className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700"
-              />
-            </div>
-
-            <div className="space-y-1 flex flex-col justify-end">
-              <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer pb-2">
+              <label className="flex items-center gap-1.5 cursor-pointer text-slate-700 dark:text-slate-300">
                 <input
                   type="checkbox"
                   checked={testBuyer.isTargetedCensusTract}
                   onChange={(e) => setTestBuyer({ ...testBuyer, isTargetedCensusTract: e.target.checked })}
                   className="rounded text-indigo-600 focus:ring-indigo-500"
                 />
-                Targeted Tract
+                OHCS Targeted Area Census Tract
+              </label>
+
+              <label className="flex items-center gap-1.5 cursor-pointer text-slate-700 dark:text-slate-300">
+                <input
+                  type="checkbox"
+                  checked={testBuyer.ownsOtherRealEstate ?? false}
+                  onChange={(e) => setTestBuyer({ ...testBuyer, ownsOtherRealEstate: e.target.checked })}
+                  className="rounded text-rose-600 focus:ring-rose-500"
+                />
+                Owns Other Real Estate (Disqualifies OHCS)
               </label>
             </div>
           </div>

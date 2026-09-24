@@ -161,7 +161,7 @@ export const COMMERCIAL_PRICING_TIERS: PricingTier[] = [
       'Gemini 3.0 Hybrid Brain Multimodal Core with Autonomous Agentic Loops',
       'Unlimited Domains & Full Whitelabel Embedding Rights',
       'Full Obfuscated/Unbundled Source Code Access (.ts / .js)',
-      'Multi-LLM Gateway (Gemini 3.0, Claude 3.7, ChatGPT-4o, DeepSeek R1/V3, Cursor)',
+      'Multi-LLM Gateway (Gemini 3.0, Claude 3.7, ChatGPT-4o, DeepSeek-V4.1-Flash, Cursor)',
       'CSV Maker+ Enterprise Exporter with ZIP Distribution Package Builder',
       'Dedicated Custom Webhook & CRM Sync (Salesforce, HubSpot, Total Expert, BoldTrail, BPD)',
       'Airgapped Guardrails & Boundary Verification Engine',
@@ -910,7 +910,7 @@ Every popular AI chatbot suffers from three fatal bottlenecks:
 3. **Execution Paralysis**: Generic chatbots can only generate text—they cannot take real, audited business actions safely.
 
 ### 💡 The Vantage AI Solution:
-**Vantage AI Workspace UI + 4-in-1 Suite** transforms stateless LLMs (Claude 3.5 Sonnet, ChatGPT-4o, Gemini 2.5/3.8, DeepSeek R1) into an **autonomous, interconnected operating system**. It embeds permanent vector memory, dual-pathway Google Workspace execution, hands-free voice orchestration, and specialized real estate DTI math directly into your daily workflow.
+**Vantage AI Workspace UI + 7-in-1 Suite** transforms stateless LLMs (Claude 3.7, ChatGPT-4o, Gemini 3.0, DeepSeek-V4.1-Flash) into an **autonomous, interconnected operating system**. It embeds permanent vector memory, dual-pathway Google Workspace execution, hands-free voice orchestration, and specialized real estate DTI math directly into your daily workflow.
 
 ---
 

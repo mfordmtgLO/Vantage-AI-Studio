@@ -49,6 +49,12 @@ export interface BuyerEligibilityCheckInput {
   propertyPrice: number;
   liquidDownPayment: number;
   isTargetedCensusTract: boolean;
+  householdSize?: number; // 1 to 8+ persons (OHCS 1-2 vs 3+ income tiering)
+  isFirstTimeHomebuyer?: boolean; // Default true (3-year prior ownership rule)
+  isVeteranBorrower?: boolean; // Default false (Waives FTHB rule in OHCS)
+  ownsOtherRealEstate?: boolean; // Default false (Prohibited in OHCS Flex Lending)
+  countyFipsOrName?: string; // e.g. '41051' or 'Multnomah'
+  dtiPercent?: number; // e.g. 43.5%
 }
 
 export interface BuyerEligibilityProductResult {
@@ -57,4 +63,10 @@ export interface BuyerEligibilityProductResult {
   disqualificationReasons: string[];
   maxEstimatedGrantUsd: number;
   effectiveRequiredDownPaymentUsd: number;
+  ehousingPlusCode?: string;
+  firstHomeWaiverApplied?: boolean;
+  countyPriceLimitUsd?: number;
+  countyIncomeLimitUsd?: number;
+  grantPercentApplied?: number;
+  isForgivableDpa?: boolean;
 }

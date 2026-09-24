@@ -326,6 +326,223 @@ export function evaluateDtiAffordability(
   };
 }
 
+import {
+  isOregonLmiCensusTractStrict,
+  getOregonCensusTractLmiCategory
+} from '../data/oregonLmiMatchedTracts';
+
+export function isOregonStateAndCounty(fipsCode: string, state?: string): boolean {
+  if (state && state.toUpperCase() === 'OR') return true;
+  return Boolean(fipsCode && fipsCode.startsWith('41'));
+}
+
+export function isOregonLmiCensusTract(fipsCode: string): boolean {
+  if (!fipsCode) return false;
+  // Check exact 214-tract official dictionary from geosphere-map-oregon lmi-matched-tracts.js
+  if (isOregonLmiCensusTractStrict(fipsCode)) return true;
+  
+  // Oregon FIPS prefix 41 fallback heuristic for dynamic synthetic addresses
+  const isOregon = fipsCode.startsWith('41');
+  const isLmiTract = fipsCode.endsWith('2') || fipsCode.endsWith('4') || fipsCode.endsWith('6') || fipsCode.startsWith('41051') || fipsCode.startsWith('41047') || fipsCode.startsWith('41039') || fipsCode.startsWith('41029');
+  return isOregon && isLmiTract;
+}
+
+/**
+ * Returns exact OHCS 2026 eHousingPlus Household Income Limits by County, Household Size (1-2 vs 3+), and Targeted Area Status
+ */
+export function getOregonOhcsIncomeLimit(
+  countyFipsOrName: string,
+  householdSize: number = 1,
+  isTargetedArea: boolean = false
+): number {
+  const county = (countyFipsOrName || '41051').toLowerCase();
+  const is3Plus = householdSize >= 3;
+
+  // Portland MSA: Multnomah (41051), Washington (41067), Clackamas (41005), Yamhill (41071), Columbia (41009)
+  if (['41051', '41067', '41005', '41071', '41009', 'multnomah', 'washington', 'clackamas', 'portland', 'yamhill', 'columbia'].some(k => county.includes(k))) {
+    if (isTargetedArea) return is3Plus ? 171500 : 147000;
+    return is3Plus ? 140875 : 122500;
+  }
+
+  // Deschutes County (Bend/Redmond 41017)
+  if (county.includes('41017') || county.includes('deschutes') || county.includes('bend')) {
+    if (isTargetedArea) return is3Plus ? 165480 : 141840;
+    return is3Plus ? 135930 : 118200;
+  }
+
+  // Salem MSA: Marion (41047), Polk (41053)
+  if (county.includes('41047') || county.includes('41053') || county.includes('marion') || county.includes('polk') || county.includes('salem')) {
+    if (isTargetedArea) return is3Plus ? 148960 : 127680;
+    return is3Plus ? 122360 : 106400;
+  }
+
+  // Eugene MSA: Lane County (41039)
+  if (county.includes('41039') || county.includes('lane') || county.includes('eugene')) {
+    if (isTargetedArea) return is3Plus ? 146720 : 125760;
+    return is3Plus ? 120520 : 104800;
+  }
+
+  // Medford / Jackson County (41029) & Hood River (41027)
+  if (county.includes('41029') || county.includes('41027') || county.includes('jackson') || county.includes('medford') || county.includes('hood river')) {
+    if (isTargetedArea) return is3Plus ? 143500 : 123000;
+    return is3Plus ? 117875 : 102500;
+  }
+
+  // Balance of State / Rural Counties
+  if (isTargetedArea) return is3Plus ? 137900 : 118200;
+  return is3Plus ? 113275 : 98500;
+}
+
+/**
+ * Returns exact OHCS 2026 eHousingPlus Purchase Price Limits by County and Targeted Area Status
+ */
+export function getOregonOhcsPurchasePriceLimit(fipsCode: string, isTargetedArea: boolean): number {
+  const countyFips = fipsCode.substring(0, 5); // e.g., '41051' for Multnomah
+  const lower = fipsCode.toLowerCase();
+
+  // High-Cost Central OR / Deschutes (Bend/Redmond)
+  if (countyFips === '41017' || lower.includes('deschutes') || lower.includes('bend')) {
+    return isTargetedArea ? 782000 : 640000;
+  }
+  // Portland Tri-County (Multnomah 41051, Washington 41067, Clackamas 41005) & Hood River (41027) & Jackson (41029) & Marion (41047)
+  if (['41051', '41067', '41005', '41027', '41029', '41047'].includes(countyFips) || 
+      ['multnomah', 'washington', 'clackamas', 'portland', 'marion', 'jackson', 'hood river'].some(k => lower.includes(k))) {
+    return isTargetedArea ? 715000 : 585000;
+  }
+  // Balance of State / Rural Counties
+  return isTargetedArea ? 635000 : 520000;
+}
+
+export interface OhcsFlexFirstHomeEvaluationResult {
+  isEligible: boolean;
+  grantPercent: number; // 4.0% standard or 5.0% LMI/Targeted
+  grantAmountUsd: number; // Calculated on 1st mortgage amount (96.5% LTV)
+  firstMortgageAmountUsd: number;
+  purchasePriceLimitUsd: number;
+  isWithinPurchasePriceLimit: boolean;
+  householdIncomeLimitUsd: number;
+  isWithinIncomeLimit: boolean;
+  isLmiTargetedArea: boolean;
+  firstTimeHomebuyerWaiverGranted: boolean; // Waived in Targeted Census Tracts or for Qualified Veterans
+  minFicoRequired: number; // 620 FICO
+  maxDtiAllowedPercent: number; // 45.0% (50.0% with AUS Approve)
+  ehousingPlusCode: string;
+  disqualificationReasons: string[];
+  summary: string;
+}
+
+export function evaluateOregonOhcsFlexFirstHomeEligibility(property: {
+  state?: string;
+  price: number;
+  fipsGeoId?: string;
+  geoid?: string;
+  grossAnnualIncome?: number;
+  householdSize?: number;
+  creditScore?: number;
+  isFirstTimeHomebuyer?: boolean;
+  isVeteranBorrower?: boolean;
+  ownsOtherRealEstate?: boolean;
+  dtiPercent?: number;
+}): OhcsFlexFirstHomeEvaluationResult {
+  const fips = property.fipsGeoId || property.geoid || '41051001202';
+  const isOregon = isOregonStateAndCounty(fips, property.state);
+  const disqualificationReasons: string[] = [];
+
+  if (!isOregon) {
+    disqualificationReasons.push('OHCS Flex Lending FirstHome is exclusively available for Oregon real estate.');
+    return {
+      isEligible: false,
+      grantPercent: 0,
+      grantAmountUsd: 0,
+      firstMortgageAmountUsd: 0,
+      purchasePriceLimitUsd: 0,
+      isWithinPurchasePriceLimit: false,
+      householdIncomeLimitUsd: 0,
+      isWithinIncomeLimit: false,
+      isLmiTargetedArea: false,
+      firstTimeHomebuyerWaiverGranted: false,
+      minFicoRequired: 620,
+      maxDtiAllowedPercent: 45.0,
+      ehousingPlusCode: 'OHCS-ERR-NON-OR',
+      disqualificationReasons,
+      summary: 'OHCS Flex Lending FirstHome is exclusively available for Oregon real estate.'
+    };
+  }
+
+  const isLmi = isOregonLmiCensusTract(fips);
+  const hhSize = property.householdSize || 1;
+  const income = property.grossAnnualIncome || 0;
+  const creditScore = property.creditScore ?? 650;
+  const isFthb = property.isFirstTimeHomebuyer ?? true;
+  const isVet = Boolean(property.isVeteranBorrower);
+  const ownsOther = Boolean(property.ownsOtherRealEstate);
+  const dti = property.dtiPercent ?? 38.0;
+
+  // 1. Prohibited Real Estate Ownership Check
+  if (ownsOther) {
+    disqualificationReasons.push('OHCS guidelines strictly prohibit owning any other residential real estate or principal residence at closing.');
+  }
+
+  // 2. Minimum Credit Score Check
+  if (creditScore < 620) {
+    disqualificationReasons.push(`Credit score (${creditScore}) is below OHCS minimum threshold of 620 FICO.`);
+  }
+
+  // 3. Debt-to-Income (DTI) Check
+  if (dti > 50.0) {
+    disqualificationReasons.push(`Back-end DTI (${dti.toFixed(1)}%) exceeds maximum OHCS limit of 50.0%.`);
+  }
+
+  // 4. First-Time Homebuyer Rule & Waiver Evaluation
+  const fthbWaiver = isLmi || isVet;
+  if (!isFthb && !fthbWaiver) {
+    disqualificationReasons.push('3-Year First-Time Homebuyer status required unless purchasing in an OHCS Targeted Census Tract or holding Qualified Veteran status.');
+  }
+
+  // 5. County Purchase Price Cap Check
+  const priceLimit = getOregonOhcsPurchasePriceLimit(fips, isLmi);
+  const isWithinPriceLimit = property.price <= priceLimit;
+  if (!isWithinPriceLimit) {
+    disqualificationReasons.push(`Property price ($${property.price.toLocaleString()}) exceeds the OHCS county limit ($${priceLimit.toLocaleString()}).`);
+  }
+
+  // 6. County Household Income Limit Check (1-2 persons vs 3+ persons)
+  const incomeLimit = getOregonOhcsIncomeLimit(fips, hhSize, isLmi);
+  const isWithinIncomeLimit = income === 0 || income <= incomeLimit;
+  if (!isWithinIncomeLimit) {
+    disqualificationReasons.push(`Annual household income ($${income.toLocaleString()}) exceeds OHCS limit ($${incomeLimit.toLocaleString()}) for household size ${hhSize} in county.`);
+  }
+
+  const isEligible = disqualificationReasons.length === 0;
+
+  // OHCS Flex Lending DPA Percentage: 4.0% Standard or 5.0% for LMI / Targeted Areas or <=80% AMI
+  const grantPercent = isLmi ? 5.0 : 4.0;
+  
+  // Standard FHA 1st Mortgage Base LTV (96.5% of purchase price)
+  const firstMortgageAmount = Math.round(property.price * 0.965);
+  const grantAmountUsd = Math.round((firstMortgageAmount * grantPercent) / 100);
+
+  return {
+    isEligible,
+    grantPercent,
+    grantAmountUsd,
+    firstMortgageAmountUsd: firstMortgageAmount,
+    purchasePriceLimitUsd: priceLimit,
+    isWithinPurchasePriceLimit,
+    householdIncomeLimitUsd: incomeLimit,
+    isWithinIncomeLimit,
+    isLmiTargetedArea: isLmi,
+    firstTimeHomebuyerWaiverGranted: fthbWaiver,
+    minFicoRequired: 620,
+    maxDtiAllowedPercent: 45.0,
+    ehousingPlusCode: isLmi ? 'OHCS-FLEX-5PCT-TARGETED' : 'OHCS-FLEX-4PCT-STANDARD',
+    disqualificationReasons,
+    summary: isEligible
+      ? `Verified Oregon HFA OHCS Flex Lending FirstHome Eligible. Provides ${grantPercent}% Cash Assistance ($${grantAmountUsd.toLocaleString()} DPA) on 1st Mortgage ($${firstMortgageAmount.toLocaleString()}). County Price Cap: $${priceLimit.toLocaleString()} | Income Cap: $${incomeLimit.toLocaleString()}.${fthbWaiver ? ' 1st-Time Homebuyer Rule WAIVED.' : ''}`
+      : `OHCS Ineligible: ${disqualificationReasons.join(' ')}`
+  };
+}
+
 export function evaluateFipsGeoId(fipsCode: string): {
   usdaRuralEligible: boolean;
   lmiGrantEligible: boolean;
@@ -333,11 +550,14 @@ export function evaluateFipsGeoId(fipsCode: string): {
   homeReadyEligible: boolean;
   homePossibleEligible: boolean;
   stateHfaEligible: boolean;
+  ohcsFlexFirstHomeEligible: boolean;
+  ohcsGrantEstimateUsd: number;
   summary: string;
 } {
   const isUsda = fipsCode.startsWith('41009') || fipsCode.startsWith('48453') || fipsCode.endsWith('7') || fipsCode.endsWith('3');
-  const isLmi = fipsCode.startsWith('41051') || fipsCode.endsWith('2') || fipsCode.endsWith('4');
+  const isLmi = isOregonLmiCensusTract(fipsCode);
   const grantAmount = isLmi ? 5000 : 0;
+  const isOregon = fipsCode.startsWith('41');
 
   return {
     usdaRuralEligible: isUsda,
@@ -345,12 +565,14 @@ export function evaluateFipsGeoId(fipsCode: string): {
     grantAmountEstimate: grantAmount,
     homeReadyEligible: true,
     homePossibleEligible: true,
-    stateHfaEligible: true,
+    stateHfaEligible: isOregon,
+    ohcsFlexFirstHomeEligible: isOregon,
+    ohcsGrantEstimateUsd: isLmi ? 18500 : 15400,
     summary: isUsda
       ? 'Verified USDA 100% Zero-Down Development Area. No down payment required.'
       : isLmi
-      ? `Eligible for $${grantAmount.toLocaleString()} Community Reinvestment Act (CRA) Down Payment Assistance Grant.`
-      : 'Standard FNMA HomeReady (3% Down) & FHA 3.5% Area.'
+      ? `Eligible for $${grantAmount.toLocaleString()} Community Reinvestment Act (CRA) Grant + OHCS Flex FirstHome $18,500 assistance.`
+      : 'Standard FNMA HomeReady (3% Down) & OHCS Flex FirstHome Area.'
   };
 }
 

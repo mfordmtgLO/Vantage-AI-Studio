@@ -17,6 +17,7 @@ import {
   checkBuyerProductEligibility
 } from '../data/defaultMortgageLoanProducts';
 import { SyncedPropertyListing } from '../types/firstTimeHomebuyerPlugin';
+import { evaluateOregonOhcsFlexFirstHomeEligibility } from './geomapMortgageEngine';
 
 export interface PropertyDownPaymentEligibility {
   propertyId: string;
@@ -103,7 +104,8 @@ export class MortgageLoanEligibilityService {
         input.propertyState,
         input.propertyPrice,
         input.liquidDownPayment,
-        input.isTargetedCensusTract
+        input.isTargetedCensusTract,
+        input
       )
     );
   }
@@ -282,8 +284,15 @@ export class MortgageLoanEligibilityService {
       this.isProductActive('lakeview_national_bayview')
     );
 
+    const ohcsEval = evaluateOregonOhcsFlexFirstHomeEligibility({
+      state: property.state,
+      price: property.price,
+      fipsGeoId: property.fipsGeoId || property.geoid,
+      geoid: property.geoid
+    });
+
     const qualifiesOhcs = Boolean(
-      special.ohcsFlexLendingFirstHomeEligible &&
+      (special.ohcsFlexLendingFirstHomeEligible || ohcsEval.isEligible) &&
       this.isProductActive('ohcs_flex_lending_firsthome')
     );
 

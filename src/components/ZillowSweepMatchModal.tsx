@@ -103,10 +103,34 @@ export const ZillowSweepMatchModal: React.FC<ZillowSweepMatchModalProps> = ({
   const [coBrandWithAgent, setCoBrandWithAgent] = useState<boolean>(hasPairedAgent);
   const [agentName, setAgentName] = useState<string>('Kanndice McLean (Principal Broker)');
   const [copiedSms, setCopiedSms] = useState<boolean>(false);
+  const [selectedStrategyIndex, setSelectedStrategyIndex] = useState<number>(0);
   const [customCardNote, setCustomCardNote] = useState<string>(
     '⚡ Special LO Match Note: Reviewed property against current DPA grant matrices. Eligible for up to 100% financing or state first-time homebuyer subsidy.'
   );
   const [notesAppendedFeedback, setNotesAppendedFeedback] = useState<boolean>(false);
+
+  const PRESET_STRATEGY_NOTES = [
+    {
+      title: '⚡ DPA Grant Stacking Strategy',
+      note: '⚡ Special LO Match Note: Reviewed property against current DPA grant matrices. Eligible for up to 100% financing or state first-time homebuyer subsidy.'
+    },
+    {
+      title: '📉 Price Drop Negotiation Strategy',
+      note: '🚨 Price Reduced Listing Note: Ideal candidate for seller credit towards a 2-1 temporary rate buydown or closing cost concession.'
+    },
+    {
+      title: '🏡 100% USDA / Zero-Down Strategy',
+      note: '🏡 Zero-Down Financing Strategy: Property qualifies for 100% USDA Rural Development or Lakeview zero-down mortgage programs.'
+    },
+    {
+      title: '🔑 VIP Open House & Private Tour Note',
+      note: '🔑 Advisory Tour Note: Coordinated with Realtor advisory team for priority private showing. Pre-approval letter updated for offer submit.'
+    },
+    {
+      title: '💰 FHA 3.5% + Seller Concession Strategy',
+      note: '💰 FHA Qualified Note: Low 3.5% down payment requirement with up to 6% seller concessions permitted for escrow prepaids.'
+    }
+  ];
 
   if (!isOpen || selectedProperties.length === 0) return null;
 
@@ -320,14 +344,25 @@ export const ZillowSweepMatchModal: React.FC<ZillowSweepMatchModalProps> = ({
                 <MessageSquare className="w-4 h-4 text-emerald-400" />
                 <span>Pre-Formatted SMS Text Draft</span>
               </span>
-              <button
-                type="button"
-                onClick={handleCopySms}
-                className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 font-semibold text-[10px] transition flex items-center gap-1 cursor-pointer"
-              >
-                {copiedSms ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                <span>{copiedSms ? 'Copied SMS Text!' : 'Copy SMS'}</span>
-              </button>
+              <div className="flex items-center gap-1.5">
+                {currentLead.phone && (
+                  <a
+                    href={`sms:${currentLead.phone.replace(/[^0-9+]/g, '')}?body=${encodeURIComponent(smsText)}`}
+                    className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-[10px] transition flex items-center gap-1 cursor-pointer"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    <span>Launch SMS App</span>
+                  </a>
+                )}
+                <button
+                  type="button"
+                  onClick={handleCopySms}
+                  className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 font-semibold text-[10px] transition flex items-center gap-1 cursor-pointer"
+                >
+                  {copiedSms ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                  <span>{copiedSms ? 'Copied Text!' : 'Copy Text'}</span>
+                </button>
+              </div>
             </div>
             <p className="text-[11px] text-stone-400 font-mono bg-stone-900 p-2.5 rounded-xl border border-stone-800 leading-relaxed">
               {smsText}
@@ -335,11 +370,11 @@ export const ZillowSweepMatchModal: React.FC<ZillowSweepMatchModalProps> = ({
           </div>
 
           {/* Action 3: Batch Append Note to Selected Property Cards */}
-          <div className="p-3.5 rounded-2xl bg-stone-950 border border-stone-800 space-y-2 text-xs">
+          <div className="p-3.5 rounded-2xl bg-stone-950 border border-stone-800 space-y-2.5 text-xs">
             <div className="flex items-center justify-between">
               <span className="font-bold text-stone-200 flex items-center gap-1.5">
                 <FileText className="w-4 h-4 text-indigo-400" />
-                <span>Batch Append Advisory Note to {selectedProperties.length} Selected Cards</span>
+                <span>Select & Batch Stamp Strategy Note ({selectedProperties.length} Cards)</span>
               </span>
               {notesAppendedFeedback && (
                 <span className="text-emerald-400 font-bold text-[10px] flex items-center gap-1">
@@ -348,12 +383,39 @@ export const ZillowSweepMatchModal: React.FC<ZillowSweepMatchModalProps> = ({
                 </span>
               )}
             </div>
+
+            {/* Quick-Select Strategy Note Templates */}
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase font-bold text-stone-400 tracking-wider">
+                Pre-Written Strategy Templates:
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {PRESET_STRATEGY_NOTES.map((tmpl, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setSelectedStrategyIndex(idx);
+                      setCustomCardNote(tmpl.note);
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition cursor-pointer ${
+                      selectedStrategyIndex === idx
+                        ? 'bg-indigo-600/30 text-indigo-300 border-indigo-500/60 shadow-sm'
+                        : 'bg-stone-900 text-stone-400 border-stone-800 hover:bg-stone-800 hover:text-stone-200'
+                    }`}
+                  >
+                    {tmpl.title}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <textarea
               value={customCardNote}
               onChange={(e) => setCustomCardNote(e.target.value)}
               rows={2}
               className="w-full bg-stone-900 border border-stone-700 rounded-xl p-2.5 text-xs text-stone-200 focus:outline-none focus:border-amber-500 font-sans"
-              placeholder="Enter strategy note to batch-stamp onto these property cards..."
+              placeholder="Select or type custom strategy note to batch-stamp onto listing cards..."
             />
             <button
               type="button"

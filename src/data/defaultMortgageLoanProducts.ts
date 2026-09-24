@@ -6,7 +6,8 @@
  * ============================================================================
  */
 
-import { MortgageLoanProduct } from '../types/mortgageLoanProducts';
+import { evaluateOregonOhcsFlexFirstHomeEligibility } from '../services/geomapMortgageEngine';
+import { MortgageLoanProduct, BuyerEligibilityCheckInput, BuyerEligibilityProductResult } from '../types/mortgageLoanProducts';
 
 export const DEFAULT_MORTGAGE_LOAN_PRODUCTS: MortgageLoanProduct[] = [
   {
@@ -45,20 +46,21 @@ export const DEFAULT_MORTGAGE_LOAN_PRODUCTS: MortgageLoanProduct[] = [
     category: 'State HFA',
     maxLtvPercent: 100,
     maxDpaAssistancePercent: 5.0,
-    maxDpaCapUsd: 18000,
+    maxDpaCapUsd: 29250,
     dpaType: 'Forgivable Grant',
-    minCreditScore: 640,
-    maxAmiPercentage: 100,
+    minCreditScore: 620,
+    maxAmiPercentage: 115,
     eligibleStates: ['OR'],
     isTargetedAreaBonusEligible: true,
     isEligibleActive: true,
     interestRateAdjustmentBps: -12.5,
-    description: 'Oregon HFA flagship FirstHome program providing 3.5% to 5.0% cash assistance for down payment and closing costs, paired with competitive fixed-rate 1st mortgages.',
+    description: 'Oregon HFA flagship FirstHome program providing 4.0% to 5.0% cash assistance on the 1st mortgage for down payment and closing costs via eHousingPlus.',
     underwritingGuidelines: [
-      'Available statewide across Oregon with increased income limits in targeted counties',
-      'Provides 3.5% to 5.0% cash assistance grant',
-      'Requires 1st-time homebuyer status unless buying in a targeted census tract',
-      'Must be primary residence 1-unit property or qualified condo'
+      'Available statewide across Oregon with county purchase price limits ($520k–$715k)',
+      'Provides 4.0% standard DPA or 5.0% DPA for LMI/Targeted Census Tracts or ≤80% AMI',
+      'Minimum credit score: 620 FICO (FHA/VA) or 640 (Conventional)',
+      '1st-time homebuyer requirement is WAIVED in OHCS Targeted Census Tracts or for Qualified Veterans',
+      'Must be primary residence 1-unit property, PUD, qualified condo, or manufactured home'
     ],
     requiredDocumentation: [
       'OHCS Income Verification Worksheet',
@@ -246,6 +248,33 @@ export const DEFAULT_MORTGAGE_LOAN_PRODUCTS: MortgageLoanProduct[] = [
     ],
     requiredDocumentation: ['CreditSmart or approved Homebuyer Education Certificate'],
     isFeaturedSpecialtyProduct: false
+  },
+  {
+    id: 'ohcs_flex_nextstep',
+    name: 'OHCS Flex Lending NextStep',
+    agencyOrSponsor: 'Oregon Housing & Community Services (OHCS)',
+    category: 'State HFA',
+    maxLtvPercent: 97,
+    maxDpaAssistancePercent: 3.0,
+    maxDpaCapUsd: 18000,
+    dpaType: 'Deferred Repayable 2nd',
+    minCreditScore: 620,
+    maxAmiPercentage: 0,
+    eligibleStates: ['OR'],
+    isTargetedAreaBonusEligible: false,
+    isEligibleActive: true,
+    description: 'Oregon HFA program for non-first-time homebuyers or repeat buyers with qualifying income up to $125,000, offering 3.0% down payment assistance.',
+    underwritingGuidelines: [
+      'No first-time homebuyer requirement (open to repeat buyers)',
+      'Qualifying annual income cap of $125,000 statewide',
+      'Provides 3.0% cash assistance as a silent second mortgage',
+      'Primary residence in Oregon required'
+    ],
+    requiredDocumentation: [
+      'OHCS NextStep Application Worksheet',
+      'eHousingPlus Registration Confirmation'
+    ],
+    isFeaturedSpecialtyProduct: false
   }
 ];
 
@@ -257,8 +286,41 @@ export function checkBuyerProductEligibility(
   state: string,
   price: number,
   downPayment: number,
-  isTargetedTract: boolean
-) {
+  isTargetedTract: boolean,
+  extraInput?: Partial<BuyerEligibilityCheckInput>
+): BuyerEligibilityProductResult {
+  if (product.id.startsWith('ohcs_flex_lending_firsthome')) {
+    const ohcsEval = evaluateOregonOhcsFlexFirstHomeEligibility({
+      state,
+      price,
+      grossAnnualIncome: income,
+      householdSize: extraInput?.householdSize || 1,
+      creditScore,
+      isFirstTimeHomebuyer: extraInput?.isFirstTimeHomebuyer ?? true,
+      isVeteranBorrower: extraInput?.isVeteranBorrower ?? false,
+      ownsOtherRealEstate: extraInput?.ownsOtherRealEstate ?? false,
+      dtiPercent: extraInput?.dtiPercent ?? 38.0
+    });
+
+    const isEligible = product.isEligibleActive && ohcsEval.isEligible;
+    const disqualificationReasons = [...ohcsEval.disqualificationReasons];
+    if (!product.isEligibleActive) disqualificationReasons.push('Program disabled in configuration manager');
+
+    return {
+      product,
+      isEligible,
+      disqualificationReasons,
+      maxEstimatedGrantUsd: ohcsEval.grantAmountUsd,
+      effectiveRequiredDownPaymentUsd: Math.max(0, Math.round(price * 0.035) - ohcsEval.grantAmountUsd),
+      ehousingPlusCode: ohcsEval.ehousingPlusCode,
+      firstHomeWaiverApplied: ohcsEval.firstTimeHomebuyerWaiverGranted,
+      countyPriceLimitUsd: ohcsEval.purchasePriceLimitUsd,
+      countyIncomeLimitUsd: ohcsEval.householdIncomeLimitUsd,
+      grantPercentApplied: ohcsEval.grantPercent,
+      isForgivableDpa: ohcsEval.isLmiTargetedArea || (amiUsd > 0 && income <= amiUsd * 0.8)
+    };
+  }
+
   const reasons: string[] = [];
   if (!product.isEligibleActive) {
     reasons.push('Program disabled in configuration manager');
