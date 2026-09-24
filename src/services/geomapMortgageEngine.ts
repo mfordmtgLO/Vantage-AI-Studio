@@ -338,13 +338,8 @@ export function isOregonStateAndCounty(fipsCode: string, state?: string): boolea
 
 export function isOregonLmiCensusTract(fipsCode: string): boolean {
   if (!fipsCode) return false;
-  // Check exact 214-tract official dictionary from geosphere-map-oregon lmi-matched-tracts.js
-  if (isOregonLmiCensusTractStrict(fipsCode)) return true;
-  
-  // Oregon FIPS prefix 41 fallback heuristic for dynamic synthetic addresses
-  const isOregon = fipsCode.startsWith('41');
-  const isLmiTract = fipsCode.endsWith('2') || fipsCode.endsWith('4') || fipsCode.endsWith('6') || fipsCode.startsWith('41051') || fipsCode.startsWith('41047') || fipsCode.startsWith('41039') || fipsCode.startsWith('41029');
-  return isOregon && isLmiTract;
+  // Strictly check exact 214-tract official dictionary from geosphere-map-oregon/lmi-matched-tracts.js
+  return isOregonLmiCensusTractStrict(fipsCode);
 }
 
 /**

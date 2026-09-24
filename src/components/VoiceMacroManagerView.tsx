@@ -33,6 +33,7 @@ import {
 import { VoiceMacroRecipe, VoiceSafetyAirgapConfig } from '../types/voiceMacro';
 import { speakSpokenAirgap, DEFAULT_AIRGAP_CONFIG } from '../services/voiceMacroEngine';
 import { SpeechToIntentChiefOfStaffStudio } from './SpeechToIntentChiefOfStaffStudio';
+import { VisualNodeMacroEditor } from './VisualNodeMacroEditor';
 
 interface VoiceMacroManagerViewProps {
   onExecuteWorkflow?: (name: string) => void;
@@ -43,7 +44,7 @@ export const VoiceMacroManagerView: React.FC<VoiceMacroManagerViewProps> = ({
   onExecuteWorkflow,
   onExecuteCustomRecipe 
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'chief_of_staff' | 'recipes' | 'airgap'>('chief_of_staff');
+  const [activeSubTab, setActiveSubTab] = useState<'conditional_node_editor' | 'chief_of_staff' | 'recipes' | 'airgap'>('conditional_node_editor');
 
   const [macros, setMacros] = useState<VoiceMacroRecipe[]>(() => {
     try {
@@ -199,6 +200,19 @@ export const VoiceMacroManagerView: React.FC<VoiceMacroManagerViewProps> = ({
       {/* Sub-Tab Navigation Bar */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1">
         <button
+          onClick={() => setActiveSubTab('conditional_node_editor')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
+            activeSubTab === 'conditional_node_editor'
+              ? 'bg-purple-600 text-white shadow-xs ring-2 ring-purple-400'
+              : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
+          }`}
+        >
+          <Sparkles className="w-4 h-4 text-amber-300" />
+          <span>Visual Node Macro Studio (IF-THEN-ELSE)</span>
+          <span className="text-[10px] px-1.5 py-0.2 bg-purple-500/40 text-purple-100 rounded-full font-bold">Gemini 3.0</span>
+        </button>
+
+        <button
           onClick={() => setActiveSubTab('chief_of_staff')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
             activeSubTab === 'chief_of_staff'
@@ -243,6 +257,17 @@ export const VoiceMacroManagerView: React.FC<VoiceMacroManagerViewProps> = ({
           <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <span>{successMsg}</span>
         </div>
+      )}
+
+      {/* SUB-TAB: Visual Node Macro Editor */}
+      {activeSubTab === 'conditional_node_editor' && (
+        <VisualNodeMacroEditor
+          onExecuteMacro={(graph) => {
+            if (onExecuteWorkflow) {
+              onExecuteWorkflow(graph.name);
+            }
+          }}
+        />
       )}
 
       {/* SUB-TAB: Chief of Staff Studio */}

@@ -38,7 +38,8 @@ import {
   Copy,
   Check,
   MessageSquare,
-  Calendar
+  Calendar,
+  Target
 } from 'lucide-react';
 import { usePwaInstallPrompt } from '../hooks/usePwaInstallPrompt';
 import { IosInstallGuideModal } from './IosInstallGuideModal';
@@ -53,6 +54,7 @@ import {
   getOregonCensusTractLmiCategory,
   getAllOregonLmiTractDetails,
   getCountyNameFromFips,
+  isOregonLmiCensusTractStrict,
   OregonLmiCategory
 } from '../data/oregonLmiMatchedTracts';
 import {
@@ -1184,8 +1186,8 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                       : 'bg-stone-800 text-stone-400 border border-stone-700'
                   }`}
                 >
-                  <Layers className="w-3.5 h-3.5" />
-                  <span>🌲 OHCS Flex LMI Tracts: {showOhcsLmiLayer ? 'ACTIVE' : 'OFF'}</span>
+                  <Target className="w-3.5 h-3.5" />
+                  <span>🎯 OHCS Targeted Area Layer: {showOhcsLmiLayer ? 'ACTIVE' : 'OFF'}</span>
                 </button>
 
                 {/* USDA RD Boundary Layer Toggle */}
@@ -1298,6 +1300,22 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
           <div className="relative bg-stone-950 border border-stone-800 rounded-2xl h-64 w-full overflow-hidden p-4 flex flex-col justify-between">
             {/* Background Grid */}
             <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
+
+            {/* OHCS Targeted Area Census Tract Shading Layer Overlay */}
+            {showOhcsLmiLayer && (
+              <div
+                className="absolute inset-x-4 top-4 bottom-4 opacity-40 bg-emerald-950/40 border-2 border-emerald-400/80 rounded-3xl pointer-events-none flex items-start justify-end p-2"
+                style={{
+                  backgroundImage: 'radial-gradient(circle, rgba(16, 185, 129, 0.3) 1.5px, transparent 1.5px)',
+                  backgroundSize: '12px 12px'
+                }}
+              >
+                <span className="bg-stone-950/95 text-emerald-300 text-[9px] font-mono font-black uppercase px-2 py-1 rounded-xl border border-emerald-500/70 tracking-wider shadow-xl flex items-center gap-1.5">
+                  <Target className="w-3.5 h-3.5 text-emerald-400 animate-pulse shrink-0" />
+                  <span>🎯 OHCS Targeted Tract Shading (214 Tracts • 3-Yr FTHB Waiver Active + 5.0% DPA + Higher Limits)</span>
+                </span>
+              </div>
+            )}
 
             {/* USDA RD Ineligible Metro Shading Layer Overlay */}
             {showUsdaRdLayer && (
@@ -1937,6 +1955,24 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                       </div>
                     )}
 
+                    {/* Targeted Area Validation Check Banner */}
+                    {isOregonLmiCensusTractStrict(prop.geoid) && (
+                      <div className="p-2 rounded-xl bg-gradient-to-r from-emerald-950/90 via-teal-950/80 to-emerald-950/90 border border-emerald-500/50 space-y-1 shadow-sm">
+                        <div className="flex items-center justify-between text-emerald-300 font-bold text-[10px]">
+                          <span className="flex items-center gap-1">
+                            <Target className="w-3.5 h-3.5 text-emerald-400 animate-pulse shrink-0" />
+                            <span className="font-black tracking-wide uppercase">🎯 Targeted Area Qualified</span>
+                          </span>
+                          <span className="px-1.5 py-0.2 rounded bg-emerald-900/80 text-emerald-200 border border-emerald-500/40 text-[9px] font-mono font-bold">
+                            FTHB Waiver Active
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-stone-300 leading-snug">
+                          3-Yr First-Time Homebuyer Rule <strong className="text-emerald-300 font-bold">WAIVED</strong> • 5.0% DPA Grant • Higher Income ($171.5k) &amp; Price Cap ($782k)
+                        </p>
+                      </div>
+                    )}
+
                     {/* Program Badges snippet */}
                     <div className="flex flex-wrap gap-1 text-[9px] font-bold">
                       {prop.specialPrograms.lakeviewNationalDpaEligible && (
@@ -2381,6 +2417,12 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
 
               {/* Special Badges */}
               <div className="flex flex-wrap gap-1.5">
+                {isOregonLmiCensusTractStrict(selectedProperty.geoid) && (
+                  <span className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-emerald-950 via-teal-950 to-emerald-950 text-emerald-300 border border-emerald-500/70 text-[10px] font-black flex items-center gap-1.5 shadow-sm ring-1 ring-emerald-500/30">
+                    <Target className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                    <span>🎯 Targeted Area Qualified (3-Yr FTHB Waiver Active + 5.0% DPA Boost)</span>
+                  </span>
+                )}
                 {selectedProperty.specialPrograms.lakeviewNationalDpaEligible && (
                   <span className="px-2 py-0.5 rounded-md bg-amber-950 text-amber-300 border border-amber-800 text-[10px] font-bold">
                     🏞️ Lakeview 100% National DPA (${(selectedProperty.specialPrograms.lakeviewGrantAmountUsd || 13475).toLocaleString()})

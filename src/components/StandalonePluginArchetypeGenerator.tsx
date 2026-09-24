@@ -31,6 +31,7 @@ import {
   PluginDistributionRecord
 } from '../utils/adminAuth';
 import { auth, googleSignIn } from '../services/firebase';
+import { UpgradedPluginInnovationsModal } from './UpgradedPluginInnovationsModal';
 import { 
   Sparkles, 
   Copy, 
@@ -103,6 +104,7 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
   const [copied, setCopied] = useState<boolean>(false);
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
   const [isExportingZip, setIsExportingZip] = useState<boolean>(false);
+  const [showInnovationsModal, setShowInnovationsModal] = useState<boolean>(false);
 
   // Authentication & Admin State
   const activeEmail = currentUserEmail || auth.currentUser?.email;
@@ -611,6 +613,13 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
         </div>
       )}
 
+      {/* Upgraded Innovations Matrix Modal */}
+      <UpgradedPluginInnovationsModal
+        isOpen={showInnovationsModal}
+        onClose={() => setShowInnovationsModal(false)}
+        onSelectArchetype={(id) => handleSelectArchetype(id as PluginArchetypeId)}
+      />
+
       {/* Vantage Plugin Archetype Selector Bar */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
@@ -619,12 +628,23 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
               Active Plugin Archetype
             </div>
             <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-              Select Vantage Plugin to Configure, Inspect & Export
+              Select Vantage Plugin to Configure, Inspect &amp; Export
             </h3>
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-3 py-1 rounded-full">
-            <Layers className="w-3.5 h-3.5 text-blue-500" />
-            <span className="font-semibold">{VANTAGE_PLUGIN_ARCHETYPES.length} Modular Archetypes Loaded</span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowInnovationsModal(true)}
+              className="px-3.5 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-full text-xs font-bold transition flex items-center gap-1.5 shadow-md cursor-pointer border border-purple-400/30"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>7 Upgraded AI Innovations</span>
+            </button>
+
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-3 py-1.5 rounded-full">
+              <Layers className="w-3.5 h-3.5 text-blue-500" />
+              <span className="font-semibold">{VANTAGE_PLUGIN_ARCHETYPES.length} Modular Archetypes Loaded</span>
+            </div>
           </div>
         </div>
 
