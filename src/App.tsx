@@ -80,13 +80,16 @@ export default function App() {
       if (pluginParam === 'brain') return 'brain';
       if (pluginParam === 'voice' || pluginParam === 'orchestrator') return 'orchestrator';
       if (pluginParam === 'workspace') return 'studio';
+      if (pluginParam === 'profiles' || pluginParam === 'lo_agent_profiles' || pluginParam === 'kanndice') return 'lo_agent_profiles';
 
       const tabParam = urlParams.get('tab');
-      const isAdminQuery = urlParams.get('admin') === 'true' || urlParams.get('admin_vault') === 'true';
+      if (tabParam === 'profiles' || tabParam === 'lo_agent_profiles' || tabParam === 'agents') return 'lo_agent_profiles';
+
+      const isAdminQuery = urlParams.get('admin_vault') === 'true';
       if (isAdminQuery || tabParam === 'admin' || tabParam === 'admin_plugins') {
         return 'admin_plugins';
       }
-      if (tabParam && ['suite', 'studio', 'brain', 'real_estate', 'orchestrator', 'scheduler', 'drafts', 'gmail', 'calendar', 'drive', 'sheets', 'tasks', 'contacts', 'voice-macros', 'admin_plugins'].includes(tabParam)) {
+      if (tabParam && ['suite', 'studio', 'brain', 'real_estate', 'orchestrator', 'scheduler', 'drafts', 'gmail', 'calendar', 'drive', 'sheets', 'tasks', 'contacts', 'voice-macros', 'admin_plugins', 'lo_agent_profiles'].includes(tabParam)) {
         return tabParam as WorkspaceTab;
       }
     } catch {}
