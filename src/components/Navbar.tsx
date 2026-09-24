@@ -13,6 +13,9 @@ import { useMemory } from '../context/MemoryContext';
 import { isMikeFordAdmin } from '../utils/adminAuth';
 import { getWorkspaceNotificationCounts, ModuleNotificationCounts } from '../utils/workspaceNotifications';
 import { BatterySaverNavbarToggle } from './BatterySaverNavbarToggle';
+import { usePwaInstallPrompt } from '../hooks/usePwaInstallPrompt';
+import { IosInstallGuideModal } from './IosInstallGuideModal';
+import { ChevronDown, ChevronUp, Sliders } from 'lucide-react';
 
 interface NavbarProps {
   activeTab: WorkspaceTab;
@@ -74,6 +77,33 @@ export const Navbar: React.FC<NavbarProps> = ({
     guardrails,
     memories 
   } = useMemory();
+
+  const {
+    isInstallable,
+    isInstalled,
+    isIOS,
+    isMobile,
+    isIosGuideOpen,
+    setIsIosGuideOpen,
+    triggerInstall
+  } = usePwaInstallPrompt();
+
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+
+  const handleAddToHomeScreen = async () => {
+    if (isIOS) {
+      setIsIosGuideOpen(true);
+    } else {
+      const outcome = await triggerInstall();
+      if (outcome === 'ios_guide' || outcome === 'not_supported') {
+        if (onOpenShareLinksModal) {
+          onOpenShareLinksModal();
+        } else {
+          setIsIosGuideOpen(true);
+        }
+      }
+    }
+  };
 
   const [notificationCounts, setNotificationCounts] = useState<ModuleNotificationCounts>(getWorkspaceNotificationCounts);
 
@@ -214,285 +244,356 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto scrollbar-none touch-pan-x whitespace-nowrap min-w-0 max-w-full py-1">
-            {/* Dual Pathway Switcher & Workspace Connection Pill */}
-            <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-              <button
-                onClick={() => setIsWorkspaceModalOpen(true)}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                  pathway === 'workspace'
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
-                }`}
-                title="Click to view Dual Google Apps / Workspace settings"
-              >
-                {pathway === 'workspace' ? (
-                  <>
-                    <Building2 className="w-3.5 h-3.5 text-indigo-200" />
-                    <span className="hidden sm:inline">Workspace Active</span>
-                    <span className="sm:hidden">Workspace</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span className="hidden sm:inline">Google Apps (Free)</span>
-                    <span className="sm:hidden">Apps</span>
-                  </>
-                )}
-              </button>
-
-              <button
-                onClick={() => setIsWorkspaceModalOpen(true)}
-                className="text-[11px] font-semibold px-2 py-1 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 hover:underline cursor-pointer hidden md:flex items-center gap-1"
-                title="Connect paid Google Workspace account"
-              >
-                <Building2 className="w-3 h-3" />
-                <span>{isWorkspaceConnected ? 'Workspace Config' : 'Workspace Login'}</span>
-              </button>
-            </div>
-
-            {/* Sync Workspace / Refresh Button */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 min-w-0">
+            {/* Prominent "Add to Home Screen" PWA App Install Button */}
             <button
-              onClick={() => syncData()}
-              disabled={isSyncing}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/80 text-xs font-semibold transition cursor-pointer shadow-xs"
-              title={`Sync Workspace Data (Last: ${lastSynced || 'just now'})`}
+              id="navbar-add-to-home-screen-btn"
+              onClick={handleAddToHomeScreen}
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-gradient-to-r from-amber-400 via-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-md shadow-amber-500/20 transition transform active:scale-95 cursor-pointer shrink-0 border border-amber-300"
+              title="Add Vantage AI Studio to your Mobile Home Screen as a native app"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-blue-600' : 'text-slate-500 dark:text-slate-400'}`} />
-              <span className="hidden lg:inline">{isSyncing ? 'Syncing...' : 'Sync'}</span>
-            </button>
-
-            {/* 2nd Brain & Remember Knowledge Base Button */}
-            <button
-              onClick={() => setIsKnowledgeBaseOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/50 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900/60 text-xs font-semibold rounded-xl transition shadow-xs cursor-pointer"
-              title="Open 2nd Brain Memory Bank & Ingest Knowledge"
-            >
-              <Brain className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-              <span className="hidden sm:inline">2nd Brain</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-blue-200/70 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-                {memories.length}
+              <Smartphone className="w-3.5 h-3.5 text-slate-950 animate-bounce" />
+              <span className="text-xs font-black">Add to Home Screen</span>
+              <span className="hidden min-[420px]:inline-block text-[9px] px-1 py-0.2 bg-slate-950 text-amber-300 font-extrabold rounded-xs uppercase tracking-wide">
+                PWA
               </span>
             </button>
-
-            {/* Agent Memory Explorer Button */}
-            <button
-              onClick={() => setIsMemoryExplorerOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-900/60 text-xs font-semibold rounded-xl transition shadow-xs cursor-pointer"
-              title="Open Agent Memory Explorer (View, Edit, Delete Learned Context)"
-            >
-              <Database className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span className="hidden sm:inline">Memory Explorer</span>
-            </button>
-
-            {/* 2nd Brain Guardrails & Boundaries Studio Button */}
-            <button
-              onClick={() => setIsGuardrailsModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/60 text-xs font-semibold rounded-xl transition shadow-xs cursor-pointer"
-              title="Shape 2nd Brain personality, censorship boundaries & permissible actions"
-            >
-              <Shield className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span className="hidden sm:inline">Guardrails</span>
-              <span className="text-[10px] uppercase font-bold px-1.5 py-0.2 rounded-full bg-emerald-200/70 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200">
-                {guardrails.personalityPreset}
-              </span>
-            </button>
-
-            {/* Dynamic Theme Mode Switcher (Light / Dark / System) */}
-            <div
-              id="theme-toggle-group"
-              className="flex items-center p-0.5 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs"
-              role="radiogroup"
-              aria-label="Color theme selector"
-            >
-              <button
-                id="theme-btn-light"
-                type="button"
-                onClick={() => setTheme('light')}
-                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  theme === 'light'
-                    ? 'bg-white text-amber-600 shadow-xs dark:bg-slate-700 dark:text-amber-400 font-bold'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-                title="Light Theme"
-                role="radio"
-                aria-checked={theme === 'light'}
-              >
-                <Sun className={`w-3.5 h-3.5 ${theme === 'light' ? 'text-amber-500' : 'text-slate-400 dark:text-slate-500'}`} />
-                <span className="hidden xl:inline">Light</span>
-              </button>
-
-              <button
-                id="theme-btn-dark"
-                type="button"
-                onClick={() => setTheme('dark')}
-                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  theme === 'dark'
-                    ? 'bg-white text-indigo-600 shadow-xs dark:bg-slate-700 dark:text-indigo-400 font-bold'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-                title="Dark Theme"
-                role="radio"
-                aria-checked={theme === 'dark'}
-              >
-                <Moon className={`w-3.5 h-3.5 ${theme === 'dark' ? 'text-indigo-500 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'}`} />
-                <span className="hidden xl:inline">Dark</span>
-              </button>
-
-              <button
-                id="theme-btn-system"
-                type="button"
-                onClick={() => setTheme('system')}
-                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  theme === 'system'
-                    ? 'bg-white text-blue-600 shadow-xs dark:bg-slate-700 dark:text-blue-400 font-bold'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-                title={`System Theme (Matches OS: ${resolvedTheme})`}
-                role="radio"
-                aria-checked={theme === 'system'}
-              >
-                <Monitor className={`w-3.5 h-3.5 ${theme === 'system' ? 'text-blue-500 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'}`} />
-                <span className="hidden xl:inline">Auto</span>
-              </button>
-            </div>
-
-            {/* Battery Status API: Dynamic Battery-Saver Toggle */}
-            <BatterySaverNavbarToggle />
 
             {/* In-App BYOK (Bring Your Own Key) Settings Drawer */}
             {onOpenByokDrawer && (
               <button
                 id="byok-settings-btn"
                 onClick={onOpenByokDrawer}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800/70 text-xs font-bold rounded-xl transition shadow-xs cursor-pointer"
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800/70 text-xs font-bold rounded-xl transition shadow-xs cursor-pointer shrink-0"
                 title="Bring Your Own Keys (BYOK): Gemini, RentCast, DeepSeek"
               >
                 <Key className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                <span>API Keys (BYOK)</span>
+                <span className="hidden sm:inline">API Keys (BYOK)</span>
+                <span className="sm:hidden">Keys</span>
               </button>
             )}
 
+            {/* Global Voice Studio Button */}
             <button
               id="global-voice-studio-btn"
               onClick={onOpenVoiceModal}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900/60 text-xs font-semibold rounded-xl transition shadow-xs cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900/60 text-xs font-semibold rounded-xl transition shadow-xs cursor-pointer shrink-0"
               title="Open Global Voice-to-Text Studio (Cmd/Ctrl + K)"
             >
               <Mic className="w-3.5 h-3.5 text-red-600 dark:text-red-400 animate-pulse" />
-              <span>Voice Studio</span>
-              <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold bg-red-100 dark:bg-red-900/70 text-red-700 dark:text-red-200 rounded-md border border-red-200 dark:border-red-800">
+              <span className="hidden sm:inline">Voice Studio</span>
+              <span className="sm:hidden">Voice</span>
+              <kbd className="hidden md:inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold bg-red-100 dark:bg-red-900/70 text-red-700 dark:text-red-200 rounded-md border border-red-200 dark:border-red-800">
                 ⌘K
               </kbd>
             </button>
 
-            {isAdmin && onOpenWizard && (
-              <button
-                onClick={onOpenWizard}
-                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900/60 text-xs font-semibold rounded-xl transition shadow-xs cursor-pointer"
-                title="Launch Plugin Integration Wizard"
-              >
-                <Code className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                <span>Wizard</span>
-              </button>
-            )}
-
-            {isAdmin && onOpenSalesAssistant && (
-              <button
-                onClick={onOpenSalesAssistant}
-                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-900/60 text-xs font-semibold rounded-xl transition shadow-xs cursor-pointer"
-                title="Generate Digital Product Sales Copy"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
-                <span>Sales Copy</span>
-              </button>
-            )}
-
-            {isAdmin && onOpenScaffolding && (
-              <button
-                onClick={onOpenScaffolding}
-                className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-xl transition shadow-xs cursor-pointer"
-                title="1-Click Zero-Shot Full Website Scaffolding Prompt"
-              >
-                <Layers className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
-                <span>Scaffold</span>
-              </button>
-            )}
-
-            {isAdmin && onOpenLicenseStudio && (
-              <button
-                onClick={onOpenLicenseStudio}
-                className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-900/60 text-xs font-semibold rounded-xl transition shadow-xs cursor-pointer"
-                title="Commercial Domain-Locking & License Keys"
-              >
-                <Shield className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                <span>License Key</span>
-              </button>
-            )}
-
-            {/* Shareable Live Mobile URLs & PWA Launcher Button (Admin Only) */}
-            {isAdmin && onOpenShareLinksModal && (
-              <button
-                id="lead-mobile-urls-nav-btn"
-                onClick={onOpenShareLinksModal}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl transition shadow-md shadow-blue-500/20 cursor-pointer"
-                title="Open Live Shareable Mobile & Desktop URLs with 1-Click Add-to-Home-Screen for Leads (Admin Only)"
-              >
-                <Smartphone className="w-3.5 h-3.5 text-amber-300" />
-                <span className="hidden sm:inline">Lead Mobile URLs</span>
-                <span className="sm:hidden">URLs</span>
-                <span className="text-[9px] px-1.5 py-0.2 bg-amber-400 text-slate-950 font-black rounded-sm uppercase tracking-wide">
-                  PWA
-                </span>
-              </button>
-            )}
-
-            {isAdmin && onOpenPitchDeck && (
-              <button
-                onClick={onOpenPitchDeck}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500/10 to-indigo-500/10 hover:from-amber-500/20 hover:to-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold rounded-xl transition shadow-xs cursor-pointer"
-                title="Commercial Retail Software Suite Sales Pitch Deck Reference (Admin Only)"
-              >
-                <Megaphone className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                <span>Pitch Deck</span>
-                <span className="hidden sm:inline text-[9px] px-1.5 py-0.5 bg-indigo-600 text-white rounded-md font-extrabold uppercase tracking-wide">
-                  Master
-                </span>
-              </button>
-            )}
-
-            {onOpenPublicWebsite && (
-              <button
-                onClick={onOpenPublicWebsite}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800 text-xs font-bold rounded-xl transition cursor-pointer"
-                title="View Live Public Customer-Facing Website & Lead Experience"
-              >
-                <Globe className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                <span className="hidden sm:inline">Public Website</span>
-                <span className="sm:hidden">Public</span>
-              </button>
-            )}
-
-            {user && (
-              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-full border border-slate-200 dark:border-slate-700">
-                <img
-                  src={user.photoURL || 'https://www.gravatar.com/avatar/?d=mp'}
-                  alt={user.displayName || 'User'}
-                  className="w-6 h-6 rounded-full"
-                />
-                <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{user.displayName || user.email}</span>
-              </div>
-            )}
+            {/* Mobile Quick Tools Expander Toggle (md:hidden) */}
             <button
-              onClick={onLogout}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:text-white hover:bg-rose-600 dark:hover:bg-rose-700 rounded-xl border border-rose-200 dark:border-rose-900/50 transition cursor-pointer shadow-xs"
-              title="Sign Out of Dashboard"
+              type="button"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className={`md:hidden flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition cursor-pointer shrink-0 ${
+                isMobileMenuOpen
+                  ? 'bg-blue-600 text-white border-blue-500 shadow-md ring-2 ring-blue-400/40'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
+              }`}
+              title="Toggle Quick Header Tools & Theme Switcher"
             >
-              <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Sign Out</span>
+              <Sliders className="w-3.5 h-3.5" />
+              <span className="text-[11px] font-bold">{isMobileMenuOpen ? 'Close' : 'Tools'}</span>
+              {isMobileMenuOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
             </button>
+
+            {/* Desktop Horizontal Header Items (md:flex) */}
+            <div className="hidden md:flex items-center gap-2 overflow-x-auto scrollbar-none py-1">
+              {/* Dual Pathway Switcher & Workspace Connection Pill */}
+              <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                <button
+                  onClick={() => setIsWorkspaceModalOpen(true)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                    pathway === 'workspace'
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
+                  }`}
+                  title="Click to view Dual Google Apps / Workspace settings"
+                >
+                  {pathway === 'workspace' ? (
+                    <>
+                      <Building2 className="w-3.5 h-3.5 text-indigo-200" />
+                      <span>Workspace Active</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <span>Google Apps (Free)</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setIsWorkspaceModalOpen(true)}
+                  className="text-[11px] font-semibold px-2 py-1 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 hover:underline cursor-pointer flex items-center gap-1"
+                  title="Connect paid Google Workspace account"
+                >
+                  <Building2 className="w-3 h-3" />
+                  <span>{isWorkspaceConnected ? 'Workspace Config' : 'Workspace Login'}</span>
+                </button>
+              </div>
+
+              {/* Sync Workspace / Refresh Button */}
+              <button
+                onClick={() => syncData()}
+                disabled={isSyncing}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/80 text-xs font-semibold transition cursor-pointer shadow-xs"
+                title={`Sync Workspace Data (Last: ${lastSynced || 'just now'})`}
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-blue-600' : 'text-slate-500 dark:text-slate-400'}`} />
+                <span className="hidden lg:inline">{isSyncing ? 'Syncing...' : 'Sync'}</span>
+              </button>
+
+              {/* 2nd Brain & Remember Knowledge Base Button */}
+              <button
+                onClick={() => setIsKnowledgeBaseOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/50 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900/60 text-xs font-semibold rounded-xl transition shadow-xs cursor-pointer"
+                title="Open 2nd Brain Memory Bank & Ingest Knowledge"
+              >
+                <Brain className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                <span>2nd Brain</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-blue-200/70 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                  {memories.length}
+                </span>
+              </button>
+
+              {/* Agent Memory Explorer Button */}
+              <button
+                onClick={() => setIsMemoryExplorerOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-900/60 text-xs font-semibold rounded-xl transition shadow-xs cursor-pointer"
+                title="Open Agent Memory Explorer"
+              >
+                <Database className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                <span>Memory Explorer</span>
+              </button>
+
+              {/* 2nd Brain Guardrails Studio Button */}
+              <button
+                onClick={() => setIsGuardrailsModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/60 text-xs font-semibold rounded-xl transition shadow-xs cursor-pointer"
+                title="Shape 2nd Brain personality, censorship boundaries & permissible actions"
+              >
+                <Shield className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Guardrails</span>
+              </button>
+
+              {/* Dynamic Theme Mode Switcher */}
+              <div
+                id="theme-toggle-group"
+                className="flex items-center p-0.5 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs"
+                role="radiogroup"
+                aria-label="Color theme selector"
+              >
+                <button
+                  id="theme-btn-light"
+                  type="button"
+                  onClick={() => setTheme('light')}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    theme === 'light'
+                      ? 'bg-white text-amber-600 shadow-xs dark:bg-slate-700 dark:text-amber-400 font-bold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                  title="Light Theme"
+                >
+                  <Sun className={`w-3.5 h-3.5 ${theme === 'light' ? 'text-amber-500' : 'text-slate-400 dark:text-slate-500'}`} />
+                  <span className="hidden xl:inline">Light</span>
+                </button>
+
+                <button
+                  id="theme-btn-dark"
+                  type="button"
+                  onClick={() => setTheme('dark')}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    theme === 'dark'
+                      ? 'bg-white text-indigo-600 shadow-xs dark:bg-slate-700 dark:text-indigo-400 font-bold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                  title="Dark Theme"
+                >
+                  <Moon className={`w-3.5 h-3.5 ${theme === 'dark' ? 'text-indigo-500 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'}`} />
+                  <span className="hidden xl:inline">Dark</span>
+                </button>
+
+                <button
+                  id="theme-btn-system"
+                  type="button"
+                  onClick={() => setTheme('system')}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    theme === 'system'
+                      ? 'bg-white text-blue-600 shadow-xs dark:bg-slate-700 dark:text-blue-400 font-bold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                  title={`System Theme (${resolvedTheme})`}
+                >
+                  <Monitor className={`w-3.5 h-3.5 ${theme === 'system' ? 'text-blue-500 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'}`} />
+                  <span className="hidden xl:inline">Auto</span>
+                </button>
+              </div>
+
+              {/* Battery Status API Toggle */}
+              <BatterySaverNavbarToggle />
+
+              {isAdmin && onOpenWizard && (
+                <button
+                  onClick={onOpenWizard}
+                  className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900/60 text-xs font-semibold rounded-xl transition shadow-xs cursor-pointer"
+                  title="Launch Plugin Integration Wizard"
+                >
+                  <Code className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                  <span>Wizard</span>
+                </button>
+              )}
+
+              {isAdmin && onOpenShareLinksModal && (
+                <button
+                  id="lead-mobile-urls-nav-btn"
+                  onClick={onOpenShareLinksModal}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl transition shadow-md shadow-blue-500/20 cursor-pointer"
+                  title="Open Live Shareable Mobile & Desktop URLs"
+                >
+                  <Smartphone className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Lead URLs</span>
+                </button>
+              )}
+
+              {onOpenPublicWebsite && (
+                <button
+                  onClick={onOpenPublicWebsite}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800 text-xs font-bold rounded-xl transition cursor-pointer"
+                  title="View Live Public Customer Website"
+                >
+                  <Globe className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                  <span>Public Site</span>
+                </button>
+              )}
+
+              {user && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-full border border-slate-200 dark:border-slate-700">
+                  <img
+                    src={user.photoURL || 'https://www.gravatar.com/avatar/?d=mp'}
+                    alt={user.displayName || 'User'}
+                    className="w-6 h-6 rounded-full"
+                  />
+                  <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{user.displayName || user.email}</span>
+                </div>
+              )}
+
+              <button
+                onClick={onLogout}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:text-white hover:bg-rose-600 dark:hover:bg-rose-700 rounded-xl border border-rose-200 dark:border-rose-900/50 transition cursor-pointer shadow-xs"
+                title="Sign Out"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Sign Out</span>
+              </button>
+            </div>
           </div>
         </div>
+
+        {/* Mobile Quick Tools Collapsible Sub-Bar (md:hidden) */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-slate-50/95 dark:bg-slate-900/95 p-3 animate-in slide-in-from-top-1 space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Theme Switcher */}
+              <div className="flex items-center p-0.5 bg-slate-200 dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => setTheme('light')}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 ${
+                    theme === 'light' ? 'bg-white text-amber-600 shadow-xs' : 'text-slate-600 dark:text-slate-400'
+                  }`}
+                >
+                  <Sun className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Light</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTheme('dark')}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 ${
+                    theme === 'dark' ? 'bg-slate-700 text-indigo-400 shadow-xs' : 'text-slate-600 dark:text-slate-400'
+                  }`}
+                >
+                  <Moon className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Dark</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTheme('system')}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 ${
+                    theme === 'system' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400'
+                  }`}
+                >
+                  <Monitor className="w-3.5 h-3.5" />
+                  <span>Auto</span>
+                </button>
+              </div>
+
+              {/* Pathway */}
+              <button
+                onClick={() => setIsWorkspaceModalOpen(true)}
+                className="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold flex items-center gap-1.5"
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                <span>{pathway === 'workspace' ? 'Workspace Active' : 'Free Google Apps'}</span>
+              </button>
+
+              {/* Sync */}
+              <button
+                onClick={() => syncData()}
+                disabled={isSyncing}
+                className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-blue-600' : ''}`} />
+                <span>Sync</span>
+              </button>
+
+              {/* 2nd Brain */}
+              <button
+                onClick={() => setIsKnowledgeBaseOpen(true)}
+                className="px-3 py-1.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs font-bold rounded-xl flex items-center gap-1.5"
+              >
+                <Brain className="w-3.5 h-3.5" />
+                <span>2nd Brain ({memories.length})</span>
+              </button>
+
+              {/* Guardrails */}
+              <button
+                onClick={() => setIsGuardrailsModalOpen(true)}
+                className="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold rounded-xl flex items-center gap-1.5"
+              >
+                <Shield className="w-3.5 h-3.5" />
+                <span>Guardrails</span>
+              </button>
+
+              {/* Public Site */}
+              {onOpenPublicWebsite && (
+                <button
+                  onClick={onOpenPublicWebsite}
+                  className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-xl flex items-center gap-1.5"
+                >
+                  <Globe className="w-3.5 h-3.5" />
+                  <span>Public Site</span>
+                </button>
+              )}
+
+              {/* Sign out */}
+              <button
+                onClick={onLogout}
+                className="px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900/50 rounded-xl flex items-center gap-1.5"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Sign Out</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Prominent Google Workspace 7-Apps Launcher Bar */}
         <div className="pt-2 pb-1.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 max-w-full min-w-0">
@@ -583,6 +684,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           })}
         </nav>
       </div>
+
+      <IosInstallGuideModal
+        isOpen={isIosGuideOpen}
+        onClose={() => setIsIosGuideOpen(false)}
+        pluginName="Vantage AI Mobile App"
+      />
     </header>
   );
 };
