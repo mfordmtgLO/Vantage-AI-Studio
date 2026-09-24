@@ -69,8 +69,8 @@ export interface WebsiteHookCategory {
 }
 
 export const EXECUTIVE_MASTER_HOOK = {
-  problem: "Every popular AI chatbot suffers from 'Goldfish Amnesia,' 'Tab Fatigue,' and 'Execution Paralysis.' The moment you close the browser tab, the AI forgets who your clients are, what your preferences were, and what projects you're working on. Worse, they live in isolated silos—forcing you to constantly copy-paste back and forth between ChatGPT, Gmail, Google Sheets, Drive, and your Calendar while risking data leaks.",
-  solution: "Vantage AI Workspace UI + 4-in-1 Suite transforms stateless LLMs (Claude 3.5 Sonnet, ChatGPT-4o, Gemini 2.5/3.8, Cursor) into an autonomous, interconnected operating system. It embeds permanent vector memory, dual-pathway Google Workspace execution, hands-free voice orchestration, and specialized real estate DTI math directly into your daily workflow—eliminating manual context switching forever."
+  problem: "Every popular AI chatbot suffers from 'Goldfish Amnesia,' 'Tab Fatigue,' 'Messy Data Corruption,' and 'Execution Paralysis.' The moment you close the browser tab, the AI forgets who your clients are, what your preferences were, and what projects you're working on. Worse, they live in isolated silos—forcing you to constantly copy-paste back and forth between ChatGPT, Gmail, Google Sheets, messy CSV spreadsheets, and your CRM while risking non-ASCII encoding crashes, data leaks, and lost leads.",
+  solution: "Vantage AI Workspace UI + 7-in-1 Suite powered by the Gemini 3.0 Hybrid Brain transforms stateless LLMs into an autonomous, interconnected operating system. It embeds permanent vector memory, sub-second reasoning, multi-million token context recall, CSV Maker+ batch hygiene & cross-file deduplication, dual-pathway Google Workspace execution, hands-free voice orchestration, and specialized real estate & mortgage DTI math directly into your daily workflow—eliminating manual context switching and data corruption forever."
 };
 
 export const WORKSPACE_UI_DEEP_DIVE = {
@@ -122,8 +122,10 @@ export const COMMERCIAL_PRICING_TIERS: PricingTier[] = [
     badge: 'Most Popular for Solos',
     deliverables: [
       '1 Production Domain / Landing Page Authorization',
-      'Up to 250 Active User 2nd Brain Memory Profiles',
-      'Full Vantage AI Workspace UI + Chosen Plugin Container',
+      'Gemini 3.0 Hybrid Brain Core Intelligence Engine',
+      'Up to 250 Active User 2nd Brain Memory Profiles with Industry Modalities',
+      'Full Vantage AI Workspace UI + Chosen Standalone Plugin Container',
+      'CSV Maker+ Standalone Hygiene & CRM Exporter Widget',
       'Dual-Pathway Google Workspace Integration (Pathway A & B)',
       'Live Gmail Drafts, Calendar 15-Min Buffer & Sheets Cleanup Tool',
       'Standard API & Tool Schema Updates'
@@ -138,8 +140,10 @@ export const COMMERCIAL_PRICING_TIERS: PricingTier[] = [
     badge: 'Best Value for Teams',
     deliverables: [
       'Up to 5 Production Domains / Client Sites',
-      'Unlimited Active 2nd Brain Profiles across team members',
+      'Gemini 3.0 Multi-Token Context & Sub-Second Reasoning Upgrade',
+      'Unlimited Active 2nd Brain Profiles across team members with Industry Modalities',
       'Co-branded paired partner bridges (Agent + Loan Officer)',
+      'CSV Maker+ Cross-File Multi-Source Batch Processor & Deduplicator',
       'Automated weekly dsh-cron background audits & alert drafts',
       'Multi-File Lead Database Consolidation & Purge Engine',
       'Priority Email & Slack Integration Support'
@@ -147,17 +151,19 @@ export const COMMERCIAL_PRICING_TIERS: PricingTier[] = [
   },
   {
     id: 'enterprise_saas',
-    name: 'Enterprise SaaS Edition (4-in-1 Suite)',
+    name: 'Enterprise SaaS Edition (7-in-1 Suite)',
     priceMonthly: '$499 / month',
     priceYearly: '$4,990 / year',
     idealCustomer: 'Full Brokerages, Regional Lenders, Enterprise SaaS Founders',
     badge: 'Enterprise Flagship',
     deliverables: [
-      'Complete Vantage AI Workspace Suite (All 4 Modules Included)',
+      'Complete Vantage AI Workspace Suite (All 7 Standalone Modules Included)',
+      'Gemini 3.0 Hybrid Brain Multimodal Core with Autonomous Agentic Loops',
       'Unlimited Domains & Full Whitelabel Embedding Rights',
       'Full Obfuscated/Unbundled Source Code Access (.ts / .js)',
-      'Multi-LLM Gateway (Claude, ChatGPT, Gemini, DeepSeek, Cursor)',
-      'Dedicated Custom Webhook & CRM Sync (Salesforce, HubSpot, Follow Up Boss)',
+      'Multi-LLM Gateway (Gemini 3.0, Claude 3.7, ChatGPT-4o, DeepSeek R1/V3, Cursor)',
+      'CSV Maker+ Enterprise Exporter with ZIP Distribution Package Builder',
+      'Dedicated Custom Webhook & CRM Sync (Salesforce, HubSpot, Total Expert, BoldTrail, BPD)',
       'Airgapped Guardrails & Boundary Verification Engine',
       '1-on-1 Dedicated Integration & Launch Engineering Support'
     ]
@@ -170,11 +176,12 @@ export const COMMERCIAL_PRICING_TIERS: PricingTier[] = [
     idealCustomer: 'Etsy, Gumroad & GitHub Marketplace Buyers wanting self-hosting',
     badge: '1-Time Purchase',
     deliverables: [
-      'Complete Vantage AI Suite Combo Pack (.zip with all 4 plugin modules)',
+      'Complete Vantage AI Suite Combo Pack (.zip with all 7 standalone plugin modules)',
+      'Vantage AI Studio - CSV Maker+ Multi-CRM Hygiene & Export Package',
       '.md scaffolding prompts for zero-shot replication across AI IDEs',
       'OpenAPI tool .json schemas & standalone React component widgets',
       'Domain-locked license generator with SHA256-MF tamper verification',
-      'Commercial distribution rights with attribution'
+      'Commercial distribution rights with attribution for Mike Ford (fordmj@gmail.com)'
     ]
   }
 ];
@@ -249,14 +256,15 @@ export const SUITE_MODULE_PITCHES: ModulePitch[] = [
   },
   {
     id: 'second_brain',
-    title: 'Module 2: Vantage 2nd Brain Plugin Module & Memory Harness',
-    hook: 'Stop Building AI Chatbots That Forget Everything. Give Your AI a Permanent, Vector-Indexed Brain in 60 Seconds.',
-    summary: 'A drop-in memory infrastructure that adds long-term hierarchical vector recall, client persona indexing, procedural workflow recall, and operational airgapped guardrails to any AI application or chat interface.',
+    title: 'Module 2: Vantage 2nd Brain Plugin Module & Memory Harness (Gemini 3.0 Hybrid Edition)',
+    hook: 'Stop Building AI Chatbots That Forget Everything. Give Your AI a Permanent, Vector-Indexed Brain with Gemini 3.0 Hybrid Reasoning in 60 Seconds.',
+    summary: 'A drop-in memory infrastructure powered by the Gemini 3.0 Hybrid Brain that adds multi-million token vector recall, deep industry + career persona modalities (Mortgage, Real Estate, Enterprise Sales, Wealth Management, Legal, SaaS), procedural workflow execution, and autonomous circadian knowledge pruning.',
     coreCapabilities: [
-      'Multi-Engine Hybrid Recall: Seamlessly toggles between Hybrid keyword matching, DeepSeek semantic vectors, and Gemini embeddings.',
-      'Dynamic Persona & Client Memory Indexing: Automatically anchors user preferences, tone of voice, past decisions, and biographical constraints.',
-      'Airgapped Boundary & Safety Guardrails: Evaluates actions before external dispatch, preventing unauthorized sends, data leaks, or catastrophic hallucinations.',
-      'Scenario Simulator Testing Studio: Test and benchmark memory recall across simulated complex conversations before deploying live.'
+      'Gemini 3.0 Hybrid Brain Core Engine: Sub-second reasoning latency paired with multi-million token context windows for zero-loss long-term conversation recall.',
+      'Industry + Career Knowledge Modalities: Pre-seeded professional persona profiles (Mortgage Officer, Real Estate Broker, SaaS Architect, Wealth Advisor) with built-in regulatory rules and domain terminology.',
+      'Autonomous Circadian Memory Hygiene: Background consolidation jobs automatically prune outdated guidelines, resolve conflicting instructions, and calculate memory confidence weights.',
+      'Airgapped Boundary & Safety Guardrails: Evaluates actions before external dispatch, preventing unauthorized sends, non-ASCII crashes, or data leaks.',
+      'Scenario Simulator Testing Studio: Benchmark industry persona recall across simulated client interactions before going live.'
     ],
     stackedBenefits: [
       {
@@ -273,6 +281,11 @@ export const SUITE_MODULE_PITCHES: ModulePitch[] = [
         target: 'Real Estate GeoMap',
         headline: 'Cross-Session Lead Memory Persistence',
         description: 'When home buyers enter their email, all their favorited listings, custom notes, and calculated DTI affordability envelopes are permanently stored in their 2nd Brain profile.'
+      },
+      {
+        target: 'CSV Maker+',
+        headline: 'Automated CRM Tagging & Memory Logging',
+        description: 'Cleaned lead attributes and suppressed spam domains are automatically indexed in the 2nd Brain to ensure perpetual clean database ingestions.'
       }
     ]
   },
@@ -379,6 +392,31 @@ export const SUITE_MODULE_PITCHES: ModulePitch[] = [
         target: 'Real Estate GeoMap',
         headline: 'Turnkey Field Client Portal',
         description: 'Homebuyers install the co-branded micro-app on iPhone/Android, enabling offline DPA lookups, Sunday Drive geofence alerts, and live showing requests during open house tours.'
+      }
+    ]
+  },
+  {
+    id: 'csv_maker',
+    title: 'Module 7: Vantage AI Studio - CSV Maker+ Multi-CRM Hygiene & Export Plugin',
+    hook: 'Clean Messy Lead Lists, Eliminate Non-ASCII 1-127 Encoding Errors, Deduplicate Multi-Source Databases & Export Pre-Formatted CSVs for 5 Top CRMs in 1 Click.',
+    summary: 'A high-performance batch data processing and hygiene engine designed to clean, normalize, and format lead databases for Total Expert, Big Purple Dot, BoldTrail/kvCORE, Salesforce, and HubSpot with instant 1-click ZIP distribution downloads.',
+    coreCapabilities: [
+      'ASCII 1-127 Unicode Character Sanitizer: Automatically strips illegal, invisible, or corrupted non-ASCII control characters that cause CRM import crashes.',
+      'Multi-Source Batch Deduplication Engine: Cross-references multiple lead sheets simultaneously to detect and merge duplicate email addresses and phone numbers.',
+      'Automated Full Name Splitter & Phone Normalizer: Converts composite "John & Jane Doe" full name strings into standardized First Name, Last Name, and E.164 phone formats.',
+      '5 Pre-Configured CRM Schema Exporters: 1-click export templates specifically formatted for Total Expert, Big Purple Dot, BoldTrail, Salesforce, and HubSpot.',
+      'ZIP Distribution Package Builder: Generates complete standalone plugin bundles (.zip) with embedded React dropzone components, Express router code, OpenAPI schemas, and commercial license documentation.'
+    ],
+    stackedBenefits: [
+      {
+        target: '2nd Brain Memory',
+        headline: 'Automated Database Suppression Ingestion',
+        description: 'Purged spam domains and competitor records are immediately passed to the 2nd Brain to permanently block future bad lead entries.'
+      },
+      {
+        target: 'Workspace UI',
+        headline: 'Seamless Google Sheets & Drive Export',
+        description: 'Sanitized CSV lists can be pushed directly into Google Sheets relational databases or saved to Google Drive folders in 1 click.'
       }
     ]
   }

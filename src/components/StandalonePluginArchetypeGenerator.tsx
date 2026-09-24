@@ -13,6 +13,7 @@ import {
   generatePluginBackendCode,
   generatePluginCliOrConfig,
   generatePluginScriptEmbed,
+  generatePluginZipBundle,
   generateLLMBuildModePrompt, 
   generateStandaloneReactWidgetCode, 
   generateBackendRouterCode, 
@@ -77,7 +78,9 @@ import {
   Smartphone,
   DollarSign,
   Package,
-  Database
+  Database,
+  FileArchive,
+  FileStack
 } from 'lucide-react';
 import { CrmExportConfigurationView } from './CrmExportConfigurationView';
 
@@ -99,6 +102,7 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
   const [llmPreset, setLlmPreset] = useState<'universal' | 'claude' | 'chatgpt' | 'gemini' | 'deepseek' | 'cursor'>('universal');
   const [copied, setCopied] = useState<boolean>(false);
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
+  const [isExportingZip, setIsExportingZip] = useState<boolean>(false);
 
   // Authentication & Admin State
   const activeEmail = currentUserEmail || auth.currentUser?.email;
@@ -119,7 +123,9 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
     const meta = getArchetypeMeta(archetypeId);
     setConfig(meta.defaultConfig);
     setLicenseKey(`${meta.licensePrefix}-${Math.random().toString(36).substring(2, 6).toUpperCase()}-2026`);
-    if (archetypeId === 'real_estate_geomap') {
+    if (archetypeId === 'csv_maker') {
+      setDistributionNotes('Standalone Vantage CSV Maker+ Multi-CRM Hygiene, Batch Merger & Template Generator deployment');
+    } else if (archetypeId === 'real_estate_geomap') {
       setDistributionNotes('Standalone Vantage Real Estate GeoMap & MLS Intelligence deployment');
     } else if (archetypeId === 'full_suite') {
       setDistributionNotes('Commercial Enterprise Software Suite (All-in-One master distribution)');
@@ -463,6 +469,29 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
     setTimeout(() => setDownloadSuccess(null), 4000);
   };
 
+  const handleDownloadZipBundle = async () => {
+    setIsExportingZip(true);
+    try {
+      const blob = await generatePluginZipBundle(selectedArchetype, config, watermarkHeader);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${config.pluginName.toLowerCase()}-dist-bundle-${Date.now()}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      setDownloadSuccess(`Downloaded Complete "${config.pluginName}" ZIP Distribution Bundle!`);
+      setTimeout(() => setDownloadSuccess(null), 4000);
+    } catch (err: any) {
+      console.error('Error creating ZIP bundle:', err);
+      alert('Failed to generate ZIP bundle: ' + err.message);
+    } finally {
+      setIsExportingZip(false);
+    }
+  };
+
   const handleRunSandbox = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!sandboxPrompt.trim()) return;
@@ -626,6 +655,7 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
                       {arch.icon === 'smartphone' && <Smartphone className="w-5 h-5 text-amber-500" />}
                       {arch.icon === 'layout' && <Building2 className="w-5 h-5 text-indigo-500" />}
                       {arch.icon === 'mic' && <Mic className="w-5 h-5 text-purple-500" />}
+                      {arch.icon === 'file-spreadsheet' && <FileSpreadsheet className="w-5 h-5 text-cyan-500" />}
                     </div>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                       isSelected
@@ -1004,6 +1034,46 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
                   </label>
                 </>
               )}
+
+              {selectedArchetype === 'csv_maker' && (
+                <>
+                  <div className="p-2.5 bg-cyan-50/60 dark:bg-cyan-950/40 rounded-xl border border-cyan-200 dark:border-cyan-800 text-[11px] text-cyan-700 dark:text-cyan-300 space-y-1">
+                    <div className="font-bold flex items-center gap-1">
+                      <FileSpreadsheet className="w-3.5 h-3.5" /> CSV Maker+ Engine Suite:
+                    </div>
+                    <ul className="list-disc pl-4 space-y-0.5 text-slate-600 dark:text-slate-300">
+                      <li>ASCII 1-127 Unicode character cleaner</li>
+                      <li>Cross-file multi-source batch deduplication</li>
+                      <li>Auto-split Full Name to First & Last Name</li>
+                      <li>5 Pre-configured CRM schemas & ZIP downloads</li>
+                    </ul>
+                  </div>
+
+                  <label className="flex items-center gap-2.5 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={config.includeUIWidget}
+                      onChange={(e) => setConfig({ ...config, includeUIWidget: e.target.checked })}
+                      className="w-4 h-4 text-cyan-600 rounded border-slate-300 dark:border-slate-600"
+                    />
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <FileStack className="w-3.5 h-3.5 text-cyan-500" /> Batch Processor Dropzone & Merger
+                    </span>
+                  </label>
+
+                  <label className="flex items-center gap-2.5 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={config.includeGuardrailsAndBoundaries}
+                      onChange={(e) => setConfig({ ...config, includeGuardrailsAndBoundaries: e.target.checked })}
+                      className="w-4 h-4 text-cyan-600 rounded border-slate-300 dark:border-slate-600"
+                    />
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <Shield className="w-3.5 h-3.5 text-emerald-500" /> Pre-Export Hygiene Gate & Audit Trail
+                    </span>
+                  </label>
+                </>
+              )}
             </div>
           </div>
 
@@ -1153,12 +1223,22 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
                     Track all proprietary 2nd Brain plugin packages distributed by Mike Ford.
                   </p>
                 </div>
-                <button
-                  onClick={handleExportFullJsonPackage}
-                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Download className="w-3.5 h-3.5" /> Export All (.json)
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleDownloadZipBundle}
+                    disabled={isExportingZip}
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-sm transition"
+                  >
+                    {isExportingZip ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileArchive className="w-3.5 h-3.5" />}
+                    <span>{isExportingZip ? 'Building ZIP...' : 'Download ZIP Bundle (.zip)'}</span>
+                  </button>
+                  <button
+                    onClick={handleExportFullJsonPackage}
+                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-sm transition"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Export All (.json)
+                  </button>
+                </div>
               </div>
 
               <div className="overflow-x-auto">
@@ -1960,6 +2040,32 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
                   </div>
                 </div>
               )}
+
+              {/* 7. CSV MAKER+ SANDBOX */}
+              {selectedArchetype === 'csv_maker' && (
+                <div className="space-y-4">
+                  <div className="p-4 bg-gradient-to-r from-cyan-900/40 via-blue-900/30 to-slate-900 rounded-2xl border border-cyan-500/30 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-cyan-500/20 text-cyan-400 rounded-xl border border-cyan-500/30">
+                        <FileSpreadsheet className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                          Vantage AI Studio-CSV Maker+ Interactive Sandbox
+                          <span className="text-[10px] uppercase px-2 py-0.5 bg-cyan-500/20 text-cyan-300 font-extrabold rounded-full">
+                            Full Production Engine
+                          </span>
+                        </h4>
+                        <p className="text-xs text-slate-300 mt-0.5">
+                          Test live multi-file batch uploads, cross-file deduplication, ASCII 1-127 hygiene scanning, and 1-click CRM template exports.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <CrmExportConfigurationView />
+                </div>
+              )}
             </div>
           )}
 
@@ -1978,14 +2084,18 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
                     {activeView === 'prompt' && `${config.pluginName.toLowerCase()}-llm-prompt.md`}
                     {activeView === 'react_widget' && `${config.pluginName}.tsx`}
                     {activeView === 'backend_router' && (
-                      selectedArchetype === 'voice_plugin' 
+                      selectedArchetype === 'csv_maker'
+                        ? 'vantageCsvMakerRouter.ts'
+                        : selectedArchetype === 'voice_plugin' 
                         ? 'vantageVoiceRouter.ts' 
                         : selectedArchetype === 'workplace_ui' 
                         ? 'vantageWorkplaceRouter.ts' 
                         : 'vantageHarnessRouter.ts'
                     )}
                     {activeView === 'dsh_cli' && (
-                      selectedArchetype === 'voice_plugin'
+                      selectedArchetype === 'csv_maker'
+                        ? 'csv-maker-package.json'
+                        : selectedArchetype === 'voice_plugin'
                         ? 'voice-manifest.json'
                         : selectedArchetype === 'workplace_ui'
                         ? 'workplace-manifest.json'
@@ -2005,11 +2115,19 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
                     <span>{copied ? 'Copied' : 'Copy'}</span>
                   </button>
                   <button
+                    onClick={handleDownloadZipBundle}
+                    disabled={isExportingZip}
+                    className="flex items-center gap-1.5 px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[11px] font-semibold transition cursor-pointer shadow-sm"
+                  >
+                    {isExportingZip ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileArchive className="w-3.5 h-3.5" />}
+                    <span>{isExportingZip ? 'Building ZIP...' : 'Download ZIP (.zip)'}</span>
+                  </button>
+                  <button
                     onClick={handleDownloadFile}
                     className="flex items-center gap-1.5 px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[11px] font-semibold transition cursor-pointer"
                   >
                     <Download className="w-3.5 h-3.5" />
-                    <span>Download</span>
+                    <span>Download File</span>
                   </button>
                 </div>
               </div>

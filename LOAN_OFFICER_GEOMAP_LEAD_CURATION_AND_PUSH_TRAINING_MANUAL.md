@@ -2,36 +2,38 @@
 > **Comprehensive Standard Operating Procedures (SOP) for Producing Loan Officers**  
 > **Author & System Architect:** Mike Ford (`fordmj@gmail.com`) | NMLS #288455  
 > **Platform:** Vantage AI Studio • First-Time Homebuyer GeoMap & 2nd Brain Ecosystem  
-> **Version:** 3.4 Enterprise Edition
+> **Version:** 3.5 Enterprise Edition (Gemini 3.0 Hybrid Engine)
 
 ---
 
 ## 📑 TABLE OF CONTENTS
 1. [Executive Overview & The LO Flywheel](#1-executive-overview--the-lo-flywheel)
 2. [Module 1: How Lead Capture & Intake Works (Chatbot & Note Comments)](#2-module-1-how-lead-capture--intake-works-chatbot--note-comments)
-3. [Module 2: Sourcing City-Specific Inventory (RentCast API & GeoMap Sync)](#3-module-2-sourcing-city-specific-inventory-rentcast-api--geomap-sync)
-4. [Module 3: The 3-Hearted Showcase Curation & Note Strategy Rule](#4-module-3-the-3-hearted-showcase-curation--note-strategy-rule)
-5. [Module 4: Solo LO vs. Co-Branded LO+Agent Pairing Setup](#5-module-4-solo-lo-vs-co-branded-loagent-pairing-setup)
-6. [Module 5: Pushing to the Client's Mobile Web App & The 1-Push Alert](#6-module-5-pushing-to-the-clients-mobile-web-app--the-1-push-alert)
-7. [Module 6: Step-by-Step Daily LO Checklist & Quick Reference](#7-module-6-step-by-step-daily-lo-checklist--quick-reference)
+3. [Module 2: Bulk Lead List Ingestion & CSV Maker+ Batch Hygiene](#3-module-2-bulk-lead-list-ingestion--csv-maker-batch-hygiene)
+4. [Module 3: Sourcing City-Specific Inventory (RentCast API & GeoMap Sync)](#4-module-3-sourcing-city-specific-inventory-rentcast-api--geomap-sync)
+5. [Module 4: The 3-Hearted Showcase Curation & Note Strategy Rule](#5-module-4-the-3-hearted-showcase-curation--note-strategy-rule)
+6. [Module 5: Solo LO vs. Co-Branded LO+Agent Pairing Setup](#6-module-5-solo-lo-vs-co-branded-loagent-pairing-setup)
+7. [Module 6: Pushing to the Client's Mobile Web App & The 1-Push Alert](#7-module-6-pushing-to-the-clients-mobile-web-app--the-1-push-alert)
+8. [Module 7: Step-by-Step Daily LO Checklist & Quick Reference](#8-module-7-step-by-step-daily-lo-checklist--quick-reference)
 
 ---
 
 ## 1. EXECUTIVE OVERVIEW & THE LO FLYWHEEL
 
-As a Loan Officer using Vantage AI Studio, your primary competitive advantage is **combining hyper-local down payment assistance (DPA) financing math with interactive spatial property discovery**. 
+As a Loan Officer using Vantage AI Studio powered by the **Gemini 3.0 Hybrid Brain**, your primary competitive advantage is **combining hyper-local down payment assistance (DPA) financing math with sub-second spatial property discovery, automated lead database hygiene, and multi-token career persona intelligence**. 
 
 Instead of sending static PDF flyers or generic MLS portals where buyers get lost or poached by third-party listing agents, you provide an **interactive, co-branded GeoMap Web App** that buyers install directly to their mobile home screens ("Add to Home Screen" PWA).
 
 ```
 ┌───────────────────────────────────────────────────────────────────────────┐
-│                       THE 5-STEP LO VALUE FLYWHEEL                        │
+│                      THE 6-STEP LO VALUE FLYWHEEL                         │
 ├───────────────────────────────────────────────────────────────────────────┤
-│  STEP 1: INTAKE ➔ Buyer interacts with Card Chatbot or Leaves a Note     │
-│  STEP 2: TRIAGE ➔ 2nd Brain indexes buyer profile & DPA eligibility       │
-│  STEP 3: SOURCE ➔ Sync RentCast listings or Geosphere portal properties   │
-│  STEP 4: CURATE ➔ Stamp LO notes & Heart the Top 3 Featured Listings      │
-│  STEP 5: PUSH   ➔ Send 1-tap push to Client Mobile App + Native Mailto    │
+│  STEP 1: HYGIENE➔ Clean & Deduplicate Lead Databases via CSV Maker+       │
+│  STEP 2: INTAKE ➔ Buyer interacts with Card Chatbot or Leaves a Note      │
+│  STEP 3: TRIAGE ➔ 2nd Brain (Gemini 3.0) indexes profile & DPA eligibility│
+│  STEP 4: SOURCE ➔ Sync RentCast listings or Geosphere portal properties   │
+│  STEP 5: CURATE ➔ Stamp LO notes & Heart the Top 3 Featured Listings       │
+│  STEP 6: PUSH   ➔ Send 1-tap push to Client Mobile App + Native Mailto     │
 └───────────────────────────────────────────────────────────────────────────┘
 ```
 

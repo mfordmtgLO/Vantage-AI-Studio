@@ -9,26 +9,27 @@
 
 ## 📑 TABLE OF CONTENTS
 1. [Executive Master Hook & Subscription Pricing Model](#1-executive-master-hook--subscription-pricing-model)
-2. [Module 1: Vantage 2nd Brain Cognitive Core Plugin (Real Estate & Mortgage Edition)](#2-module-1-vantage-2nd-brain-cognitive-core-plugin-real-estate--mortgage-edition)
+2. [Module 1: Vantage 2nd Brain Cognitive Core Plugin (Gemini 3.0 Hybrid Edition)](#2-module-1-vantage-2nd-brain-cognitive-core-plugin-gemini-30-hybrid-edition)
 3. [Module 2: Google Workspace Dual-Pathway UI Plugin](#3-module-2-google-workspace-dual-pathway-ui-plugin)
 4. [Module 3: Voice Macro Orchestrator & Intent Router Plugin](#4-module-3-voice-macro-orchestrator--intent-router-plugin)
 5. [Module 4: Flagship Real Estate GeoMap, DeepSeek Zillow Swarm & DPA Mortgage Plugin](#5-module-4-flagship-real-estate-geomap-deepseek-zillow-swarm--dpa-mortgage-plugin)
-6. [Module 5: Commercial Enterprise All-in-One Master Suite](#6-module-5-commercial-enterprise-all-in-one-master-suite)
+6. [Module 5: Commercial Enterprise All-in-One Master Suite (7-in-1 Stack)](#6-module-5-commercial-enterprise-all-in-one-master-suite)
 7. [Module 6: Mobile Micro-Apps & Add-to-Home-Screen PWA Plugin](#7-module-6-mobile-micro-apps--add-to-home-screen-pwa-plugin)
-8. [The Flagship Real Estate & Mortgage Combo (2nd Brain + GeoMap Swarm Stack)](#8-the-flagship-real-estate--mortgage-combo-2nd-brain--geomap-swarm-stack)
-9. [The 6-in-1 Vantage Master Suite: Multi-Module Stacked Power Benefits](#9-the-6-in-1-vantage-master-suite-multi-module-stacked-power-benefits)
-10. [Ready-to-Run High-Conversion Ad Campaign Hooks & Headlines](#10-ready-to-run-high-conversion-ad-campaign-hooks--headlines)
+8. [Module 7: Vantage AI Studio - CSV Maker+ Multi-CRM Hygiene & Export Plugin](#8-module-7-vantage-ai-studio---csv-maker-multi-crm-hygiene--export-plugin)
+9. [The Flagship Real Estate & Mortgage Combo (2nd Brain + GeoMap Swarm Stack)](#9-the-flagship-real-estate--mortgage-combo-2nd-brain--geomap-swarm-stack)
+10. [The 7-in-1 Vantage Master Suite: Multi-Module Stacked Power Benefits](#10-the-7-in-1-vantage-master-suite-multi-module-stacked-power-benefits)
+11. [Ready-to-Run High-Conversion Ad Campaign Hooks & Headlines](#11-ready-to-run-high-conversion-ad-campaign-hooks--headlines)
 
 ---
 
 ## 1. EXECUTIVE MASTER HOOK & SUBSCRIPTION PRICING MODEL
 
 ### 🎯 The Big Problem in Modern Real Estate & Mortgage AI:
-> **Every popular AI chatbot suffers from "Goldfish Amnesia" and "Mortgage Underwriting Blindness."**  
-> The moment you close the browser tab, the AI forgets who your buyers are, their DTI limits, credit scores, and pre-approval status. Worse, generic LLMs know nothing about hyper-local 11-digit census tract CRA grants, cannot audit MLS/Zillow price changes, cannot cross-reference property listings for status shifts, and cannot generate native local email drafts with official NMLS compliance signatures.
+> **Every popular AI chatbot suffers from "Goldfish Amnesia," "Tab Fatigue," "Messy Data Corruption," and "Mortgage Underwriting Blindness."**  
+> The moment you close the browser tab, the AI forgets who your buyers are, their DTI limits, credit scores, and pre-approval status. Worse, generic LLMs know nothing about hyper-local 11-digit census tract CRA grants, cannot clean corrupted non-ASCII CSV lead spreadsheets, cannot audit MLS/Zillow price changes, and cannot generate native local email drafts with official NMLS compliance signatures.
 
 ### 💡 The Vantage AI Solution:
-**Vantage AI Workspace** transforms stateless LLMs into **permanent, industry-specialized cognitive powerhouses** built specifically for **Mortgage Loan Officers, Producing Realtors, and Lending Teams**. It combines permanent 2nd Brain vector memory with DeepSeek Harness Swarm market sweeps, interactive GIS parcel mapping, multi-layer DPA grant stacking, and native one-click client outreach.
+**Vantage AI Workspace** powered by the **Gemini 3.0 Hybrid Brain** transforms stateless LLMs into **permanent, industry-specialized cognitive powerhouses** built specifically for **Mortgage Loan Officers, Producing Realtors, Lending Teams, and Enterprise Executives**. It combines permanent 2nd Brain vector memory with DeepSeek Harness Swarm market sweeps, CSV Maker+ multi-CRM batch hygiene, interactive GIS parcel mapping, multi-layer DPA grant stacking, and native one-click client outreach.
 
 ---
 
@@ -36,20 +37,20 @@
 
 | Tier | Price | Ideal Customer | Deliverables & Rights |
 | :--- | :--- | :--- | :--- |
-| **Individual Pro Edition** | **$49 / month** *(or $490/yr - 2 mos free)* | Solo Loan Officers, Producing Realtors, Consultants | • 1 Production Domain / Landing Page<br>• Up to 250 Active User 2nd Brain Memory Profiles<br>• Full access to chosen plugin container<br>• Daily DeepSeek Zillow Swarm Sweep (Wave 1 Audit + Wave 2 Discovery)<br>• Standard API & tool schema updates |
-| **Team / Agency Edition** | **$149 / month** *(or $1,490/yr)* | Producing Real Estate Teams (3-10 agents), Mortgage Branches | • Up to 5 Production Domains / Client Sites<br>• Unlimited Active 2nd Brain Profiles<br>• Co-branded paired partner bridges (Agent + Loan Officer profile cards)<br>• Customizable Target Cities Queue & Swarm Cron Cadence<br>• Automated morning `dsh-cron` background audits & alert drafts |
-| **Enterprise SaaS Edition** | **$499 / month** *(or $4,990/yr)* | Full Brokerages, Regional Lenders, PropTech Founders | • **Unlimited Domains & Whitelabel Embedding Rights**<br>• Full Obfuscated/Unbundled Source Code Access (.ts / .js)<br>• Multi-LLM Gateway (Gemini 3.7, DeepSeek R1/V3, Claude, ChatGPT)<br>• Pre-seeded Real Estate & Mortgage Guideline Knowledge Bases<br>• Dedicated Custom Webhook & CRM Sync (Salesforce, HubSpot, Encompass)<br>• 1-on-1 Integration & Launch Support |
-| **Instant Buyout (Digital Download)** | **$199 - $699 One-Time** | Etsy / GitHub Marketplace Buyers who prefer self-hosting | • Full `.zip` containing containerized code, `.md` scaffolding prompts, OpenAPI tool `.json`, and perpetual commercial license key |
+| **Individual Pro Edition** | **$49 / month** *(or $490/yr - 2 mos free)* | Solo Loan Officers, Producing Realtors, Consultants | • 1 Production Domain / Landing Page<br>• Gemini 3.0 Hybrid Brain Core Intelligence Engine<br>• Up to 250 Active User 2nd Brain Memory Profiles with Industry Modalities<br>• Full access to chosen plugin container + CSV Maker+ Standalone Exporter<br>• Daily DeepSeek Zillow Swarm Sweep (Wave 1 Audit + Wave 2 Discovery)<br>• Standard API & tool schema updates |
+| **Team / Agency Edition** | **$149 / month** *(or $1,490/yr)* | Producing Real Estate Teams (3-10 agents), Mortgage Branches | • Up to 5 Production Domains / Client Sites<br>• Gemini 3.0 Multi-Token Context & Sub-Second Reasoning Upgrade<br>• Unlimited Active 2nd Brain Profiles with Industry Modalities<br>• Co-branded paired partner bridges (Agent + Loan Officer profile cards)<br>• CSV Maker+ Multi-Source Batch Deduplicator & Purge Engine<br>• Automated morning `dsh-cron` background audits & alert drafts |
+| **Enterprise SaaS Edition (7-in-1 Suite)** | **$499 / month** *(or $4,990/yr)* | Full Brokerages, Regional Lenders, PropTech Founders | • **Unlimited Domains & Whitelabel Embedding Rights**<br>• Full Obfuscated/Unbundled Source Code Access (.ts / .js)<br>• Multi-LLM Gateway (Gemini 3.0, Claude 3.7, ChatGPT-4o, DeepSeek R1/V3, Cursor)<br>• Pre-seeded Real Estate, Mortgage & Enterprise Career Modality Knowledge Bases<br>• CSV Maker+ Enterprise Exporter with ZIP Distribution Package Builder<br>• Dedicated Custom Webhook & CRM Sync (Total Expert, Big Purple Dot, BoldTrail, Salesforce, HubSpot)<br>• 1-on-1 Integration & Launch Support |
+| **Instant Buyout (Digital Download)** | **$297 - $997 One-Time** | Etsy / GitHub Marketplace Buyers who prefer self-hosting | • Full `.zip` containing containerized code for all 7 modules, `.md` scaffolding prompts, OpenAPI tool `.json`, CSV Maker+ package, and perpetual commercial license key |
 
 ---
 
-## 2. MODULE 1: VANTAGE 2ND BRAIN COGNITIVE CORE PLUGIN (REAL ESTATE & MORTGAGE EDITION)
+## 2. MODULE 1: VANTAGE 2ND BRAIN COGNITIVE CORE PLUGIN (GEMINI 3.0 HYBRID EDITION)
 
 ### 🪝 The Hook:
-> **"Turn Your AI Into a Seasoned Mortgage & Real Estate Underwriting Understudy. A Permanent 2nd Brain Pre-Loaded with FHA, VA, USDA, CRA Grants, and DTI Qualification Intelligence."**
+> **"Turn Your AI Into a Seasoned Mortgage & Real Estate Underwriting Understudy. A Permanent 2nd Brain Pre-Loaded with Gemini 3.0 Hybrid Reasoning, FHA, VA, USDA, CRA Grants, and Career Persona Modalities."**
 
 ### 📦 What It Does:
-The **Vantage 2nd Brain Cognitive Core (Real Estate & Mortgage Edition)** is a domain-specialized cognitive memory layer that equips AI applications with long-term vector recall, client persona indexing, procedural mortgage underwriting heuristics, NMLS/DRE compliance guardrails, and **autonomous circadian memory hygiene**.
+The **Vantage 2nd Brain Cognitive Core (Gemini 3.0 Hybrid Edition)** is a domain-specialized cognitive memory layer that equips AI applications with multi-million token vector recall, deep industry + career persona indexing (Mortgage, Real Estate, Enterprise Sales, Wealth Management, Legal, SaaS), procedural underwriting heuristics, compliance guardrails, and **autonomous circadian memory hygiene**.
 
 ---
 
@@ -135,7 +136,24 @@ A zero-install Progressive Web App (PWA) client portal engine that enables real 
 
 ---
 
-## 8. THE FLAGSHIP REAL ESTATE & MORTGAGE COMBO (2ND BRAIN + GEOMAP SWARM STACK)
+## 8. MODULE 7: VANTAGE AI STUDIO - CSV MAKER+ MULTI-CRM HYGIENE & EXPORT PLUGIN
+
+### 🪝 The Hook:
+> **"Clean Messy Lead Lists, Eliminate Non-ASCII 1-127 Encoding Errors, Deduplicate Multi-Source Databases & Export Pre-Formatted CSVs for 5 Top CRMs in 1 Click."**
+
+### 📦 What It Does:
+A high-performance batch data processing and hygiene engine designed to clean, normalize, and format lead databases for **Total Expert, Big Purple Dot, BoldTrail/kvCORE, Salesforce, and HubSpot** with instant 1-click **ZIP Distribution Package Downloads**.
+
+### 🌟 Core Capabilities:
+- **ASCII 1-127 Unicode Character Sanitizer**: Automatically strips illegal, invisible, or corrupted non-ASCII control characters that cause CRM import crashes.
+- **Multi-Source Batch Deduplication Engine**: Cross-references multiple lead sheets simultaneously to detect and merge duplicate email addresses and phone numbers.
+- **Automated Full Name Splitter & Phone Normalizer**: Converts composite "John & Jane Doe" full name strings into standardized First Name, Last Name, and E.164 phone formats.
+- **5 Pre-Configured CRM Schema Exporters**: 1-click export templates specifically formatted for Total Expert, Big Purple Dot, BoldTrail, Salesforce, and HubSpot.
+- **ZIP Distribution Package Builder**: Generates complete standalone plugin bundles (`.zip`) with embedded React dropzone components, Express router code, OpenAPI schemas, and commercial license documentation.
+
+---
+
+## 9. THE FLAGSHIP REAL ESTATE & MORTGAGE COMBO (2ND BRAIN + GEOMAP SWARM STACK)
 
 When the **Real Estate & Mortgage 2nd Brain Engine** is paired with the **Real Estate GeoMap & Zillow Swarm Plugin**, it creates an untouchable competitive moat for loan officers and agents:
 

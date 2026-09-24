@@ -35,6 +35,15 @@ import {
   generateMobileMicroAppPluginBackendCode,
   generateMobileMicroAppPluginScriptEmbed
 } from './mobileMicroAppPluginService';
+import {
+  generateCsvMakerPluginPrompt,
+  generateCsvMakerPluginReactCode,
+  generateCsvMakerPluginHookCode,
+  generateCsvMakerPluginBackendCode,
+  generateCsvMakerPluginScriptEmbed,
+  generateCsvMakerPluginCliOrConfig,
+  generateCsvMakerZipBundle
+} from './csvMakerPluginService';
 
 export type PluginArchetypeId = 
   | 'second_brain' 
@@ -42,7 +51,8 @@ export type PluginArchetypeId =
   | 'voice_plugin'
   | 'workplace_ui' 
   | 'full_suite'
-  | 'mobile_microapps';
+  | 'mobile_microapps'
+  | 'csv_maker';
 
 export interface PluginArchetypeMeta {
   id: PluginArchetypeId;
@@ -51,7 +61,7 @@ export interface PluginArchetypeMeta {
   badge: string;
   tagline: string;
   description: string;
-  icon: 'brain' | 'layout' | 'mic' | 'map' | 'package' | 'smartphone';
+  icon: 'brain' | 'layout' | 'mic' | 'map' | 'package' | 'smartphone' | 'file-spreadsheet';
   licensePrefix: string;
   defaultConfig: PluginPackagingConfig;
 }
@@ -176,6 +186,21 @@ export const VANTAGE_PLUGIN_ARCHETYPES: PluginArchetypeMeta[] = [
       pluginName: 'VantageMobileMicroAppsPlugin',
       apiBasePath: '/api/vantage-mobile'
     }
+  },
+  {
+    id: 'csv_maker',
+    name: 'Vantage AI Studio-CSV Maker+',
+    componentName: 'VantageCsvMakerPlugin',
+    badge: 'CSV Hygiene, Batch & CRM Exporter',
+    tagline: 'Multi-CRM CSV Hygiene Cleaner, ASCII 1-127 Sanitizer, Batch Processor & Template Exporter',
+    description: 'Turnkey enterprise CSV hygiene & batch merge engine. Auto-detects and repairs non-ASCII characters, splits full names, deduplicates cross-file datasets, maps schemas (Total Expert, Big Purple Dot, BoldTrail, Salesforce, HubSpot), and exports compliant spreadsheets and ZIP bundles.',
+    icon: 'file-spreadsheet',
+    licensePrefix: 'VNTG-CSVMAKER',
+    defaultConfig: {
+      ...DEFAULT_PACKAGING_CONFIG,
+      pluginName: 'VantageCsvMakerPlugin',
+      apiBasePath: '/api/vantage-csv-maker'
+    }
   }
 ];
 
@@ -192,6 +217,9 @@ export function generatePluginBuildPrompt(
   currentGuardrails?: GuardrailSettings,
   sampleMemories?: UserMemory[]
 ): string {
+  if (archetypeId === 'csv_maker') {
+    return generateCsvMakerPluginPrompt(config);
+  }
   if (archetypeId === 'real_estate_geomap') {
     return generateGeoMapPluginPrompt(config);
   }
@@ -217,6 +245,9 @@ export function generatePluginReactCode(
   archetypeId: PluginArchetypeId,
   config: PluginPackagingConfig
 ): string {
+  if (archetypeId === 'csv_maker') {
+    return generateCsvMakerPluginReactCode(config);
+  }
   if (archetypeId === 'real_estate_geomap') {
     return generateGeoMapPluginReactCode(config);
   }
@@ -307,6 +338,9 @@ export function generatePluginHookCode(
   archetypeId: PluginArchetypeId,
   config: PluginPackagingConfig
 ): string {
+  if (archetypeId === 'csv_maker') {
+    return generateCsvMakerPluginHookCode(config);
+  }
   if (archetypeId === 'real_estate_geomap') {
     return generateGeoMapPluginHookCode(config);
   }
@@ -332,6 +366,9 @@ export function generatePluginBackendCode(
   archetypeId: PluginArchetypeId,
   config: PluginPackagingConfig
 ): string {
+  if (archetypeId === 'csv_maker') {
+    return generateCsvMakerPluginBackendCode(config);
+  }
   if (archetypeId === 'real_estate_geomap') {
     return generateGeoMapPluginBackendCode(config);
   }
@@ -357,6 +394,9 @@ export function generatePluginCliOrConfig(
   archetypeId: PluginArchetypeId,
   config: PluginPackagingConfig
 ): string {
+  if (archetypeId === 'csv_maker') {
+    return generateCsvMakerPluginCliOrConfig(config);
+  }
   if (archetypeId === 'real_estate_geomap') {
     return `# Vantage AI Real Estate GeoMap Module Specification
 name: "${config.pluginName}"
@@ -433,6 +473,9 @@ export function generatePluginScriptEmbed(
   archetypeId: PluginArchetypeId,
   config: PluginPackagingConfig
 ): string {
+  if (archetypeId === 'csv_maker') {
+    return generateCsvMakerPluginScriptEmbed(config);
+  }
   if (archetypeId === 'real_estate_geomap') {
     return generateGeoMapPluginScriptEmbed(config);
   }
@@ -449,6 +492,30 @@ export function generatePluginScriptEmbed(
     return generateVoicePluginScriptEmbed(config);
   }
   return generateUniversalScriptEmbed(config);
+}
+
+/**
+ * Generates Downloadable ZIP Package for any Plugin Archetype
+ */
+export async function generatePluginZipBundle(
+  archetypeId: PluginArchetypeId,
+  config: PluginPackagingConfig,
+  watermarkHeader: string
+): Promise<Blob> {
+  if (archetypeId === 'csv_maker') {
+    return await generateCsvMakerZipBundle(config, watermarkHeader);
+  }
+  // Default zip packager
+  const JSZip = (await import('jszip')).default;
+  const zip = new JSZip();
+  zip.file('LICENSE.txt', `${watermarkHeader}\n\nCOMMERCIAL ATTRIBUTION & LICENSE\nCopyright (c) 2026 Mike Ford <fordmj@gmail.com>`);
+  zip.file('README.md', generatePluginBuildPrompt(archetypeId, config));
+  zip.file(`src/${config.pluginName}.tsx`, `${watermarkHeader}\n\n${generatePluginReactCode(archetypeId, config)}`);
+  zip.file('src/useVantagePlugin.ts', `${watermarkHeader}\n\n${generatePluginHookCode(archetypeId, config)}`);
+  zip.file('src/router.ts', `${watermarkHeader}\n\n${generatePluginBackendCode(archetypeId, config)}`);
+  zip.file('embed.html', generatePluginScriptEmbed(archetypeId, config));
+  zip.file('config.json', generatePluginCliOrConfig(archetypeId, config));
+  return await zip.generateAsync({ type: 'blob' });
 }
 
 /**
