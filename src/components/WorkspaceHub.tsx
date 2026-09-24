@@ -24,6 +24,7 @@ import { AutonomousMeetingConcierge } from './AutonomousMeetingConcierge';
 import { MultiSourceDataPurgeStudio } from './MultiSourceDataPurgeStudio';
 import { PushNotificationManager } from './PushNotificationManager';
 import { LiveTwoWayNotesModal } from './LiveTwoWayNotesModal';
+import { ProfileCardsAdminPortal } from './ProfileCardsAdminPortal';
 import { GoogleAppHeader } from './GoogleAppHeader';
 import { GoogleAppsCommandDeck } from './GoogleAppsCommandDeck';
 import { GoogleAppsWorkspacePortal } from './GoogleAppsWorkspacePortal';
@@ -2001,6 +2002,9 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
 
       {/* GMAIL DRAFTS TAB */}
       {activeTab === 'drafts' && <GmailDraftsView />}
+
+      {/* LO & AGENT PROFILE CARDS ADMIN PORTAL TAB */}
+      {activeTab === 'lo_agent_profiles' && <ProfileCardsAdminPortal />}
 
       {/* ADMIN PLUGINS & CODE GENERATORS TAB */}
       {activeTab === 'admin_plugins' && (

@@ -23,6 +23,7 @@ interface NavbarProps {
   user: User | null;
   onLogout: () => void;
   onOpenVoiceModal: () => void;
+  onOpenMobileAdmin?: () => void;
   onOpenWizard?: () => void;
   onOpenSalesAssistant?: () => void;
   onOpenScaffolding?: () => void;
@@ -44,6 +45,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   user, 
   onLogout, 
   onOpenVoiceModal,
+  onOpenMobileAdmin,
   onOpenWizard,
   onOpenSalesAssistant,
   onOpenScaffolding,
@@ -197,6 +199,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   // Autonomous AI Engines & Platform Studios
   const studioTabs = [
     { id: 'suite' as WorkspaceTab, label: '💎 Vantage Suite', icon: Sparkles, badge: '4-in-1' },
+    { id: 'lo_agent_profiles' as WorkspaceTab, label: '👥 LO & Agent Profiles', icon: Users, badge: 'Kanndice' },
     { id: 'google_apps' as WorkspaceTab, label: '🌐 7 Google Apps Hub', icon: Layers, badge: 'Portal' },
     { id: 'studio' as WorkspaceTab, label: 'Prompt Studio & Copilot', icon: Bot },
     { id: 'brain' as WorkspaceTab, label: '2nd Brain Memory', icon: Brain },
@@ -594,6 +597,84 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
         )}
+
+        {/* PRIMARY EXECUTIVE CONTROL STRIP (LO Profiles, Mobile Admin, GeoMap, 2nd Brain, Sign Out) */}
+        <div className="py-1.5 px-2 bg-slate-900 text-white rounded-xl my-1 flex items-center justify-between gap-2 overflow-x-auto scrollbar-none shadow-md border border-slate-800">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => setActiveTab('lo_agent_profiles')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-black transition flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'lo_agent_profiles'
+                  ? 'bg-emerald-500 text-slate-950 shadow-md ring-2 ring-emerald-400/50'
+                  : 'bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40'
+              }`}
+              title="Edit Kanndice McLean & LO Contact Profile Cards"
+            >
+              <Users className="w-3.5 h-3.5 text-emerald-400" />
+              <span>👥 LO &amp; Agent Profiles</span>
+              <span className="text-[9px] px-1.5 py-0.2 bg-emerald-400 text-slate-950 font-extrabold rounded-full">
+                Edit Kanndice
+              </span>
+            </button>
+
+            {onOpenMobileAdmin && (
+              <button
+                type="button"
+                onClick={onOpenMobileAdmin}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 transition flex items-center gap-1.5 cursor-pointer shrink-0"
+                title="Launch Mobile Admin Dashboard"
+              >
+                <Smartphone className="w-3.5 h-3.5 text-amber-400" />
+                <span>📱 Mobile Admin</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('real_estate')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                activeTab === 'real_estate'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+              }`}
+            >
+              <Home className="w-3.5 h-3.5 text-blue-400" />
+              <span>🏠 GeoMap</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('brain')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                activeTab === 'brain'
+                  ? 'bg-purple-600 text-white shadow-md'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+              }`}
+            >
+              <Brain className="w-3.5 h-3.5 text-purple-400" />
+              <span>🧠 2nd Brain</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {user && (
+              <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-slate-800/80 rounded-lg text-[11px] text-slate-300 font-medium">
+                <img src={user.photoURL || 'https://www.gravatar.com/avatar/?d=mp'} alt="" className="w-4 h-4 rounded-full" />
+                <span className="truncate max-w-[120px]">{user.displayName || user.email}</span>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={onLogout}
+              className="px-3 py-1.5 rounded-lg bg-rose-900/80 hover:bg-rose-800 text-rose-200 border border-rose-500/50 text-xs font-black transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+              title="Sign Out of Vantage AI Studio"
+            >
+              <LogOut className="w-3.5 h-3.5 text-rose-300" />
+              <span>🚪 Sign Out</span>
+            </button>
+          </div>
+        </div>
 
         {/* Prominent Google Workspace 7-Apps Launcher Bar */}
         <div className="pt-2 pb-1.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 max-w-full min-w-0">
