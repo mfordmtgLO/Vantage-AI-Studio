@@ -30,11 +30,13 @@ import { auth } from '../services/firebase';
 interface RealEstateMortgageViewProps {
   onOpenPluginVault?: () => void;
   onOpenByokDrawer?: () => void;
+  onOpenShareLinksModal?: (propertyId?: string) => void;
 }
 
 export const RealEstateMortgageView: React.FC<RealEstateMortgageViewProps> = ({
   onOpenPluginVault,
-  onOpenByokDrawer
+  onOpenByokDrawer,
+  onOpenShareLinksModal
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'geomap' | 'loan_products' | 'dpa_stacker' | 'lead_capture'>('geomap');
   const [leadCaptureMode, setLeadCaptureMode] = useState<'form' | 'crm'>('form');
@@ -170,7 +172,10 @@ export const RealEstateMortgageView: React.FC<RealEstateMortgageViewProps> = ({
 
       {/* Sub-Tab Rendering */}
       {activeSubTab === 'geomap' && (
-        <FirstTimeHomebuyerGeoPlugin onOpenByokDrawer={onOpenByokDrawer} />
+        <FirstTimeHomebuyerGeoPlugin 
+          onOpenByokDrawer={onOpenByokDrawer} 
+          onOpenShareLinksModal={onOpenShareLinksModal}
+        />
       )}
 
       {activeSubTab === 'loan_products' && (

@@ -307,32 +307,78 @@ export const SUITE_MODULE_PITCHES: ModulePitch[] = [
   },
   {
     id: 'real_estate_geo',
-    title: 'Module 4: Vantage Real Estate GeoMap Plugin Module',
-    hook: 'Turn Renters into Homebuyers on Your Website. The Only AI Plugin with USDA 100% Zero-Down Area Checkers, Census Tract $5K-$10K Grants, Live DTI Math & RentCast Priority Listings.',
-    summary: 'The ultimate real estate and mortgage technology engine. Instantly geocodes properties, matches 11-digit FIPS Census Tracts with low-to-moderate income (LMI) grants, checks USDA Rural Development (RD) 100% financing boundaries, and computes real-time buyer DTI affordability envelopes.',
+    title: 'Module 4: Flagship Real Estate GeoMap & DPA Mortgage Plugin (GeoMap 3.0)',
+    hook: 'Turn Renters into Homebuyers on Your Website. The Only AI Plugin with Multi-Layer DPA Grant Stacking, AI 2nd Brain Lead Triage, Proactive Geofence Driving Radar & Co-Branded Tablet Kiosks.',
+    summary: 'The ultimate real estate and mortgage technology engine. Instantly geocodes properties, matches 11-digit FIPS Census Tracts with LMI grants, checks USDA Rural Development (RD) 100% financing boundaries, computes real-time buyer DTI affordability envelopes, and features an AI 2nd Brain Lead Triage engine that automatically decomposes visitor inquiries into LO vs. Agent domains while simultaneously emailing both professionals.',
     coreCapabilities: [
-      'USDA Rural Development (RD) 100% (0% Down) Checker: Evaluates coordinates and FIPS GeoIDs to flag properties eligible for zero-down government-guaranteed financing.',
-      'Census Tract $5,000–$10,000 CRA Grant Matching: Detects <80% Area Median Income (AMI) tracts eligible for bank CRA grants, Fannie Mae HomeReady (3% down), and state DPA programs.',
-      'RentCast Priority Listing Feed: Shows active listings with price drop counters, days on market, RentCast valuation/investment scores (e.g. 96/100), and monthly P&I + Tax/Ins estimates.',
-      'Live Buyer DTI Affordability Engine: Sliders for Gross Monthly Income, Monthly Debts, Down Payment, and Interest Rate calculate real-time Front-End / Back-End DTI, Max Housing Payment Caps, and Max Purchase Price Envelopes.',
-      '1-Click Zillow URL Geocoder: Buyers paste any Zillow listing link to import specs, geocode coordinates, and place an interactive map pin with pre-qualification indicators.',
-      'Autonomous dsh-cron Weekly Price Audits: Background cron tasks audit active listings every Monday morning, calculate price cuts, and draft automated alert emails.'
+      'Customizable Lead Capture Form with AI 2nd Brain Triage: Decomposes buyer questions into Loan Officer domains (loan programs, DPA, credit scores, pre-approval, monthly payments, DTI, underwriting, income, taxes, interest rates) vs. Realtor Agent domains (property address, beds/baths/sqft, DOM, pricing trends, private tours, walk-throughs, meetup/coffee, search criteria, seller concessions).',
+      'GeoMap Plugin Default Property Listing & Front-and-Center View: Check the "GeoMap Plugin default" box on any property listing card to feature that listing as the first to view front and center in all plugin exports, social links, emails, texts, messaging, and QR codes with live AI notes chat bot & scenario Q&A.',
+      'Simultaneous Dual-Email Dispatch: Instantly notifies both the Loan Officer (fordmj@gmail.com) and paired Realtor Agent (kanndice@cascadepremier.com) with pre-drafted 1-click replies and actionable urgency ratings.',
+      'Dynamic Solo LO Mode vs. Co-Branded Combo Pack: Easily pairs an LO with a top-producing agent for co-branded lead attraction; if no agent is selected, it cleanly degrades to Solo LO Mode with zero external agent intermediary.',
+      'Co-Branded 1-Tap Agent Contact Card: Copies a pre-formatted contact card with name, license #, broker, headshot, and co-branded link ready to paste into Instagram, TikTok, LinkedIn bios, and email signatures.',
+      'Native Mobile Share via SMS Intent: Triggers native mobile SMS sharing pre-populated with the co-branded property link, listing specs, and dual contact info.',
+      'Live Showing QR Code & Tablet Kiosk Presenter: Interactive Open House / Showing Kiosk mode with high-contrast QR code for instant phone scanning and offline PWA saving.',
+      'Multi-Layer DPA Grant Waterfall Stacking Solver: Stacks Lakeview National 100% DPA, OHCS Flex Lending ($15,400), CRA $5k-$10k Grants, USDA 100% 0-down, and Fannie Mae HomeReady (3% down) to solve for True Zero Out-of-Pocket closing cash.',
+      'Proactive Geofenced Interest Radius Alert Radar: Real-time mobility radar triggers cross-platform mobile alerts when a buyer physically drives within 0.5 miles of a favorited listing or enters a USDA 100% zero-down corridor.',
+      'Real-Time Collaborative Co-Borrower Canvas: Sliders for joint co-borrower gross income and liabilities dynamically recalculate front/back-end DTI limits with live visual comparisons.',
+      'DeepThink Pre-Mortem Modal: Analyzes property vulnerability, tax reassessment resets, aging capital expenditure reserves, and underwriting flags.',
+      '1-Click Executive Pre-Approval Dossier: Generates official PDF/print pre-approval certificates complete with census tract grant qualification badges and LO+Agent credentials.',
+      '1-Click Zillow URL Geocoder: Buyers paste any Zillow listing link to import specs, geocode coordinates, and place an interactive map pin with pre-qualification indicators.'
     ],
     stackedBenefits: [
       {
         target: '2nd Brain',
-        headline: 'Permanent Buyer Cross-Session Persistence',
-        description: 'When a lead enters their email, their favorited homes, property notes, and DTI envelopes are stored in vector memory, reloaded whenever they return from any device.'
+        headline: 'Automated Cognitive Lead Decomposition',
+        description: 'When a visitor submits notes or questions, the AI 2nd Brain segments the text into distinct LO and Agent domains, drafting separate tailored responses for each professional.'
       },
       {
         target: 'Workspace UI',
-        headline: 'Automated Price Drop Outreach',
-        description: 'When weekly dsh-cron audits detect a price drop on a buyer\'s favorite listing, it automatically formats and drafts an outreach email in Gmail Live Drafts for paired loan officers and real estate agents.'
+        headline: 'Simultaneous Dual-Inbox Notification & Gmail Drafts',
+        description: 'Dispatches instant notifications to the LO and Agent inboxes simultaneously, generating ready-to-review Gmail drafts with the lead\'s specific financial constraints.'
       },
       {
         target: 'Voice Orchestrator',
-        headline: 'Conversational Pre-Qualification',
-        description: 'Buyers can verbally state their financial situation ("I make $8,500 a month with a $450 car payment and $20,000 saved") and immediately see their purchasing power envelope on screen.'
+        headline: 'Conversational Pre-Qualification & Hands-Free Tour Requests',
+        description: 'Buyers can verbally state their financial profile ("I make $8,500/mo with $400 in debts and $10k saved") to instantly see their purchasing power envelope on screen.'
+      }
+    ]
+  },
+  {
+    id: 'enterprise_suite',
+    title: 'Module 5: Commercial Enterprise All-in-One Master Suite',
+    hook: 'Deploy the Entire 6-Module Cognitive Ecosystem Under Your Own Brand with Domain-Locked Multi-Tenant Security.',
+    summary: 'The master enterprise framework that bundles and orchestrates all standalone Vantage plugin modules into a single, cohesive SaaS command center with tenant isolation, cryptographic watermark protection, and centralized license validation.',
+    coreCapabilities: [
+      'Centralized Multi-Tenant Gateway: Manage client organizations, seats, and domain authorizations from one master admin panel.',
+      'SHA256-MF Anti-Tamper Security: Verifies commercial license integrity and prevents unauthorized code reuse across unapproved domains.',
+      'Unified Modular Navigation: Switch effortlessly between Cognitive Memory, Geospatial MLS, Voice Macros, Workspace Cockpit, and Mobile PWAs with synchronized user state.',
+      'Turnkey Whitelabel Embedding: Embed the full suite on client portals with customized branding, color schemes, and domain routing.'
+    ],
+    stackedBenefits: [
+      {
+        target: 'All Modules',
+        headline: 'Unified Ecosystem State Synchronization',
+        description: 'User preferences, active leads, and AI memory persist across all modules seamlessly under one commercial license.'
+      }
+    ]
+  },
+  {
+    id: 'mobile_pwa',
+    title: 'Module 6: Mobile Micro-Apps & Add-to-Home-Screen PWA Plugin',
+    hook: 'Zero App Store Friction. Turn Web Visitors into Mobile Power-Users with 1-Tap Home Screen Installation.',
+    summary: 'A zero-install Progressive Web App (PWA) client portal engine that enables real estate agents, loan officers, and clients to save lightweight mobile micro-apps directly to their iOS and Android home screens without downloading from the App Store or Google Play.',
+    coreCapabilities: [
+      'Zero-Install Add-to-Home-Screen Prompts: Native install banners and step-by-step installation guides for Safari (iOS) and Chrome (Android).',
+      'Biometric & Passwordless Client Access: Instant, friction-free login with Face ID or WebAuthn.',
+      'Offline Cache Resilience: Access saved property portfolios, loan rate cards, and 2nd Brain memos even without cellular signal.',
+      'Shareable Magic Lead Links: Generate personalized micro-app invite links for clients via SMS or WhatsApp in 1 click.',
+      'Tablet Kiosk Presenter: Turn any iPad or Android tablet into a high-converting Open House lead generation kiosk with camera QR scan.'
+    ],
+    stackedBenefits: [
+      {
+        target: 'Real Estate GeoMap',
+        headline: 'Turnkey Field Client Portal',
+        description: 'Homebuyers install the co-branded micro-app on iPhone/Android, enabling offline DPA lookups, Sunday Drive geofence alerts, and live showing requests during open house tours.'
       }
     ]
   }
@@ -350,6 +396,14 @@ export const STACKED_SUPERPOWERS = [
   {
     title: '3. Complete Data Hygiene & Permanent Suppression Lists',
     description: 'Clean thousands of messy leads across multiple CSV/XLSX files using the Targeted String/Domain Purge Filter, with purged spam domains permanently logged into the Vantage 2nd Brain so your databases remain pristine forever.'
+  },
+  {
+    title: '4. The Co-Branded LO+Agent AI 2nd Brain Triage Engine',
+    description: 'Visitors submit comments, questions, or showing requests on any property listing. The AI 2nd Brain instantly decomposes the inquiry into Loan Officer domains (loan programs, DPA, credit, pre-approval, monthly payments, underwriting, income, interest rate) vs. Realtor Agent domains (property address, specs, pricing trends, private tours, walk-throughs, offer strategy, seller concessions), simultaneously emailing both professionals with 1-click pre-drafted responses.'
+  },
+  {
+    title: '5. Sunday Drive Geofenced Mobility Radar & Open House Tablet Kiosk',
+    description: 'Homebuyers driving on weekends receive real-time proximity alerts when entering USDA 100% zero-down zones or within 0.5 miles of favorited listings. At open houses, agents present a 1-tap tablet kiosk with high-contrast QR codes and native SMS intent sharing, allowing visitors to save the co-branded portal directly to their phone home screen in 2 seconds.'
   }
 ];
 
@@ -504,6 +558,46 @@ Card 4: 📊 A Google Sheets Purge tool that cleans messy lead databases in 1 cl
 Card 5: 🚀 All 4 in one containerized plugin. Link below!`,
     cta: 'Swipe Up / Click to Unlock',
     creativeNotes: '5-card swipeable carousel with crisp 3D icons on dark indigo background.'
+  },
+  {
+    id: 'meta_agent_attraction_machine',
+    name: 'Facebook Ad 5: "The Ultimate Agent Attraction Machine for Loan Officers"',
+    channel: 'Facebook & Instagram B2B (Targeting Mortgage Originators & Branch Managers)',
+    targetAudience: 'Mortgage Loan Officers, Producing Originators, NMLS Licensees, Branch Managers',
+    headline: 'Stop Begging Agents for Referrals. Hand Them a Co-Branded AI GeoMap & Open House Kiosk.',
+    bodyCopy: `Top real estate agents are tired of loan officers offering "great rates and fast turn times."
+
+Instead, hand them a turnkey, co-branded technology asset:
+🤝 Co-Branded Portal: Highlights your LO credentials side-by-side with their headshot, license, and active listings.
+📱 1-Tap Tablet Kiosk Presenter: Turn any iPad into an Open House registration kiosk with live QR codes and offline PWA saving.
+💬 Native Mobile SMS Sharing: Agents text properties with 1 tap—pre-populating your co-branded financing link.
+🧠 AI 2nd Brain Lead Triage: When a buyer submits notes, AI automatically separates financing questions for you from showing/property questions for the agent—emailing both simultaneously!
+🛡️ Solo LO Mode: Works standalone with zero agent intermediaries whenever you want direct borrower control.
+
+Win 3-5 new exclusive Realtor partners this month with modern technology.`,
+    cta: 'Claim Your Co-Branded LO+Agent License ($49/mo)',
+    creativeNotes: 'Sleek visual mockup showing Mike Ford + Kanndice McLean co-branded HUD, tablet kiosk QR code, and AI lead triage breakdown.'
+  },
+  {
+    id: 'meta_ai_lead_triage',
+    name: 'Facebook Ad 6: "AI 2nd Brain Lead Triage: Stop Fighting Over Web Leads"',
+    channel: 'Facebook Feed & LinkedIn Sponsored Content',
+    targetAudience: 'Real Estate Brokers, Team Leads, Mortgage Branch Managers',
+    headline: 'AI Now Separates Mortgage Questions from Property Tours in Real-Time.',
+    bodyCopy: `When a homebuyer submits questions on your website, who should respond first?
+
+If they ask: "What are the HOA fees, can we see it Saturday, and do I qualify for the 0% down USDA grant?"
+Normally, the lead gets lost in email chains or one party forgets to reply.
+
+The Vantage AI 2nd Brain Lead Triage Engine solves this automatically:
+⚡ Decomposes the text using Gemini 3.8 Flash.
+📋 Routes loan programs, credit, DTI, and DPA questions directly to the Loan Officer.
+🏡 Routes showing requests, property specs, and offer questions directly to the Realtor.
+📬 Simultaneously emails both professionals with 1-click pre-drafted replies and urgency ratings.
+
+Double your speed-to-lead and convert more web visitors into closed escrows.`,
+    cta: 'Test Live AI Lead Triage Demo',
+    creativeNotes: 'Split-screen UI showing visitor comment on left and AI cognitive decomposition into LO vs. Agent columns on right.'
   }
 ];
 
@@ -560,25 +654,58 @@ export const GOOGLE_ADS_CAMPAIGNS: GoogleAdGroup[] = [
       'usda 100 zero down area checker',
       'dti affordability calculator plugin',
       'census tract cra grant widget',
-      'mortgage lead capture ai tool'
+      'mortgage lead capture ai tool',
+      'ai lead capture form real estate',
+      'co-branded real estate lead portal'
     ],
     headlines: [
       'Real Estate AI GeoMap Plugin',
       'USDA 0% Down Area Checker',
       '$10K CRA Grant Matcher',
+      'AI 2nd Brain Lead Triage',
       'Live DTI Affordability Tool',
       'Turn Renters into Buyers',
       'Drop-In Real Estate Plugin'
     ],
     descriptions: [
       'Embed USDA 100% financing and $10K CRA grant checkers on your real estate website in 60 seconds.',
-      'Calculate buyer front/back DTI, sync favorites to 2nd brain memory, and automate email alerts.'
+      'AI 2nd Brain segments buyer questions for LO and Agent, simultaneously emailing both with 1-click replies.'
     ],
     sitelinks: [
       { title: 'Grant Map Demo', desc: 'Check 11-digit Census Tract CRA grant eligibility.' },
-      { title: 'USDA Zone Checker', desc: 'Instant 100% zero-down rural boundary matching.' }
+      { title: 'AI Lead Triage Demo', desc: 'Automatic LO vs Agent cognitive inquiry decomposition.' },
+      { title: 'USDA Zone Checker', desc: 'Instant 100% zero-down rural boundary matching.' },
+      { title: 'Open House Kiosk', desc: 'Interactive tablet kiosk with instant QR code scanning.' }
     ],
-    callouts: ['RentCast Integration', 'Census Tract FIPS Matching', 'Weekly Price Drop Audits']
+    callouts: ['RentCast Integration', 'Census Tract FIPS Matching', 'AI 2nd Brain Triage', 'Dual LO+Agent Dispatch']
+  },
+  {
+    id: 'google_agent_attraction_search',
+    campaignName: 'Campaign 3: Loan Officer Agent Attraction & Co-Branded Tech',
+    targetKeywords: [
+      'loan officer agent attraction tool',
+      'co-branded real estate mortgage app',
+      'open house sign in sheet app ipad',
+      'open house qr code lead capture',
+      'mortgage technology for realtor partners'
+    ],
+    headlines: [
+      'Attract Top Realtor Partners',
+      'Co-Branded LO + Agent Portal',
+      'Open House Tablet Kiosk App',
+      'Native SMS Listing Share',
+      'Instant Pre-Approval Dossier',
+      'Dual-Dispatch Lead Engine'
+    ],
+    descriptions: [
+      'Offer your Realtor partners a branded GeoMap portal, 1-tap iPad open house kiosk, and instant AI lead triage.',
+      'Solo LO mode and paired partner bridges. Text listings via native SMS with zero app store friction.'
+    ],
+    sitelinks: [
+      { title: 'Tablet Kiosk Presenter', desc: 'High-contrast QR code open house presenter for iPad.' },
+      { title: 'Agent Contact Card Copy', desc: '1-tap bio copy formatted for Instagram, TikTok & LinkedIn.' }
+    ],
+    callouts: ['Co-Branded HUD', 'Native SMS Sharing', 'Solo LO Toggle', '1-Tap Bio Cards']
   }
 ];
 
@@ -777,18 +904,32 @@ Vantage AI Workspace UI is a containerized, production-ready interface and API b
 
 ---
 
-## 3. 4-IN-1 SUITE MODULES & STACKED SUPERPOWERS
+## 3. 6-IN-1 SUITE MODULES & STACKED SUPERPOWERS
 
-### 🧩 The 4 Core Plugin Modules:
-1. **Vantage AI Workspace UI**: Gmail Drafts, Calendar Buffers, Drive Explorer, Sheets Relational SQL Engine.
-2. **Vantage 2nd Brain Cognitive Core**: Hierarchical vector memory, DeepSeek/Gemini recall, client personas, airgapped guardrails.
+### 🧩 The 6 Core Plugin Modules:
+1. **Vantage AI Workspace UI**: Gmail Drafts, Calendar Buffers, Drive Explorer, Sheets Relational SQL Engine, Targeted String/Domain Purge Filter.
+2. **Vantage 2nd Brain Cognitive Core**: Hierarchical vector memory, DeepSeek/Gemini recall, client personas, airgapped guardrails, circadian memory consolidation.
 3. **Vantage Voice Orchestrator**: Speech-to-intent decomposition, compound multi-step execution, spoken confirmation airgap.
-4. **Vantage Real Estate GeoMap**: USDA 100% 0%-down area checker, Census Tract $5k-$10k CRA grant matcher, RentCast valuation, live DTI math.
+4. **Flagship Real Estate GeoMap & DPA Mortgage Plugin (GeoMap 3.0)**:
+   - **Customizable Lead Capture Form with AI 2nd Brain Triage**: Automatically decomposes buyer questions into Loan Officer domains (loan programs, DPA, credit scores, pre-approval, monthly payments, DTI, underwriting, income, taxes, interest rates) vs. Realtor Agent domains (property address, beds/baths/sqft, DOM, pricing trends, private tours, walk-throughs, meetup/coffee, search criteria, seller concessions).
+   - **Simultaneous Dual-Email Dispatch**: Instantly notifies both the Loan Officer (fordmj@gmail.com) and paired Realtor Agent (kanndice@cascadepremier.com) with pre-drafted 1-click replies and actionable urgency ratings.
+   - **Dynamic Solo LO Mode vs. Co-Branded Combo Pack**: Easily pairs an LO with a top-producing agent for co-branded lead attraction; if no agent is selected, it cleanly degrades to Solo LO Mode with zero external agent intermediary.
+   - **Co-Branded 1-Tap Agent Contact Card**: Copies a pre-formatted contact card with name, license #, broker, headshot, and co-branded link ready to paste into Instagram, TikTok, LinkedIn bios, and email signatures.
+   - **Native Mobile Share via SMS Intent**: Triggers native mobile SMS sharing pre-populated with the co-branded property link, listing specs, and dual contact info.
+   - **Live Showing QR Code & Tablet Kiosk Presenter**: Interactive Open House / Showing Kiosk mode with high-contrast QR code for instant phone scanning and offline PWA saving.
+   - **Multi-Layer DPA Grant Waterfall Stacking Solver**: Stacks Lakeview National 100% DPA, OHCS Flex Lending ($15,400), CRA $5k-$10k Grants, USDA 100% 0-down, and Fannie Mae HomeReady (3% down) to solve for True Zero Out-of-Pocket closing cash.
+   - **Proactive Geofenced Interest Radius Alert Radar**: Real-time mobility radar triggers cross-platform mobile alerts when a buyer physically drives within 0.5 miles of a favorited listing or enters a USDA 100% zero-down corridor.
+   - **Real-Time Collaborative Co-Borrower Canvas**: Sliders for joint co-borrower gross income and liabilities dynamically recalculate front/back-end DTI limits with live visual comparisons.
+   - **DeepThink Pre-Mortem Modal**: Analyzes property vulnerability, tax reassessment resets, aging capital expenditure reserves, and underwriting flags.
+5. **Commercial Enterprise All-in-One Master Suite**: Centralized multi-tenant admin gateway, SHA256-MF anti-tamper security, unified state synchronization, and whitelabel embedding rights.
+6. **Mobile Micro-Apps & Add-to-Home-Screen PWA Plugin**: Zero-install PWA client portal, biometric login, offline cache resilience, shareable magic lead links, and Open House tablet kiosk mode.
 
-### ⚡ Top 3 Stacked Superpowers:
+### ⚡ Top 5 Stacked Superpowers:
 - **1. The Autonomous Lead-to-Closing Loop**: A homebuyer calculates their DTI envelope on your website and favorites two USDA homes. The 2nd Brain indexes their budget. When a price cut occurs, background cron agents flag the reduction, update the profile, and draft an outreach email in Gmail Live Drafts for the assigned Realtor and Loan Officer.
 - **2. Hands-Free Voice-Driven Workspace OS**: Execute multi-tool workflows across Gmail, Calendar, and CRM with natural speech, protected by spoken confirmation airgaps and active guardrails.
 - **3. Complete Data Hygiene & Permanent Suppression**: Clean thousands of messy leads across CSV/XLSX files, with purged spam domains permanently memorized by the 2nd Brain so they never re-enter your CRM.
+- **4. The Co-Branded LO+Agent AI 2nd Brain Triage Engine**: Visitor comments on any listing are automatically decomposed by AI and simultaneously emailed to the LO and Agent, eliminating lead handoff friction.
+- **5. Sunday Drive Geofenced Mobility Radar & Open House Tablet Kiosk**: Real-time proximity alerts when driving near grant-eligible homes + 1-tap tablet kiosk for weekend open houses with instant camera QR scanning and 1-tap SMS intent sharing.
 
 ---
 
@@ -842,6 +983,16 @@ Vantage AI Workspace UI is a containerized, production-ready interface and API b
 - **Body Copy**: *"74% of first-time buyers abandon agent websites because they think they need 20% down. Our drop-in plugin checks 11-digit Census Tracts for $5,000–$10,000 grants and USDA 0%-down zones while calculating real-time DTI limits."*
 - **CTA**: *"Test the Interactive Grant Map Demo"*
 
+### 🎯 Ad 4: "The Ultimate Agent Attraction Machine for Loan Officers"
+- **Headline**: *"Stop Begging Agents for Referrals. Hand Them a Co-Branded AI GeoMap & Open House Kiosk."*
+- **Body Copy**: *"Top agents don't want another rate sheet. Hand them a co-branded portal with their headshot and active listings, a 1-tap iPad Open House kiosk, native SMS sharing, and AI 2nd Brain lead triage that emails both of you simultaneously."*
+- **CTA**: *"Claim Your Co-Branded LO+Agent License ($49/mo)"*
+
+### 🎯 Ad 5: "AI 2nd Brain Lead Triage: Stop Fighting Over Web Leads"
+- **Headline**: *"AI Now Separates Mortgage Questions from Property Tours in Real-Time."*
+- **Body Copy**: *"When a buyer asks about loan programs, DPA, and Saturday open houses, our AI segments the text instantly—emailing underwriting questions to the LO and tour requests to the Realtor with 1-click pre-drafted replies."*
+- **CTA**: *"Test Live AI Lead Triage Demo"*
+
 ---
 
 ## 7. HIGH-INTENT GOOGLE ADS SEARCH CAMPAIGNS
@@ -853,9 +1004,14 @@ Vantage AI Workspace UI is a containerized, production-ready interface and API b
 - **Callout Extensions**: *Dual-Pathway Google Auth*, *Zero Browser API Key Exposure*, *15-Min Meeting Buffer Automation*, *Permanent 2nd Brain Memory*
 
 ### 🔍 Campaign 2: Real Estate & Mortgage Lead Automation
-- **Target Keywords**: \`real estate website grant calculator\`, \`usda 100 zero down area checker\`, \`dti affordability calculator plugin\`, \`census tract cra grant widget\`
-- **Headlines**: *"Real Estate AI GeoMap Plugin"*, *"USDA 0% Down Area Checker"*, *"$10K CRA Grant Matcher"*, *"Live DTI Affordability Tool"*
-- **Descriptions**: *"Embed USDA 100% financing and $10K CRA grant checkers on your real estate website in 60 seconds."*
+- **Target Keywords**: \`real estate website grant calculator\`, \`usda 100 zero down area checker\`, \`dti affordability calculator plugin\`, \`census tract cra grant widget\`, \`ai lead capture form real estate\`
+- **Headlines**: *"Real Estate AI GeoMap Plugin"*, *"USDA 0% Down Area Checker"*, *"$10K CRA Grant Matcher"*, *"AI 2nd Brain Lead Triage"*
+- **Descriptions**: *"Embed USDA 100% financing and $10K CRA grant checkers on your real estate website in 60 seconds. Simultaneous LO+Agent email dispatch with 2nd Brain cognitive parsing."*
+
+### 🔍 Campaign 3: Loan Officer Agent Attraction & Co-Branded Tech
+- **Target Keywords**: \`loan officer agent attraction tool\`, \`co-branded real estate mortgage app\`, \`open house tablet kiosk app\`, \`open house qr code lead capture\`
+- **Headlines**: *"Attract Top Realtor Partners"*, *"Co-Branded LO + Agent Portal"*, *"Open House Tablet Kiosk App"*, *"Native SMS Listing Share"*
+- **Descriptions**: *"Offer your Realtor partners a branded GeoMap portal, 1-tap iPad open house kiosk, and instant AI lead triage with solo LO mode fallback."*
 
 ---
 

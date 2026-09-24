@@ -106,6 +106,19 @@ export const READY_MADE_CRON_JOBS: ReadyMadeCronJobTemplate[] = [
     tags: ['Daily', 'Inbox', 'Triage', 'VIP']
   },
   {
+    id: 'cron_gmail_daily_zillow_swarm_sweep',
+    appId: 'gmail',
+    appName: 'Gmail',
+    title: 'Daily 6:00 AM Zillow Swarm Sweep & Buyer Match Digest',
+    description: 'Runs DeepSeek Swarm waves to audit active GeoMap listings, discover DPA-eligible inventory, and draft morning buyer match summaries.',
+    cadence: 'Daily',
+    defaultScheduleLabel: 'Every Morning at 6:00 AM',
+    cronExpression: '0 6 * * *',
+    suggestedPrompt: 'Execute DeepSeek Swarm Zillow market sweep across target cities. Identify price drops and 0-down DPA eligible inventory, then generate a morning executive dispatch draft for active homebuyer leads.',
+    searchGroundingRecommended: true,
+    tags: ['Daily', 'Zillow Swarm', 'DPA', 'Leads', '6:00 AM']
+  },
+  {
     id: 'cron_gmail_lead_followup',
     appId: 'gmail',
     appName: 'Gmail',

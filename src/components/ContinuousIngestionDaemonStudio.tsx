@@ -17,10 +17,12 @@ import {
   Sliders, 
   ChevronRight,
   ExternalLink,
-  Code
+  Code,
+  Leaf
 } from 'lucide-react';
 import { IngestionDaemonFeed, UserMemory } from '../types';
 import { PREBUILT_INGESTION_FEEDS } from '../data/prebuiltIngestionFeeds';
+import { useBatterySaver } from '../context/BatterySaverContext';
 
 interface ContinuousIngestionDaemonStudioProps {
   onSaveMemory?: (data: any) => Promise<any>;
@@ -29,6 +31,7 @@ interface ContinuousIngestionDaemonStudioProps {
 export const ContinuousIngestionDaemonStudio: React.FC<ContinuousIngestionDaemonStudioProps> = ({
   onSaveMemory
 }) => {
+  const { isBatterySaverActive } = useBatterySaver();
   const [feeds, setFeeds] = useState<IngestionDaemonFeed[]>(PREBUILT_INGESTION_FEEDS);
   const [selectedFeedId, setSelectedFeedId] = useState<string>(PREBUILT_INGESTION_FEEDS[0].id);
   const [isIngestingId, setIsIngestingId] = useState<string | null>(null);
@@ -245,9 +248,17 @@ export const ContinuousIngestionDaemonStudio: React.FC<ContinuousIngestionDaemon
           <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 shadow-xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <span className="text-[10px] font-extrabold uppercase text-indigo-600 dark:text-indigo-400 tracking-wider">
-                  Target Ingestion Channel
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-extrabold uppercase text-indigo-600 dark:text-indigo-400 tracking-wider">
+                    Target Ingestion Channel
+                  </span>
+                  {isBatterySaverActive && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-[10px] font-bold">
+                      <Leaf className="w-2.5 h-2.5 text-amber-500" />
+                      <span>Throttled 3x (Power Saver)</span>
+                    </span>
+                  )}
+                </div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mt-0.5">
                   {currentFeed.name}
                 </h3>

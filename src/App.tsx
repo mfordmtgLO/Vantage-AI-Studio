@@ -18,6 +18,7 @@ import { User } from 'firebase/auth';
 import { ThemeProvider } from './context/ThemeContext';
 import { AccountPathwayProvider } from './context/AccountPathwayContext';
 import { MemoryProvider } from './context/MemoryContext';
+import { BatterySaverProvider } from './context/BatterySaverContext';
 import { VoiceIntentPayload } from './types/voiceMacro';
 import { ConnectWorkspaceModal } from './components/ConnectWorkspaceModal';
 import { RememberThisModal } from './components/RememberThisModal';
@@ -56,7 +57,10 @@ export default function App() {
         urlParams.get('plugin') || 
         urlParams.get('view') === 'dashboard' || 
         urlParams.get('mode') === 'dashboard' ||
-        urlParams.get('lead') === '1'
+        urlParams.get('lead') === '1' ||
+        urlParams.get('prop') ||
+        urlParams.get('listing') ||
+        urlParams.get('propertyId')
       ) {
         return 'dashboard';
       }
@@ -70,7 +74,7 @@ export default function App() {
       const urlParams = new URLSearchParams(window.location.search);
       const pluginParam = urlParams.get('plugin');
       if (pluginParam === 'suite' || pluginParam === 'all' || urlParams.get('suite') === '1') return 'suite';
-      if (pluginParam === 'geomap' || pluginParam === 'real_estate') return 'real_estate';
+      if (pluginParam === 'geomap' || pluginParam === 'real_estate' || urlParams.get('prop') || urlParams.get('listing') || urlParams.get('propertyId')) return 'real_estate';
       if (pluginParam === 'brain') return 'brain';
       if (pluginParam === 'voice' || pluginParam === 'orchestrator') return 'orchestrator';
       if (pluginParam === 'workspace') return 'studio';
@@ -95,6 +99,7 @@ export default function App() {
   const [isByokDrawerOpen, setIsByokDrawerOpen] = useState<boolean>(false);
   const [isByokChecklistOpen, setIsByokChecklistOpen] = useState<boolean>(false);
   const [isShareLinksModalOpen, setIsShareLinksModalOpen] = useState<boolean>(false);
+  const [shareLinksPropertyId, setShareLinksPropertyId] = useState<string | undefined>(undefined);
   const [isMobileAdminMode, setIsMobileAdminMode] = useState<boolean>(() => {
     return new URLSearchParams(window.location.search).get('mobile_admin') === 'true';
   });
@@ -179,6 +184,9 @@ export default function App() {
         const isLeadQuery = urlParams.get('lead') === '1' || 
           urlParams.get('lead_mode') === '1' || 
           urlParams.get('guest') === '1' ||
+          urlParams.get('prop') !== null ||
+          urlParams.get('listing') !== null ||
+          urlParams.get('propertyId') !== null ||
           urlParams.get('plugin') !== null;
 
         if (isLeadQuery || localStorage.getItem('vantage_guest_mode') === 'true') {
@@ -366,7 +374,11 @@ export default function App() {
             <ConnectWorkspaceModal />
             <LeadMobileShareLinksModal
               isOpen={isShareLinksModalOpen}
-              onClose={() => setIsShareLinksModalOpen(false)}
+              onClose={() => {
+                setIsShareLinksModalOpen(false);
+                setShareLinksPropertyId(undefined);
+              }}
+              initialPropertyId={shareLinksPropertyId}
             />
           </div>
         </AccountPathwayProvider>
@@ -442,8 +454,9 @@ export default function App() {
 
   return (
     <ThemeProvider>
-      <AccountPathwayProvider>
-        <MemoryProvider>
+      <BatterySaverProvider>
+        <AccountPathwayProvider>
+          <MemoryProvider>
           <div className="min-h-screen max-w-[100vw] w-full overflow-x-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased transition-colors duration-200">
             {/* Mobile PWA Add-to-Home-Screen Dynamic Header Banner */}
             <MobileAddToHomeScreenBanner
@@ -486,14 +499,21 @@ export default function App() {
                 onOpenPitchDeck={() => setIsPitchDeckOpen(true)}
                 onOpenByokDrawer={() => setIsByokDrawerOpen(true)}
                 onOpenByokChecklist={() => setIsByokChecklistOpen(true)}
-                onOpenShareLinksModal={() => setIsShareLinksModalOpen(true)}
+                onOpenShareLinksModal={(propId?: string) => {
+                  setShareLinksPropertyId(propId);
+                  setIsShareLinksModalOpen(true);
+                }}
               />
             </main>
 
             {/* Lead Mobile Share URLs & Add-to-Home-Screen Modal */}
             <LeadMobileShareLinksModal
               isOpen={isShareLinksModalOpen}
-              onClose={() => setIsShareLinksModalOpen(false)}
+              onClose={() => {
+                setIsShareLinksModalOpen(false);
+                setShareLinksPropertyId(undefined);
+              }}
+              initialPropertyId={shareLinksPropertyId}
             />
 
             {/* BYOK (Bring Your Own Key) In-App Drawer Modal */}
@@ -595,6 +615,7 @@ export default function App() {
           </div>
         </MemoryProvider>
       </AccountPathwayProvider>
-    </ThemeProvider>
+    </BatterySaverProvider>
+  </ThemeProvider>
   );
 }

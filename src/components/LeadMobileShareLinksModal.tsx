@@ -3,7 +3,7 @@ import {
   X, Copy, Check, ExternalLink, Smartphone, Share2, QrCode, 
   MessageSquare, Mail, Home, Building2, Brain, Mic, Sparkles, 
   ShieldCheck, Globe, CheckCircle2, ChevronDown, ChevronUp, Link as LinkIcon,
-  Users, UserCheck, Award, Download, Maximize2, Tablet, Contact, User
+  Users, UserCheck, Award, Download, Maximize2, Tablet, Contact, User, Star
 } from 'lucide-react';
 import { 
   LEAD_MOBILE_PLUGIN_MODULES, 
@@ -24,14 +24,22 @@ interface LeadMobileShareLinksModalProps {
   initialPluginId?: string;
   initialLoId?: string;
   initialAgentId?: string;
+  initialPropertyId?: string;
 }
+
+const PROMOTABLE_PROPERTIES = [
+  { id: 'geo-101', address: '742 SE Hawthorne Blvd, Portland, OR 97214', price: 435000, desc: '$5k CRA Grant & $15k Price Drop' },
+  { id: 'geo-102', address: '14800 NW St Helens Rd, Scappoose, OR 97056', price: 389000, desc: 'USDA 100% Zero-Down Eligible' },
+  { id: 'geo-103', address: '2105 NE Alberta St, Portland, OR 97211', price: 485000, desc: 'Alberta Arts District • 20% DPA Bonus' }
+];
 
 export const LeadMobileShareLinksModal: React.FC<LeadMobileShareLinksModalProps> = ({
   isOpen,
   onClose,
   initialPluginId,
   initialLoId = 'lo-mike-ford',
-  initialAgentId = 'agent-kanndice-mclean'
+  initialAgentId = 'agent-kanndice-mclean',
+  initialPropertyId
 }) => {
   const [selectedBaseUrlType, setSelectedBaseUrlType] = useState<'current' | 'dev' | 'custom'>('current');
   const [customBaseUrl, setCustomBaseUrl] = useState<string>(() => {
@@ -47,6 +55,65 @@ export const LeadMobileShareLinksModal: React.FC<LeadMobileShareLinksModalProps>
   const [isCobrandedQrExpanded, setIsCobrandedQrExpanded] = useState<boolean>(false);
   const [isShowingKioskOpen, setIsShowingKioskOpen] = useState<boolean>(false);
   const [isContactCardModalOpen, setIsContactCardModalOpen] = useState<boolean>(false);
+
+  // Default property promotion state
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string>(() => {
+    if (initialPropertyId) return initialPropertyId;
+    try {
+      return localStorage.getItem('vantage_geomap_default_property_id') || 'geo-101';
+    } catch {
+      return 'geo-101';
+    }
+  });
+  const [includeDefaultProperty, setIncludeDefaultProperty] = useState<boolean>(true);
+
+  // Curated property IDs state for multi-property lead export build
+  const [curatedPropertyIds, setCuratedPropertyIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('vantage_geomap_curated_ids');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return ['geo-101', 'geo-102'];
+  });
+  const [includeCuratedShortlist, setIncludeCuratedShortlist] = useState<boolean>(true);
+
+  // Dynamic promotable properties merged with any locally pushed LO listings
+  const promotablePropertiesList = useMemo(() => {
+    let list = [...PROMOTABLE_PROPERTIES];
+    try {
+      if (typeof window !== 'undefined') {
+        const pushedJson = localStorage.getItem('vantage_geomap_pushed_properties');
+        if (pushedJson) {
+          const pushed = JSON.parse(pushedJson);
+          if (Array.isArray(pushed) && pushed.length > 0) {
+            const pushedItems = pushed.map((p: any) => ({
+              id: p.id,
+              address: p.formattedAddress || p.addressLine1 || 'Pushed Listing',
+              price: p.price || 400000,
+              desc: p.proactiveLoNote ? `LO Note: "${p.proactiveLoNote.slice(0, 35)}..."` : 'Curated Low/No-Down Home'
+            }));
+            const existingIds = new Set(list.map(item => item.id));
+            const newOnes = pushedItems.filter((item: any) => !existingIds.has(item.id));
+            list = [...newOnes, ...list];
+          }
+        }
+      }
+    } catch {}
+    return list;
+  }, []);
+
+  const handleToggleCuratedId = (id: string) => {
+    setCuratedPropertyIds((prev) => {
+      const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
+      try {
+        localStorage.setItem('vantage_geomap_curated_ids', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
 
   // Synced LO and Agent Profiles for dynamic co-branding
   const loanOfficers = useMemo(() => ProfileCardSyncService.getLoanOfficers(), []);
@@ -91,7 +158,7 @@ export const LeadMobileShareLinksModal: React.FC<LeadMobileShareLinksModalProps>
 
   const isSoloMode = selectedAgentId === 'solo' || selectedAgentId === 'none';
 
-  // Primary Co-Branded Link for the selected LO+Agent pair
+  // Primary Co-Branded Link for the selected LO+Agent pair (with default property front & center and checkboxed curated properties)
   const selectedCobrandedUrl = buildLeadPluginUrl(
     'geomap',
     currentBaseUrl,
@@ -99,7 +166,9 @@ export const LeadMobileShareLinksModal: React.FC<LeadMobileShareLinksModalProps>
       leadMode: true,
       lo: currentLo.id,
       agent: isSoloMode ? 'none' : currentAgent.id,
-      pack: 'geomap_brain_combo'
+      pack: 'geomap_brain_combo',
+      prop: includeDefaultProperty ? selectedPropertyId : undefined,
+      props: includeCuratedShortlist && curatedPropertyIds.length > 0 ? curatedPropertyIds : undefined
     }
   );
 
@@ -118,7 +187,15 @@ export const LeadMobileShareLinksModal: React.FC<LeadMobileShareLinksModalProps>
   const handleShareViaSms = async () => {
     const partnerName = isSoloMode ? 'Direct Originator' : currentAgent.name;
     const shareTitle = `Homebuyer AI GeoMap & $0-Down Grant Portal`;
-    const shareText = `Hi! Here is our co-branded First-Time Homebuyer AI GeoMap & $0-Down Grant Portal from ${currentLo.name} (NMLS #${currentLo.nmlsNumber}) & ${partnerName}:\n\n${selectedCobrandedUrl}`;
+    const chosenProp = promotablePropertiesList.find(p => p.id === selectedPropertyId);
+    const propSnippet = includeDefaultProperty && chosenProp
+      ? `\n🏡 Featured Property Listing: ${chosenProp.address} ($${chosenProp.price.toLocaleString()}) - ${chosenProp.desc}`
+      : '';
+    const curatedSnippet = includeCuratedShortlist && curatedPropertyIds.length > 0
+      ? `\n🎯 Curated Shortlist: ${curatedPropertyIds.length} homes pre-screened for low or zero down payment mortgage financing (USDA, OHCS Flex FirstHome, Lakeview 100%, HomeReady).`
+      : '';
+    const favoritesTip = `\n💡 Front & Center Tip: Click the ❤️ heart icon on ANY 3 property listing cards to customize your top 3 front & center carousel rotation view on desktop or mobile app!`;
+    const shareText = `Hi! Here is our First-Time Homebuyer AI GeoMap & $0-Down Grant Portal from ${currentLo.name} (NMLS #${currentLo.nmlsNumber}) & ${partnerName}:${propSnippet}${curatedSnippet}${favoritesTip}\n\n${selectedCobrandedUrl}\n\nOpen on mobile or desktop to review the curated property list, test payment scenarios, and chat directly with our AI 2nd Brain!`;
 
     // Native mobile share intent (iOS/Android/iPad)
     if (typeof navigator !== 'undefined' && navigator.share) {
@@ -478,6 +555,124 @@ export const LeadMobileShareLinksModal: React.FC<LeadMobileShareLinksModalProps>
                 >
                   Solo LO (Direct)
                 </button>
+              </div>
+
+              {/* Featured GeoMap Plugin Default Property & Curated Shortlist Selector */}
+              <div className="p-3 bg-slate-900/90 rounded-xl border border-amber-500/40 space-y-2.5">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={includeDefaultProperty}
+                        onChange={(e) => setIncludeDefaultProperty(e.target.checked)}
+                        className="w-4 h-4 rounded border-slate-600 text-amber-500 focus:ring-amber-500 focus:ring-offset-slate-900 bg-slate-950 cursor-pointer"
+                      />
+                      <span className="text-xs font-bold text-amber-200 flex items-center gap-1.5">
+                        <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                        <span>Featured Default Property</span>
+                      </span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={includeCuratedShortlist}
+                        onChange={(e) => setIncludeCuratedShortlist(e.target.checked)}
+                        className="w-4 h-4 rounded border-slate-600 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-slate-900 bg-slate-950 cursor-pointer"
+                      />
+                      <span className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Curated Shortlist ({curatedPropertyIds.length})</span>
+                      </span>
+                    </label>
+                  </div>
+
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                    Front & Center + Curated Cards
+                  </span>
+                </div>
+
+                <div className="space-y-2 pt-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {promotablePropertiesList.map((prop) => {
+                      const isDefault = prop.id === selectedPropertyId;
+                      const isCurated = curatedPropertyIds.includes(prop.id);
+                      return (
+                        <div
+                          key={prop.id}
+                          className={`p-2.5 rounded-xl border transition flex flex-col justify-between gap-1.5 ${
+                            isDefault
+                              ? 'bg-amber-500/15 border-amber-400 text-white ring-1 ring-amber-400/40 shadow-xs'
+                              : isCurated
+                              ? 'bg-emerald-950/20 border-emerald-500/50 text-slate-200'
+                              : 'bg-slate-950/80 border-slate-800 text-slate-400 hover:border-slate-700'
+                          }`}
+                        >
+                          <div>
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="text-xs font-extrabold font-mono text-emerald-400">
+                                ${(prop.price).toLocaleString()}
+                              </span>
+                              {isDefault ? (
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500 text-slate-950 flex items-center gap-0.5 shadow-xs">
+                                  <Star className="w-2.5 h-2.5 fill-slate-950" /> Default
+                                </span>
+                              ) : isCurated ? (
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                  Curated
+                                </span>
+                              ) : null}
+                            </div>
+                            <div className="text-[11px] font-bold truncate text-slate-200 mt-0.5">
+                              {prop.address.split(',')[0]}
+                            </div>
+                            <div className="text-[9px] text-slate-400 truncate">
+                              {prop.desc}
+                            </div>
+                          </div>
+
+                          {/* Control Checkboxes for Default & Curate */}
+                          <div className="pt-1.5 border-t border-slate-800/80 flex items-center justify-between text-[10px]">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedPropertyId(prop.id);
+                                try {
+                                  localStorage.setItem('vantage_geomap_default_property_id', prop.id);
+                                } catch {}
+                              }}
+                              className={`flex items-center gap-1 font-bold cursor-pointer transition ${
+                                isDefault ? 'text-amber-300' : 'text-slate-400 hover:text-white'
+                              }`}
+                              title="Set this property as the default front and center listing"
+                            >
+                              <Star className={`w-3 h-3 ${isDefault ? 'fill-amber-400 text-amber-400' : ''}`} />
+                              <span>{isDefault ? 'Is Default' : 'Set Default'}</span>
+                            </button>
+
+                            <label
+                              onClick={(e) => e.stopPropagation()}
+                              className="flex items-center gap-1 cursor-pointer text-slate-300 hover:text-emerald-300 font-bold"
+                              title="Toggle inclusion in curated lead export build"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isCurated}
+                                onChange={() => handleToggleCuratedId(prop.id)}
+                                className="w-3.5 h-3.5 rounded border-slate-700 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-slate-900 bg-slate-950 cursor-pointer"
+                              />
+                              <span>Curate</span>
+                            </label>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[10px] text-slate-400">
+                    When potential leads open your share link, QR code, SMS, or email, all checkboxed curated listings are built into their app deck, with the selected default property featured front-and-center!
+                  </p>
+                </div>
               </div>
 
               {/* Live Co-branded URL preview bar */}

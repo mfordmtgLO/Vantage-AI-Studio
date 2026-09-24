@@ -136,6 +136,18 @@ Real estate agents constantly look for high-converting links to put in their **I
    * Direct live link to the co-branded PWA portal with $0-down grant radar
 3. If **Solo LO mode** is active, the engine automatically degrades to a Solo LO professional profile card with Mike Ford's NMLS credentials and direct mortgage intake link.
 
+### Format G: "GeoMap Plugin Default" Property Checkbox & Front-and-Center Export
+When promoting a specific for-sale property listing online, on social media (Instagram Reels, TikTok, Facebook, LinkedIn), or emailing, texting, messaging, or distributing open-house QR codes to potential leads:
+1. **1-Click "GeoMap Plugin default" Checkbox:** On each property listing card in the GeoMap (or inside the Featured Property Promotion Hero bar), check the **"GeoMap Plugin default"** checkbox.
+2. **Instant Front-and-Center Highlighting:** When checked, that property listing immediately moves to the very first card in the deck and is highlighted with a gold star badge and glowing amber accent.
+3. **URL Parameter Propagation:** The exported link is automatically formatted with `&prop=<property-id>` (e.g. `&prop=geo-101`).
+4. **Lead Experience on Mobile or Desktop:**
+   * When a prospective homebuyer opens the link via text message, email, social media, or QR code, that property listing appears **front and center** on their screen.
+   * The interactive canvas centers its gold star pin on this listing.
+   * The lead can immediately inspect bedroom/bathroom specs, square footage, census tract GEOID, and stacked DPA down payment grant amounts ($5k CRA grant, $15.4k OHCS FirstHome, USDA 100%).
+   * The lead can interact with the **AI 2nd Brain Notes Chat Bot** and type free-form scenario questions into the inquiry input (e.g. *"Can I get $0 down on this home?"*, *"What would my monthly payment be if rates drop 0.5%?"*).
+   * Inbound inquiries are triaged by the AI and simultaneously dispatched to both Mike Ford and Kanndice McLean (or 100% to Mike Ford in Solo LO mode).
+
 ---
 
 ## 4. TWO-WAY SMS LEAD NOTES & INSTANT REPLY FUNCTION

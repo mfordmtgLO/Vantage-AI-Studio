@@ -54,8 +54,17 @@ export interface SyncedPropertyListing {
   specialPrograms: SpecialLoanProgramBadges;
   propertyNotes: string;
   isFavorite?: boolean;
+  isGeoMapPluginDefault?: boolean;
+  isCuratedForLead?: boolean;
+  proactiveLoNote?: string;
+  sellerConcessionSuggestedUsd?: number;
   sourceMasterFeedId?: string;
   lastSyncedTimestamp?: string;
+  zillowStatus?: 'Active' | 'Pending' | 'Off-Market' | 'Price Change';
+  zillowSweepDate?: string; // YYYY-MM-DD
+  isZillowSweepNew?: boolean;
+  zillowSweepBatchId?: string;
+  zillowSweepNotes?: string[];
 }
 
 export interface BuyerDtiProfile {
@@ -106,6 +115,9 @@ export interface FirstTimeHomebuyerGeoPluginProps {
   initialProperties?: SyncedPropertyListing[];
   initialBuyerProfile?: Partial<BuyerDtiProfile>;
   masterConfig?: Partial<MasterFeedSyncConfig>;
+  defaultPropertyId?: string;
+  onSetDefaultProperty?: (propertyId: string) => void;
+  onOpenShareLinksModal?: (propertyId?: string) => void;
   onPropertySelect?: (property: SyncedPropertyListing) => void;
   onPrequalRecalculated?: (result: BuyerPrequalificationResult) => void;
   onAreaRequestSubmitted?: (request: AreaListingRequestPayload) => void;

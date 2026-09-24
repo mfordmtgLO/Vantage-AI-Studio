@@ -16,8 +16,10 @@ import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import { scanAndPruneKnowledge } from './knowledgePruning';
 import { ProfileCardSyncService } from './profileCardSyncService';
+import { zillowSwarmSweepService } from './zillowSwarmSweepService';
 
 export type CircadianCycleType = 
+  | 'daily_zillow_swarm_sweep'
   | 'nightly_consolidation'
   | 'weekly_deepthink_digest'
   | 'monthly_investable_ingestion'
@@ -55,6 +57,19 @@ export interface CircadianJob {
 const STORAGE_KEY = 'vantage_circadian_cron_jobs_v1';
 
 export const DEFAULT_CIRCADIAN_JOBS: CircadianJob[] = [
+  {
+    id: 'job_daily_zillow_swarm_sweep',
+    name: 'Daily 6:00 AM DeepSeek Swarm Zillow Market Sweep',
+    description: 'Deploys DeepSeek Harness Swarm waves to audit active GeoMap listings for price & status deltas (Active/Pending/Off-Market) and discover newly listed DPA/0-down eligible homes across target market cities.',
+    cycleType: 'daily_zillow_swarm_sweep',
+    cadence: 'daily',
+    cronExpression: '0 6 * * *', // 6:00 AM Daily
+    targetBrainTier: 'all',
+    agentRole: 'motor_harness',
+    status: 'active',
+    nextRunAt: new Date(Date.now() + 1000 * 60 * 60 * 4).toISOString(),
+    executionLogs: []
+  },
   {
     id: 'job_nightly_consolidation',
     name: 'Nightly Hippocampal Memory Consolidation',
@@ -153,6 +168,25 @@ export async function executeCircadianJob(
 
   try {
     switch (job.cycleType) {
+      case 'daily_zillow_swarm_sweep': {
+        const config = zillowSwarmSweepService.getScheduleConfig();
+        if (config.status === 'paused') {
+          summary = `⏸️ Daily Zillow Swarm Sweep is currently paused by user. Skipped execution.`;
+          status = 'warning';
+          affectedCount = 0;
+          break;
+        }
+        if (config.status === 'disabled') {
+          summary = `🚫 Daily Zillow Swarm Sweep is disabled in configuration. Skipped execution.`;
+          status = 'warning';
+          affectedCount = 0;
+          break;
+        }
+        const sweepResult = await zillowSwarmSweepService.executeZillowSwarmSweep({ isManual: false });
+        affectedCount = sweepResult.auditResults.auditedAddressCount + sweepResult.discoveryResults.newListingsFound;
+        summary = sweepResult.message;
+        break;
+      }
       case 'nightly_consolidation': {
         const report = await scanAndPruneKnowledge(currentUid);
         affectedCount = report.scannedCount;

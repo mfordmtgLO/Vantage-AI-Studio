@@ -28,12 +28,15 @@ import {
   Copy,
   ExternalLink,
   X,
-  Check
+  Check,
+  Star,
+  Heart
 } from 'lucide-react';
 import { SyncedPropertyListing, BuyerDtiProfile, BuyerPrequalificationResult } from '../types/firstTimeHomebuyerPlugin';
 import mortgageEligibilityService from '../services/mortgageEligibility';
 import { calculateMonthlyPI, formatUSD } from '../services/geomapMortgageEngine';
 import { useAccountPathway } from '../context/AccountPathwayContext';
+import { ListingNotesProfileFooter } from './ListingNotesProfileFooter';
 
 export interface ChatMessage {
   id: string;
@@ -104,16 +107,23 @@ export const ListingChatBotNotesPanel: React.FC<ListingChatBotNotesPanelProps> =
       property
     );
 
+    const isDefaultListing = Boolean(property.isGeoMapPluginDefault) ||
+      (typeof window !== 'undefined' && localStorage.getItem('vantage_geomap_default_property_id') === property.id);
+
+    const defaultBanner = isDefaultListing
+      ? `⭐ FEATURED GEOMAP PLUGIN DEFAULT LISTING (Front & Center View)\n`
+      : '';
+
     const initialGreeting: ChatMessage = {
       id: `msg-init-${property.id}`,
       sender: 'assistant',
       text: hasPairedAgent && assignedAgentName
-        ? `Hello! I'm the AI Assistant for ${assignedLoanOfficerName} and ${assignedAgentName} for ${property.formattedAddress}.\n\n` +
+        ? `${defaultBanner}Hello! I'm the AI Assistant for ${assignedLoanOfficerName} and ${assignedAgentName} for ${property.formattedAddress}.\n\n` +
           `• Price: ${formatUSD(property.price)}\n` +
           `• Summary: ${prescreen.recommendationSummary}\n` +
           `• Initial Listing Notes: "${property.propertyNotes}"\n\n` +
           `Select a quick question button below or type a custom question. Inbound notes and showing requests are relayed directly to both ${assignedLoanOfficerName} and ${assignedAgentName}.`
-        : `Hello! I'm ${assignedLoanOfficerName}'s Direct AI Mortgage Assistant for ${property.formattedAddress}.\n\n` +
+        : `${defaultBanner}Hello! I'm ${assignedLoanOfficerName}'s Direct AI Mortgage Assistant for ${property.formattedAddress}.\n\n` +
           `• Price: ${formatUSD(property.price)}\n` +
           `• Summary: ${prescreen.recommendationSummary}\n` +
           `• Initial Listing Notes: "${property.propertyNotes}"\n\n` +
@@ -147,6 +157,43 @@ export const ListingChatBotNotesPanel: React.FC<ListingChatBotNotesPanelProps> =
       },
       property
     );
+
+    if (lower.includes('city') || lower.includes('what city') || lower.includes('desired area') || lower.includes('planning to purchase')) {
+      return `📍 **Target City & Desired Purchase Area Intake**:\n` +
+             `What city or neighborhood in Oregon are you planning to purchase in? (e.g. Scappoose, Portland, St. Helens, Columbia County, Beaverton, Hillsboro, Salem, Bend).\n\n` +
+             `Our Oregon GeoSphere spatial engine continuously maps:\n` +
+             `• **USDA Rural Development 100% Zero-Down Zones** (e.g. Scappoose, Columbia County, outskirts)\n` +
+             `• **LMI Census Tract CRA $5,000–$10,000 Grants**\n` +
+             `• **OHCS Flex Lending $15,400 Cash Grant Corridors**\n\n` +
+             `Type your desired city below, or click **"Curate Low/No-Down Shortlist"** to have ${assignedLoanOfficerName} ${hasPairedAgent && assignedAgentName ? `and ${assignedAgentName}` : ''} curate matching properties for you!`;
+    }
+
+    if (lower.includes('curate') || lower.includes('short list') || lower.includes('shortlist') || lower.includes('low or no down')) {
+      return `✨ **Curated Low or No Down Payment Property Shortlist**:\n` +
+             `Yes! We would love to curate a custom shortlist of active for-sale properties in your desired purchase area that qualify for:\n` +
+             `• **USDA 100% Financing ($0 Down Payment)**\n` +
+             `• **OHCS Flex Lending FirstHome ($15,400 Grant)**\n` +
+             `• **Lakeview National 100% DPA (FHA 1st + Soft 2nd)**\n` +
+             `• **Fannie Mae HomeReady 3% Down (with 25% PMI Discount)**\n` +
+             `• **Bank CRA $5k–$10k Non-Repayable Grants**\n\n` +
+             `${assignedLoanOfficerName} ${hasPairedAgent && assignedAgentName ? `and ${assignedAgentName}` : ''} will review active listings synced from the GeoSphere spatial feed, verify down payment grant rules, and push the curated properties directly into your mobile/desktop GeoMap app!`;
+    }
+
+    if (lower.includes('favorite') || lower.includes('heart') || lower.includes('front and center') || lower.includes('carousel') || lower.includes('top 3') || lower.includes('rotation')) {
+      return `❤️ **Customizing Your Front & Center Carousel View**:\n` +
+             `You can easily personalize which homes appear first in your viewing carousel on desktop and in your mobile "Add to Home Screen" app at any time!\n\n` +
+             `• **How to Set**: Click the **❤️ Heart icon** on **ANY 3 property listing cards** in the deck.\n` +
+             `• **Always Front & Center**: Those 3 homes will **always be the first 3 property listing cards in the carousel rotation view** every time you open the app!\n` +
+             `• **Rotating Homes**: Click ❤️ on any card to add or remove it from your top 3. Your selection automatically saves to your device.\n` +
+             `• **Easy Exploration**: Use the Next/Prev buttons or Auto-Rotate to preview monthly payments, DPA eligibility (USDA, OHCS FirstHome $15.4k, Lakeview 100%), and ask me any questions in real time!`;
+    }
+
+    if (lower.includes('seller') || lower.includes('concession') || lower.includes('contribution') || lower.includes('price reduction')) {
+      return `🏷️ **Seller Concessions & Price Reduction Strategy**:\n` +
+             `When a property experiences a price reduction or has room to negotiate, ${hasPairedAgent && assignedAgentName ? `${assignedAgentName} and ` : ''}${assignedLoanOfficerName} can craft an offer requesting seller contributions towards your closing costs (up to 3% for Conventional, 6% for FHA/USDA).\n\n` +
+             `• **Strategy**: Seller concessions can cover title, escrow, prepaids, or buy down your interest rate by 0.5%–1.0%.\n` +
+             `• **Combined with DPA**: When stacked with Lakeview 100% or OHCS FirstHome ($15.4k), seller contributions can result in a **True $0 Out-of-Pocket Closing**!`;
+    }
 
     if (lower.includes('lakeview') || lower.includes('100%')) {
       const lakeviewAmount = special.lakeviewGrantAmountUsd || Math.round(price * 0.035);
@@ -316,7 +363,11 @@ Thank you!`;
   };
 
   const quickPrompts = [
-    { label: '✉️ Email LO Re: NHF / Lakeview', text: 'TRIGGER_EMAIL_INQUIRY' },
+    { label: '❤️ Top 3 Front & Center Tip', text: 'How do I customize my Top 3 Front & Center carousel property listings?' },
+    { label: '📍 What City?', text: 'What city are you planning to purchase a house in?' },
+    { label: '✨ Curate Low/No-Down Shortlist', text: 'Would you like us to curate a short list of for sale properties in your desired home purchase area that likely qualify for low or no down payment mortgage financing?' },
+    { label: '🏷️ Price Cut & Seller Credits', text: 'Can the seller pay closing costs or offer seller concessions with a price reduction?' },
+    { label: '✉️ Email LO Re: Lakeview/NHF', text: 'TRIGGER_EMAIL_INQUIRY' },
     { label: '🏞️ Lakeview 100% DPA', text: 'Can I use Lakeview 100% Zero-Down on this home?' },
     { label: '🌲 OHCS Flex FirstHome', text: 'What is my grant eligibility with OHCS Flex Lending?' },
     { label: '🌾 USDA 0% Down Zone', text: 'Is this home inside an eligible USDA Rural Zone?' },
@@ -324,6 +375,17 @@ Thank you!`;
     { label: '💰 Cash Needed at Close', text: 'How much cash do I need at closing for this property?' },
     { label: '🔑 HomeReady 3% Down', text: 'Check Fannie Mae HomeReady eligibility and PMI savings' }
   ];
+
+  const isFavoriteProperty = typeof window !== 'undefined' && (() => {
+    try {
+      const saved = localStorage.getItem('vantage_geomap_lead_favorites');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return Array.isArray(parsed) && parsed.includes(property.id);
+      }
+    } catch {}
+    return false;
+  })();
 
   return (
     <div className={`bg-stone-900 border border-stone-800 rounded-2xl overflow-hidden shadow-xl flex flex-col ${className}`}>
@@ -334,7 +396,7 @@ Thank you!`;
             <Bot className="w-4 h-4" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h4 className="text-xs font-bold text-white tracking-wide">
                 {hasPairedAgent && assignedAgentName
                   ? `${assignedLoanOfficerName} & ${assignedAgentName} Partner Portal`
@@ -344,6 +406,18 @@ Thank you!`;
               <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-stone-900 border border-stone-700 text-stone-300">
                 {hasPairedAgent ? 'Co-Branded Live Relay' : 'Solo LO • 0 Agent Relay'}
               </span>
+              {isFavoriteProperty && (
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-500/20 border border-rose-500/40 text-rose-300 flex items-center gap-1 shadow-xs">
+                  <Heart className="w-2.5 h-2.5 fill-rose-400 text-rose-400" />
+                  <span>Top 3 Front & Center</span>
+                </span>
+              )}
+              {(Boolean(property.isGeoMapPluginDefault) || (typeof window !== 'undefined' && localStorage.getItem('vantage_geomap_default_property_id') === property.id)) && (
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 border border-amber-500/40 text-amber-300 flex items-center gap-1 shadow-xs">
+                  <Star className="w-2.5 h-2.5 fill-amber-300" />
+                  <span>GeoMap Default Listing</span>
+                </span>
+              )}
             </div>
             <p className="text-[10px] text-stone-400">
               {hasPairedAgent
@@ -396,6 +470,20 @@ Thank you!`;
         <div className={`${showIncomeSidebar ? 'md:col-span-8 border-r border-stone-800' : 'md:col-span-12'} flex flex-col justify-between p-3 bg-stone-900/60`}>
           {/* Scrollable Message List */}
           <div className="flex-1 overflow-y-auto space-y-3 pr-1 max-h-[260px] scrollbar-thin scrollbar-thumb-stone-800">
+            {property.proactiveLoNote && (
+              <div className="p-3 bg-gradient-to-r from-amber-950/80 to-stone-900 border border-amber-500/50 rounded-xl text-xs space-y-1 shadow-sm">
+                <div className="flex items-center justify-between flex-wrap gap-1">
+                  <span className="font-bold text-amber-300 flex items-center gap-1.5 text-[11px]">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span>Loan Officer Strategy Note ({assignedLoanOfficerName}):</span>
+                  </span>
+                  <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/30">
+                    Pushed to App
+                  </span>
+                </div>
+                <p className="text-stone-200 italic font-medium">"{property.proactiveLoNote}"</p>
+              </div>
+            )}
             {messages.map((msg) => (
               <div
                 key={msg.id}
@@ -521,6 +609,31 @@ Thank you!`;
           </div>
         )}
       </div>
+
+      {/* Curated Listings & Direct Response Explanatory Notice */}
+      <div className="p-3.5 bg-stone-950/95 border-t border-stone-800 text-[11px] text-stone-300 leading-relaxed space-y-1.5">
+        <p>
+          <strong className="text-amber-400 font-bold">Curated Property Listings Notice: </strong>
+          These recently for sale property listings are curated to try and match your desired home purchase area+low or now downpayment home loan programs. You can always click the Zillow link inside the cards to verify current sales status or current price or any other details our GeoMap might be missing or is a little outdated even though we strive to keep data as fresh as possible for you and feel free to type in the NOTES of any card to reqeust a tour/showing or request a a new curated for sale property list in a different desired purchase city or have prequalifcation questions, etc and we will respond right back in the notes for you ASAP!
+        </p>
+      </div>
+
+      {/* Always at the bottom of the notes sections of every property listing cards: LO profile card if solo or LO+agent profile cards if co-branded pair */}
+      <div className="p-3 bg-stone-950 border-t border-stone-800">
+        <ListingNotesProfileFooter
+          assignedLoanOfficerName={assignedLoanOfficerName}
+          assignedAgentName={assignedAgentName}
+          hasPairedAgent={hasPairedAgent}
+          propertyAddress={`${property.addressLine1}, ${property.city}, ${property.state} ${property.zipCode}`}
+          onRequestTour={() => {
+            setInputText(`Hi ${hasPairedAgent && assignedAgentName ? assignedAgentName : assignedLoanOfficerName}, I would like to request a private tour/showing for ${property.addressLine1}.`);
+          }}
+          onAskQuestion={(topic) => {
+            setInputText(`I have a question regarding down payment and financing on ${property.addressLine1}.`);
+          }}
+        />
+      </div>
+
       {/* Quick Loan Inquiry Pre-filled Email Modal */}
       {showInquiryModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">

@@ -10,8 +10,8 @@
 This master guide provides the complete operational blueprint for exporting, packaging, licensing, and delivering **Vantage AI Studio** plugin modules to purchasing customers.
 
 Specifically tailored for customer sales scenarios across all **6 Modular Plugin Archetypes**:
-1. **Cognitive 2nd Brain Engine** (`VantageBrainHarnessPlugin`): Autonomous DeepSeek & Gemini agent harness with web search, circadian cron scheduler, hippocampal memory consolidation, dynamic confidence score recalibration, and persistent vector memory across 3 subscription delivery tiers (Level 1 Core, Level 2 Pro Investable Monthly, Level 3 Ultra Executive Quarterly).
-2. **Real Estate GeoMap & MLS Intelligence Plugin** (`VantageGeoMapPlugin`): Geospatial MLS property search with GIS boundary overlays, USDA 0% down rural zones, CRA LMI subsidy grant tracts, and live P&I mortgage estimators.
+1. **Cognitive 2nd Brain Engine (Real Estate & Mortgage Edition)** (`VantageBrainHarnessPlugin`): Autonomous DeepSeek & Gemini agent harness pre-seeded with mortgage guidelines (FHA, VA, USDA, Conventional, CRA Grants, DTI math, ADU rent offsets), circadian cron scheduler, hippocampal memory consolidation, dynamic confidence score recalibration, and persistent vector memory across 3 subscription delivery tiers (Level 1 Core, Level 2 Pro Investable Monthly, Level 3 Ultra Executive Quarterly).
+2. **Real Estate GeoMap & DeepSeek Zillow Swarm Plugin** (`VantageGeoMapPlugin`): Geospatial MLS property search with GIS boundary overlays, USDA 0% down rural zones, CRA LMI subsidy grant tracts, DeepSeek Swarm Daily Zillow Sweeps (Wave 1 Audit + Wave 2 Discovery), Custom Target Cities Queue, Swarm Cron Scheduler, and 1-Click Native Email/SMS matching preserving local mail client signatures.
 3. **Voice Orchestrator Plugin Module** (`VantageVoiceAssistantPlugin`): Speech-to-action macro engine with live audio waveform equalizer visualizer, hotword detection ("Hey Copilot", "Good morning briefing"), and verbal airgap confirmations.
 4. **Google Workspace UI Plugin Module** (`VantageWorkplaceUIPlugin`): Embeddable cockpit with interactive tabs (Studio, Logic Orchestrator, Gmail Drafts, Drive Explorer, Sheets SQL, Tasks, Calendar, and Contacts).
 5. **Commercial Enterprise Suite (All-in-One)** (`VantageEnterpriseSuitePlugin`): Master commercial enterprise package unifying all standalone plugins into a single multi-tenant workspace with license key validation and domain-locking.
@@ -70,11 +70,17 @@ The generated archive contains everything the customer needs to deploy the solut
 │   │   ├── 📄 useVantageBrainHarness.ts          <-- Headless React hook
 │   │   ├── 📄 vantageHarnessRouter.ts            <-- Express / Node.js backend router
 │   │   └── 📄 dsh-profile.yaml                   <-- DSH CLI configuration
-│   ├── 📁 02_real_estate_geomap/
+│   ├── 📁 02_real_estate_geomap_zillow_swarm/
 │   │   ├── 📄 VantageGeoMapPlugin.tsx            <-- Interactive GIS & MLS React widget
+│   │   ├── 📄 zillowSwarmSweepService.ts         <-- DeepSeek Harness Swarm 3-wave sweep engine
+│   │   ├── 📄 ZillowSweepControlDeck.tsx         <-- Toolbar with 30-day date dropdown & manual sweep button
+│   │   ├── 📄 ZillowSweepConfigModal.tsx         <-- Target cities queue & Swarm cron schedule deck
+│   │   ├── 📄 ZillowSweepMatchModal.tsx          <-- 1-click lead/agent matching & native email/SMS dispatch
+│   │   ├── 📄 RealEstateLeadCaptureForm.tsx      <-- Customizable Lead Capture & Triage UI
 │   │   ├── 📄 useVantageGeoMap.ts                <-- Headless GeoMap hook
-│   │   ├── 📄 vantageGeoMapRouter.ts             <-- Parcel geocoding & DPA API router
-│   │   └── 📄 geomap-manifest.json               <-- GIS layer configuration
+│   │   ├── 📄 leadCaptureEmailService.ts         <-- AI 2nd Brain Triage & Dual Email Engine
+│   │   ├── 📄 vantageGeoMapRouter.ts             <-- Parcel geocoding, DPA, & lead capture API
+│   │   └── 📄 geomap-manifest.json               <-- GIS layer & Co-Branded config
 │   ├── 📁 03_voice_orchestrator/
 │   │   ├── 📄 VantageVoiceAssistantPlugin.tsx    <-- Voice macro equalizer widget
 │   │   ├── 📄 useVantageVoiceAssistant.ts        <-- Speech synthesis & recognition hook
@@ -202,10 +208,10 @@ export default function EnterprisePortal() {
 ---
 
 ## 💡 Verified Capabilities Active on Day 1
-- **Cognitive 2nd Brain**: Dynamic vector recall with DeepSeek R1 and Gemini 2.5 Flash hybrid reasoning.
-- **Geospatial Real Estate**: Instant USDA 100% zero-down checks, CRA $5,000–$10,000 grant tract matches, and live P&I mortgage estimators.
+- **Cognitive 2nd Brain**: Dynamic vector recall with DeepSeek R1 and Gemini 3.8 Flash hybrid reasoning.
+- **Geospatial Real Estate & Lead Capture**: Instant USDA 100% zero-down checks, CRA $5,000–$10,000 grant tract matches, live P&I mortgage estimators, and **Customizable Lead Capture Forms with AI 2nd Brain Cognitive Lead Triage Engine** that decomposes visitor text into LO vs. Agent domains and dispatches simultaneous emails to both inboxes. Includes **Dynamic Solo LO Mode**, 1-Tap Agent Bio Contact Cards, Native Mobile SMS Sharing, and Open House Tablet Kiosks with camera QR scanning.
 - **Voice Macro Orchestration**: Hands-free verbal task execution with safety confirmation airgaps and audio waveform feedback.
-- **Google Workspace Cockpit**: 7 Google Apps rotating actions, live Gmail draft generator, and Google Sheets relational database cleaner.
+- **Google Workspace Cockpit**: 7 Google Apps rotating actions, live Gmail draft generator, and Google Sheets relational database cleaner with Targeted String/Domain Purge Filters.
 - **Enterprise All-in-One Suite**: Centralized multi-tenant admin console with domain-locked licensing.
 - **Mobile Micro-Apps**: Add-to-Home-Screen PWA install triggers, biometric sign-in, and shareable magic lead links.
 ```

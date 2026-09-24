@@ -57,7 +57,7 @@ interface WorkspaceHubProps {
   onOpenPitchDeck?: () => void;
   onOpenByokDrawer?: () => void;
   onOpenByokChecklist?: () => void;
-  onOpenShareLinksModal?: () => void;
+  onOpenShareLinksModal?: (propertyId?: string) => void;
 }
 
 export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
@@ -1985,6 +1985,7 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
         <RealEstateMortgageView
           onOpenPluginVault={() => setActiveTab('admin_plugins')}
           onOpenByokDrawer={onOpenByokDrawer}
+          onOpenShareLinksModal={onOpenShareLinksModal}
         />
       )}
 
@@ -2014,7 +2015,7 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
             <div className="flex items-center gap-2 shrink-0">
               {onOpenShareLinksModal && (
                 <button
-                  onClick={onOpenShareLinksModal}
+                  onClick={() => onOpenShareLinksModal()}
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <Smartphone className="w-4 h-4 text-amber-300" />

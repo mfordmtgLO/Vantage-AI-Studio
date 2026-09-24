@@ -11,6 +11,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useAccountPathway } from '../context/AccountPathwayContext';
 import { useMemory } from '../context/MemoryContext';
 import { isMikeFordAdmin } from '../utils/adminAuth';
+import { BatterySaverNavbarToggle } from './BatterySaverNavbarToggle';
 
 interface NavbarProps {
   activeTab: WorkspaceTab;
@@ -247,6 +248,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span className="hidden xl:inline">Auto</span>
               </button>
             </div>
+
+            {/* Battery Status API: Dynamic Battery-Saver Toggle */}
+            <BatterySaverNavbarToggle />
 
             {/* In-App BYOK (Bring Your Own Key) Settings Drawer */}
             {onOpenByokDrawer && (

@@ -198,6 +198,9 @@ export function buildLeadPluginUrl(
     lo?: string;
     agent?: string;
     pack?: string;
+    prop?: string;
+    props?: string[] | string;
+    city?: string;
   } = {}
 ): string {
   const targetBase = baseUrl || getDefaultLiveBaseUrl();
@@ -219,7 +222,7 @@ export function buildLeadPluginUrl(
     params.set('plugin', pluginParam);
   }
 
-  // Explicit LO / Agent / Pack overrides take precedence
+  // Explicit LO / Agent / Pack / Prop / Props / City overrides take precedence
   if (options.lo) {
     params.set('lo', options.lo);
   }
@@ -228,6 +231,18 @@ export function buildLeadPluginUrl(
   }
   if (options.pack) {
     params.set('pack', options.pack);
+  }
+  if (options.prop) {
+    params.set('prop', options.prop);
+  }
+  if (options.props) {
+    const propsVal = Array.isArray(options.props) ? options.props.join(',') : options.props;
+    if (propsVal) {
+      params.set('props', propsVal);
+    }
+  }
+  if (options.city) {
+    params.set('city', options.city);
   }
 
   if (options.leadMode ?? true) {

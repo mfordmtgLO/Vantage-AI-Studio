@@ -6,7 +6,7 @@
  * ============================================================================
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   MapPin,
   Sliders,
@@ -20,6 +20,10 @@ import {
   ExternalLink,
   Layers,
   ChevronRight,
+  ChevronLeft,
+  Play,
+  Pause,
+  LayoutGrid,
   TrendingDown,
   Clock,
   PlusCircle,
@@ -29,11 +33,22 @@ import {
   UserCheck,
   Key,
   Smartphone,
-  Share2
+  Share2,
+  Star,
+  Copy,
+  Check,
+  MessageSquare,
+  Calendar
 } from 'lucide-react';
 import { usePwaInstallPrompt } from '../hooks/usePwaInstallPrompt';
 import { IosInstallGuideModal } from './IosInstallGuideModal';
 import { ListingChatBotNotesPanel } from './ListingChatBotNotesPanel';
+import { ListingNotesProfileFooter } from './ListingNotesProfileFooter';
+import { ZillowSweepControlDeck } from './ZillowSweepControlDeck';
+import { ZillowSweepMatchModal } from './ZillowSweepMatchModal';
+import { useBatterySaver } from '../context/BatterySaverContext';
+import { zillowSwarmSweepService } from '../services/zillowSwarmSweepService';
+import { buildLeadPluginUrl } from '../data/leadMobilePluginUrls';
 import {
   BuyerDtiProfile,
   FirstTimeHomebuyerGeoPluginProps,
@@ -191,6 +206,9 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
     autoSyncOnLoad: true,
     enableAreaListingRequests: true
   },
+  defaultPropertyId: propDefaultPropertyId,
+  onSetDefaultProperty,
+  onOpenShareLinksModal,
   onPropertySelect,
   onPrequalRecalculated,
   onAreaRequestSubmitted,
@@ -209,9 +227,427 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
     maxFrontEndDtiPercent: 36.0
   });
 
-  const [properties, setProperties] = useState<SyncedPropertyListing[]>(initialProperties);
-  const [selectedPropertyId, setSelectedPropertyId] = useState<string>(initialProperties[0]?.id || '');
-  const [activeFilter, setActiveFilter] = useState<'all' | 'lakeview_national' | 'ohcs_flex_firsthome' | 'usda' | 'homeready' | 'nhf_fallback' | 'lmi_cra' | 'price_drops' | 'prequalified'>('all');
+  const { isBatterySaverActive, getAdjustedInterval } = useBatterySaver();
+
+  // Initialize properties from initialProperties merged with Zillow Swarm Sweep listings & locally pushed LO listings
+  const [properties, setProperties] = useState<SyncedPropertyListing[]>(() => {
+    let base = [...initialProperties];
+    try {
+      // 1. Merge 30-day Zillow Sweep historical listings
+      const sweepListings = zillowSwarmSweepService.getAllSweepListings();
+      const baseIds = new Set(base.map(p => p.id));
+      const sweepNew = sweepListings.filter(p => !baseIds.has(p.id));
+      base = [...base, ...sweepNew];
+
+      // 2. Merge locally pushed LO listings
+      if (typeof window !== 'undefined') {
+        const pushedJson = localStorage.getItem('vantage_geomap_pushed_properties');
+        if (pushedJson) {
+          const pushed: SyncedPropertyListing[] = JSON.parse(pushedJson);
+          if (Array.isArray(pushed) && pushed.length > 0) {
+            const existingIds = new Set(base.map(p => p.id));
+            const newItems = pushed.filter(p => !existingIds.has(p.id));
+            base = [...newItems, ...base];
+          }
+        }
+      }
+    } catch {}
+    return base;
+  });
+
+  // Priority for Default Listing:
+  // 1. URL Query Param (?prop=... or ?listing=... or ?propertyId=...)
+  // 2. propDefaultPropertyId passed via props
+  // 3. localStorage vantage_geomap_default_property_id
+  // 4. Listing marked with isGeoMapPluginDefault
+  // 5. First listing in initialProperties
+  const initialResolvedDefaultId = useMemo(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlProp = urlParams.get('prop') || urlParams.get('listing') || urlParams.get('propertyId') || urlParams.get('default_prop');
+        if (urlProp && properties.some(p => p.id === urlProp)) {
+          return urlProp;
+        }
+      }
+    } catch {}
+    if (propDefaultPropertyId && properties.some(p => p.id === propDefaultPropertyId)) {
+      return propDefaultPropertyId;
+    }
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('vantage_geomap_default_property_id');
+        if (saved && properties.some(p => p.id === saved)) {
+          return saved;
+        }
+      }
+    } catch {}
+    const flagged = properties.find(p => p.isGeoMapPluginDefault);
+    if (flagged) return flagged.id;
+    return properties[0]?.id || '';
+  }, [propDefaultPropertyId, properties]);
+
+  const [activeDefaultPropertyId, setActiveDefaultPropertyId] = useState<string>(initialResolvedDefaultId);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string>(initialResolvedDefaultId || properties[0]?.id || '');
+  const [copiedPromoLink, setCopiedPromoLink] = useState<boolean>(false);
+  const [copiedCuratedLink, setCopiedCuratedLink] = useState<boolean>(false);
+  const defaultListingCardRef = useRef<HTMLDivElement>(null);
+
+  // Multi-property curated selection for lead export build
+  const [curatedPropertyIds, setCuratedPropertyIds] = useState<string[]>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlProps = urlParams.get('props');
+        if (urlProps) {
+          const ids = urlProps.split(',').map(s => s.trim()).filter(Boolean);
+          if (ids.length > 0) return ids;
+        }
+        const saved = localStorage.getItem('vantage_geomap_curated_ids');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      }
+    } catch {}
+    // Default to initial properties that qualify for low/no-down payment
+    return ['geo-101', 'geo-102'];
+  });
+
+  const [showCuratedOnly, setShowCuratedOnly] = useState<boolean>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.has('props') || urlParams.get('curated') === '1';
+      }
+    } catch {}
+    return false;
+  });
+
+  // Modal State for Proactive Loan Officer Curation & Push
+  const [showPushListingModal, setShowPushListingModal] = useState<boolean>(false);
+  const [newListingCity, setNewListingCity] = useState<string>('Scappoose');
+  const [newListingAddress, setNewListingAddress] = useState<string>('51842 SW Old Portland Rd, Scappoose, OR 97056');
+  const [newListingPrice, setNewListingPrice] = useState<number>(415000);
+  const [newListingOriginalPrice, setNewListingOriginalPrice] = useState<number>(435000);
+  const [newListingBeds, setNewListingBeds] = useState<number>(3);
+  const [newListingBaths, setNewListingBaths] = useState<number>(2);
+  const [newListingSqft, setNewListingSqft] = useState<number>(1680);
+  const [newListingUsda, setNewListingUsda] = useState<boolean>(true);
+  const [newListingOhcs, setNewListingOhcs] = useState<boolean>(true);
+  const [newListingLakeview, setNewListingLakeview] = useState<boolean>(true);
+  const [newListingHomeReady, setNewListingHomeReady] = useState<boolean>(true);
+  const [newListingCra, setNewListingCra] = useState<boolean>(false);
+  const [newListingSellerConcession, setNewListingSellerConcession] = useState<number>(12450);
+  const [newListingLoNote, setNewListingLoNote] = useState<string>(
+    'Checkout this house which just had a price reduction and we can reach out to Kanndice to see if seller will consider seller contributions towards your closing costs..what do you think?'
+  );
+  const [pushSuccessFeedback, setPushSuccessFeedback] = useState<string | null>(null);
+
+  // Auto-select and scroll front and center if opened with specific listing param
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlProp = urlParams.get('prop') || urlParams.get('listing') || urlParams.get('propertyId');
+      if (urlProp && properties.some(p => p.id === urlProp)) {
+        setSelectedPropertyId(urlProp);
+        setActiveDefaultPropertyId(urlProp);
+        setTimeout(() => {
+          defaultListingCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 350);
+      }
+    }
+  }, [properties]);
+
+  const handleToggleDefaultProperty = (propId: string) => {
+    setActiveDefaultPropertyId((prev) => {
+      const next = prev === propId ? '' : propId;
+      try {
+        if (typeof window !== 'undefined') {
+          if (next) {
+            localStorage.setItem('vantage_geomap_default_property_id', next);
+          } else {
+            localStorage.removeItem('vantage_geomap_default_property_id');
+          }
+        }
+      } catch {}
+      if (onSetDefaultProperty) {
+        onSetDefaultProperty(next);
+      }
+      return next;
+    });
+    // Immediately select and bring front & center
+    setSelectedPropertyId(propId);
+    setTimeout(() => {
+      defaultListingCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 200);
+  };
+
+  const handleToggleCuratedProperty = (propId: string) => {
+    setCuratedPropertyIds((prev) => {
+      const next = prev.includes(propId) ? prev.filter(id => id !== propId) : [...prev, propId];
+      try {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('vantage_geomap_curated_ids', JSON.stringify(next));
+        }
+      } catch {}
+      return next;
+    });
+  };
+
+  // Client Front & Center Top 3 Favorites (persisted for desktop & mobile "Add to Home Screen" app)
+  const [favoritePropertyIds, setFavoritePropertyIds] = useState<string[]>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('vantage_geomap_lead_favorites');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed.slice(0, 3);
+        }
+      }
+    } catch {}
+    return [];
+  });
+
+  const [favoriteToast, setFavoriteToast] = useState<string | null>(null);
+  const [showFavoriteAwarenessTip, setShowFavoriteAwarenessTip] = useState<boolean>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const dismissed = localStorage.getItem('vantage_geomap_fav_tip_dismissed');
+        return dismissed !== 'true';
+      }
+    } catch {}
+    return true;
+  });
+
+  // Carousel Rotation View state & controls
+  const [carouselViewMode, setCarouselViewMode] = useState<'carousel' | 'grid'>('carousel');
+  const [carouselIndex, setCarouselIndex] = useState<number>(0);
+  const [autoRotate, setAutoRotate] = useState<boolean>(false);
+
+  const handleToggleFavorite = (propId: string) => {
+    setFavoritePropertyIds((prev) => {
+      let next: string[];
+      const targetProp = properties.find(p => p.id === propId);
+      const propName = targetProp?.addressLine1 || 'Listing';
+
+      if (prev.includes(propId)) {
+        next = prev.filter(id => id !== propId);
+        setFavoriteToast(`Removed "${propName}" from your Top 3 Front & Center rotation.`);
+      } else {
+        if (prev.length < 3) {
+          next = [...prev, propId];
+          setFavoriteToast(`❤️ "${propName}" is now locked in your Top 3 Front & Center rotation (${next.length} of 3 locked)!`);
+        } else {
+          // Keep maximum of 3 by rotating out the oldest so the lead always has their preferred 3
+          next = [prev[1], prev[2], propId];
+          setFavoriteToast(`❤️ Rotated Top 3! "${propName}" is now locked as one of your 3 Front & Center carousel homes.`);
+        }
+      }
+      try {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('vantage_geomap_lead_favorites', JSON.stringify(next));
+        }
+      } catch {}
+      setTimeout(() => setFavoriteToast(null), 5500);
+      return next;
+    });
+  };
+
+  // Card-specific notes input & 2-way dispatch state
+  const [activeCardNotesId, setActiveCardNotesId] = useState<string | null>(null);
+  const [cardNoteInputs, setCardNoteInputs] = useState<Record<string, string>>({});
+  const [cardNoteSuccessFeedback, setCardNoteSuccessFeedback] = useState<Record<string, string>>({});
+
+  const handleSendCardNote = (propId: string) => {
+    const noteText = cardNoteInputs[propId]?.trim();
+    if (!noteText) return;
+
+    // Append to property notes state
+    setProperties(prev => prev.map(p => {
+      if (p.id === propId) {
+        const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const existing = p.propertyNotes
+          ? `${p.propertyNotes}\n[${timestamp} Buyer Note]: ${noteText}`
+          : `[${timestamp} Buyer Note]: ${noteText}`;
+        return { ...p, propertyNotes: existing };
+      }
+      return p;
+    }));
+
+    setCardNoteInputs(prev => ({ ...prev, [propId]: '' }));
+    const recipient = hasPairedAgent && mergedConfig.assignedAgentName
+      ? `${mergedConfig.assignedLoanOfficerName} & ${mergedConfig.assignedAgentName}`
+      : `${mergedConfig.assignedLoanOfficerName}`;
+    setCardNoteSuccessFeedback(prev => ({
+      ...prev,
+      [propId]: `Note dispatched to ${recipient}! We will respond right back in the notes for you ASAP!`
+    }));
+    setTimeout(() => {
+      setCardNoteSuccessFeedback(prev => {
+        const next = { ...prev };
+        delete next[propId];
+        return next;
+      });
+    }, 6500);
+  };
+
+  // Helper to construct lead export URL with selected LO, Agent, Default Property, and all Checkboxed Curated Properties
+  const getExportedCuratedAppUrl = (mode: 'solo' | 'paired' = 'paired') => {
+    const origin = typeof window !== 'undefined' && window.location ? window.location.origin : 'https://ais-pre-ytqtpwssj6gdvjvqbsrbyo-427099073161.us-east5.run.app';
+    const cleanOrigin = origin.replace(/\/+$/, '');
+    const currentParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const currentLo = currentParams?.get('lo') || 'lo-mike-ford';
+    const currentAgent = currentParams?.get('agent');
+    const resolvedAgent = mode === 'solo' ? 'none' : (currentAgent && currentAgent !== 'none' && currentAgent !== 'solo' ? currentAgent : 'agent-kanndice-mclean');
+
+    const params = new URLSearchParams();
+    params.set('plugin', 'geomap');
+    params.set('lead', '1');
+    params.set('guest', '1');
+    params.set('lo', currentLo);
+    params.set('agent', resolvedAgent);
+    params.set('pack', 'geomap_brain_combo');
+    if (activeDefaultPropertyId) {
+      params.set('prop', activeDefaultPropertyId);
+    }
+    if (curatedPropertyIds.length > 0) {
+      params.set('props', curatedPropertyIds.join(','));
+    }
+    return `${cleanOrigin}/?${params.toString()}`;
+  };
+
+  // Proactive Listing Push Handler
+  const handlePushNewListingSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newId = `pushed-${Date.now()}`;
+    const priceDrop = newListingOriginalPrice > newListingPrice ? newListingOriginalPrice - newListingPrice : undefined;
+    
+    const newListing: SyncedPropertyListing = {
+      id: newId,
+      formattedAddress: newListingAddress,
+      addressLine1: newListingAddress.split(',')[0] || newListingAddress,
+      city: newListingCity,
+      state: 'OR',
+      zipCode: '97056',
+      county: 'Columbia County',
+      geoid: '41009970100',
+      coordinates: { lat: 45.7576, lng: -122.8801 },
+      price: newListingPrice,
+      originalPrice: newListingOriginalPrice,
+      priceDropAmount: priceDrop,
+      daysOnMarket: 4,
+      bedrooms: newListingBeds,
+      bathrooms: newListingBaths,
+      squareFootage: newListingSqft,
+      propertyType: 'Single Family',
+      hoaMonthlyFee: 0,
+      estimatedAnnualTax: Math.round(newListingPrice * 0.011),
+      estimatedAnnualInsurance: 1100,
+      specialPrograms: {
+        usdaRural100Financing: newListingUsda,
+        usdaRuralEligible: newListingUsda,
+        lmiCraGrantEligible: newListingCra,
+        craGrantAmountUsd: newListingCra ? 5000 : 0,
+        fnmaHomeReady3Percent: newListingHomeReady,
+        fhlmcHomePossible3Percent: true,
+        stateHfaFirstHomeEligible: newListingOhcs,
+        ohcsFlexLendingFirstHomeEligible: newListingOhcs,
+        ohcsGrantAmountUsd: newListingOhcs ? 15400 : 0,
+        lakeviewNationalDpaEligible: newListingLakeview,
+        lakeviewGrantAmountUsd: newListingLakeview ? Math.round(newListingPrice * 0.035) : 0,
+        targetedAreaGrantBonus: false
+      },
+      propertyNotes: newListingLoNote,
+      proactiveLoNote: newListingLoNote,
+      sellerConcessionSuggestedUsd: newListingSellerConcession,
+      isGeoMapPluginDefault: true,
+      isCuratedForLead: true,
+      lastSyncedTimestamp: new Date().toISOString()
+    };
+
+    setProperties(prev => {
+      const updated = [newListing, ...prev];
+      try {
+        if (typeof window !== 'undefined') {
+          const currentPushedJson = localStorage.getItem('vantage_geomap_pushed_properties');
+          const currentPushed = currentPushedJson ? JSON.parse(currentPushedJson) : [];
+          localStorage.setItem('vantage_geomap_pushed_properties', JSON.stringify([newListing, ...currentPushed]));
+        }
+      } catch {}
+      return updated;
+    });
+
+    setCuratedPropertyIds(prev => {
+      const next = [newId, ...prev];
+      try {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('vantage_geomap_curated_ids', JSON.stringify(next));
+        }
+      } catch {}
+      return next;
+    });
+
+    setActiveDefaultPropertyId(newId);
+    setSelectedPropertyId(newId);
+    setShowPushListingModal(false);
+    setPushSuccessFeedback(`Successfully pushed "${newListing.addressLine1}" with Loan Officer Strategy Note! Selected as Default & Curated for Lead.`);
+    setTimeout(() => setPushSuccessFeedback(null), 6000);
+  };
+
+  const todayDateStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'zillow_sweep' | 'lakeview_national' | 'ohcs_flex_firsthome' | 'usda' | 'homeready' | 'nhf_fallback' | 'lmi_cra' | 'price_drops' | 'prequalified'>('zillow_sweep');
+  const [zillowSweepSelectedDates, setZillowSweepSelectedDates] = useState<string[]>([todayDateStr]);
+  const [zillowSweepSelectedPropertyIds, setZillowSweepSelectedPropertyIds] = useState<string[]>([]);
+  const [showZillowMatchModal, setShowZillowMatchModal] = useState<boolean>(false);
+
+  // Today's sweep count
+  const todaySweepCount = useMemo(() => {
+    return properties.filter((p) => p.zillowSweepDate === todayDateStr).length;
+  }, [properties, todayDateStr]);
+
+  const handleSweepExecuted = (res: ZillowSwarmSweepResult) => {
+    if (res.success) {
+      setProperties((prev) => {
+        // 1. Update existing properties from Wave 1 Address Audit
+        const auditedMap = new Map(
+          (res.auditResults?.auditedUpdatedProperties || []).map((p) => [p.id, p])
+        );
+
+        let updatedList = prev.map((p) => auditedMap.get(p.id) || p);
+
+        // 2. Prepend newly discovered listings from Wave 2 Broad Discovery
+        if (res.discoveryResults?.newListings?.length > 0) {
+          const existingIds = new Set(updatedList.map((p) => p.id));
+          const newOnes = res.discoveryResults.newListings.filter((p) => !existingIds.has(p.id));
+          updatedList = [...newOnes, ...updatedList];
+        }
+
+        zillowSwarmSweepService.saveSweepListings(updatedList);
+        return updatedList;
+      });
+      // Switch to today's date if not already
+      setZillowSweepSelectedDates([todayDateStr]);
+    }
+  };
+
+  const handleAppendNotesToProperties = (propertyIds: string[], noteText: string) => {
+    const idSet = new Set(propertyIds);
+    setProperties((prev) => {
+      const updated = prev.map((p) => {
+        if (idSet.has(p.id)) {
+          return {
+            ...p,
+            propertyNotes: `${p.propertyNotes ? p.propertyNotes + '\n\n' : ''}${noteText}`,
+            proactiveLoNote: noteText
+          };
+        }
+        return p;
+      });
+      zillowSwarmSweepService.saveSweepListings(updated);
+      return updated;
+    });
+  };
   const [isochroneFilter, setIsochroneFilter] = useState<'all' | '15m' | '30m' | '45m'>('all');
   const [projectedAduRent, setProjectedAduRent] = useState<number>(0);
   const [zillowInputUrl, setZillowInputUrl] = useState('');
@@ -255,8 +691,11 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
     return res;
   }, [buyerProfile, onPrequalRecalculated]);
 
-  // Filter listings via MortgageLoanEligibilityService
-  const filteredProperties = useMemo(() => {
+  // Filter listings via MortgageLoanEligibilityService & Zillow Sweep Swarm
+  const rawFilteredProperties = useMemo(() => {
+    if (activeFilter === 'zillow_sweep') {
+      return zillowSwarmSweepService.filterListingsBySweepDates(properties, zillowSweepSelectedDates);
+    }
     if (activeFilter === 'lakeview_national') {
       return mortgageEligibilityService.filterGeoMapPropertiesByDownPayment(properties, 'lakeview_national');
     }
@@ -280,9 +719,59 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
     });
   }, [properties, activeFilter, prequalResult.estimatedMaxPurchasePrice]);
 
+  // Highlight lead's top 3 favorited properties as ALWAYS FIRST in the carousel rotation, followed by default and curated!
+  const filteredProperties = useMemo(() => {
+    let list = rawFilteredProperties;
+    if (showCuratedOnly) {
+      list = list.filter(p => curatedPropertyIds.includes(p.id));
+    }
+    return [...list].sort((a, b) => {
+      // 1. Any favorited property (up to 3) is ALWAYS first!
+      const aFavIdx = favoritePropertyIds.indexOf(a.id);
+      const bFavIdx = favoritePropertyIds.indexOf(b.id);
+      const aIsFav = aFavIdx !== -1;
+      const bIsFav = bFavIdx !== -1;
+
+      if (aIsFav && !bIsFav) return -1;
+      if (!aIsFav && bIsFav) return 1;
+      if (aIsFav && bIsFav) return aFavIdx - bFavIdx;
+
+      // 2. Default property (if not already in favorites)
+      if (a.id === activeDefaultPropertyId) return -1;
+      if (b.id === activeDefaultPropertyId) return 1;
+
+      // 3. Curated properties
+      const aCurated = curatedPropertyIds.includes(a.id);
+      const bCurated = curatedPropertyIds.includes(b.id);
+      if (aCurated && !bCurated) return -1;
+      if (!aCurated && bCurated) return 1;
+
+      return 0;
+    });
+  }, [rawFilteredProperties, favoritePropertyIds, activeDefaultPropertyId, showCuratedOnly, curatedPropertyIds]);
+
+  // Auto-rotate effect if enabled by client (dynamically throttled under Battery Saver)
+  useEffect(() => {
+    if (!autoRotate || filteredProperties.length <= 1) return;
+    const intervalMs = getAdjustedInterval(5000);
+    const interval = setInterval(() => {
+      setCarouselIndex((prev) => (prev + 1) % filteredProperties.length);
+    }, intervalMs);
+    return () => clearInterval(interval);
+  }, [autoRotate, filteredProperties.length, getAdjustedInterval, isBatterySaverActive]);
+
+  // Keep carouselIndex in bounds if list changes
+  useEffect(() => {
+    if (carouselIndex >= filteredProperties.length && filteredProperties.length > 0) {
+      setCarouselIndex(0);
+    }
+  }, [filteredProperties.length, carouselIndex]);
+
   const selectedProperty = useMemo(() => {
-    return properties.find((p) => p.id === selectedPropertyId) || properties[0];
-  }, [properties, selectedPropertyId]);
+    return properties.find((p) => p.id === selectedPropertyId) ||
+           properties.find((p) => p.id === activeDefaultPropertyId) ||
+           properties[0];
+  }, [properties, selectedPropertyId, activeDefaultPropertyId]);
 
   // 1-Click "Sync GeoMap Saved Listings" from Mike Ford's Master Feed
   const handleSyncMasterFeed = () => {
@@ -634,6 +1123,7 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
           {/* Program Filters */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
             {[
+              { id: 'zillow_sweep', label: `⚡ Zillow Sweep — New Today (${todaySweepCount})`, isSpecial: true },
               { id: 'all', label: `All (${properties.length})` },
               { id: 'lakeview_national', label: '🏞️ Lakeview 100% DPA' },
               { id: 'ohcs_flex_firsthome', label: '🌲 OHCS Flex FirstHome' },
@@ -648,9 +1138,13 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveFilter(tab.id as any)}
-                className={`px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition cursor-pointer ${
+                className={`px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition cursor-pointer flex items-center gap-1 ${
                   activeFilter === tab.id
-                    ? 'bg-emerald-600 text-white shadow-md'
+                    ? tab.isSpecial
+                      ? 'bg-amber-500 text-stone-950 shadow-md font-black ring-1 ring-amber-400'
+                      : 'bg-emerald-600 text-white shadow-md'
+                    : tab.isSpecial
+                    ? 'bg-amber-950/40 text-amber-300 border border-amber-500/40 hover:bg-amber-900/60'
                     : 'bg-stone-950 text-stone-400 hover:text-white border border-stone-800'
                 }`}
               >
@@ -676,6 +1170,7 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
             <div className="relative z-10 flex items-center justify-around py-4">
               {filteredProperties.map((prop) => {
                 const isSelected = prop.id === selectedPropertyId;
+                const isDefault = prop.id === activeDefaultPropertyId;
                 const qualifies = prop.price <= prequalResult.estimatedMaxPurchasePrice;
                 return (
                   <button
@@ -686,12 +1181,14 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                       if (onPropertySelect) onPropertySelect(prop);
                     }}
                     className={`flex flex-col items-center group transition transform hover:scale-110 cursor-pointer ${
-                      isSelected ? 'scale-110 z-20' : 'opacity-85'
+                      isSelected || isDefault ? 'scale-110 z-20' : 'opacity-85'
                     }`}
                   >
                     <div
-                      className={`p-2 rounded-2xl shadow-lg border flex items-center justify-center ${
-                        isSelected
+                      className={`relative p-2 rounded-2xl shadow-lg border flex items-center justify-center ${
+                        isDefault
+                          ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 border-amber-300 ring-2 ring-amber-400/60 shadow-amber-950/40'
+                          : isSelected
                           ? 'bg-emerald-500 text-stone-950 border-white'
                           : qualifies
                           ? 'bg-stone-900 text-emerald-400 border-emerald-500/50'
@@ -699,8 +1196,17 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                       }`}
                     >
                       <Building className="w-4 h-4" />
+                      {isDefault && (
+                        <div className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-amber-400 text-stone-950 flex items-center justify-center shadow-xs">
+                          <Star className="w-2.5 h-2.5 fill-stone-950" />
+                        </div>
+                      )}
                     </div>
-                    <span className="mt-1 text-[10px] font-bold font-mono px-1.5 py-0.5 rounded bg-stone-900/90 text-white border border-stone-800">
+                    <span className={`mt-1 text-[10px] font-bold font-mono px-1.5 py-0.5 rounded border ${
+                      isDefault
+                        ? 'bg-amber-500 text-stone-950 border-amber-400 shadow-xs'
+                        : 'bg-stone-900/90 text-white border border-stone-800'
+                    }`}>
                       {formatUSD(prop.price)}
                     </span>
                   </button>
@@ -714,9 +1220,961 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
             </div>
           </div>
 
+          {/* PROPERTY LISTING CARDS DECK & CURATED SHORTLIST EXPORT SELECTOR */}
+          <div className="space-y-2.5">
+            {/* Curated Lead Shortlist & Loan Officer Strategy Toolbar */}
+            <div className="p-3 bg-gradient-to-r from-stone-900 via-stone-900/90 to-emerald-950/30 rounded-2xl border border-stone-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-black text-white flex items-center gap-1.5">
+                    <Building className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Curated Shortlist for Lead Export</span>
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
+                    {curatedPropertyIds.length} Selected of {properties.length} Total
+                  </span>
+                  {activeDefaultPropertyId && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                      <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                      <span>Default Front & Center: {properties.find(p => p.id === activeDefaultPropertyId)?.addressLine1 || 'Active'}</span>
+                    </span>
+                  )}
+                </div>
+                <p className="text-[10px] text-stone-400">
+                  Curate low/no down properties (USDA, OHCS Flex FirstHome, Lakeview 100%, HomeReady) synced from GeoSphere. Exported URL/app includes all checkboxed listings.
+                </p>
+              </div>
+
+              {/* Action Buttons: Toggle Curated Filter, Push New Listing, Export App Link */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setShowCuratedOnly(!showCuratedOnly)}
+                  className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer flex items-center gap-1.5 ${
+                    showCuratedOnly
+                      ? 'bg-emerald-600 text-white border-emerald-500 shadow-xs'
+                      : 'bg-stone-950 text-stone-300 border-stone-700 hover:text-white hover:bg-stone-800'
+                  }`}
+                  title="Toggle between showing only curated checkboxed listings or all listings"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>{showCuratedOnly ? `Curated Only (${curatedPropertyIds.length})` : 'Show Curated Only'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowPushListingModal(true)}
+                  className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 transition cursor-pointer flex items-center gap-1.5 shadow-xs"
+                  title="Proactively curate and push a new property listing with custom Loan Officer notes directly into the GeoMap app"
+                >
+                  <PlusCircle className="w-3.5 h-3.5 text-amber-400" />
+                  <span>+ Push Listing & Note</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const exportUrl = getExportedCuratedAppUrl(hasPairedAgent ? 'paired' : 'solo');
+                    navigator.clipboard.writeText(exportUrl);
+                    setCopiedCuratedLink(true);
+                    setTimeout(() => setCopiedCuratedLink(false), 3000);
+                  }}
+                  className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md transition cursor-pointer flex items-center gap-1.5"
+                  title="Copy shareable link with all checkboxed curated listings and default featured listing"
+                >
+                  {copiedCuratedLink ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-white" />
+                      <span>Copied Curated URL!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Share2 className="w-3.5 h-3.5 text-white" />
+                      <span>Export Curated App</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* CLIENT AWARENESS & ONBOARDING BANNER FOR FRONT & CENTER CUSTOMIZATION */}
+            {showFavoriteAwarenessTip ? (
+              <div className="p-3.5 bg-gradient-to-r from-rose-950/40 via-stone-900 to-amber-950/30 rounded-2xl border border-rose-500/40 shadow-md relative animate-in fade-in">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="flex items-start gap-2.5">
+                    <div className="p-2 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/40 shrink-0 mt-0.5">
+                      <Heart className="w-4 h-4 fill-rose-500 text-rose-500 animate-pulse" />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="text-xs font-black text-white flex items-center gap-1.5">
+                          <span>Personalize Your Front & Center View (Desktop & Home Screen App)</span>
+                        </h4>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 font-mono">
+                          {favoritePropertyIds.length} of 3 Favorites Locked
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-stone-300 leading-relaxed">
+                        Click the <strong className="text-rose-400 font-bold">❤️ heart favorite icon</strong> on <strong className="text-white font-bold">ANY 3 property listing cards</strong> below. Those 3 homes will <strong className="text-amber-300 font-semibold">ALWAYS be the first 3 cards in your carousel rotation view</strong> every time you open this app on desktop or from your mobile home screen!
+                      </p>
+
+                      {/* Quick slot indicators */}
+                      <div className="flex items-center gap-2 pt-1 flex-wrap">
+                        {[0, 1, 2].map((slotIdx) => {
+                          const favId = favoritePropertyIds[slotIdx];
+                          const favProp = favId ? properties.find(p => p.id === favId) : null;
+                          return (
+                            <div
+                              key={slotIdx}
+                              onClick={() => {
+                                if (favId) {
+                                  setSelectedPropertyId(favId);
+                                  const idx = filteredProperties.findIndex(p => p.id === favId);
+                                  if (idx !== -1) setCarouselIndex(idx);
+                                }
+                              }}
+                              className={`px-2.5 py-1 rounded-xl text-[10px] font-mono border transition flex items-center gap-1.5 ${
+                                favProp
+                                  ? 'bg-rose-950/60 border-rose-500/60 text-rose-200 cursor-pointer hover:bg-rose-900/60 shadow-xs'
+                                  : 'bg-stone-950/80 border-dashed border-stone-700 text-stone-500'
+                              }`}
+                              title={favProp ? `Jump to ${favProp.addressLine1}` : `Slot ${slotIdx + 1} empty - heart any card below`}
+                            >
+                              <Heart className={`w-3 h-3 ${favProp ? 'fill-rose-400 text-rose-400' : 'text-stone-600'}`} />
+                              <span className="font-bold">
+                                Spot #{slotIdx + 1}: {favProp ? favProp.addressLine1.split(',')[0] : 'Click ❤️ on any card'}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Dismiss / Got it button */}
+                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowFavoriteAwarenessTip(false);
+                        try {
+                          if (typeof window !== 'undefined') {
+                            localStorage.setItem('vantage_geomap_fav_tip_dismissed', 'true');
+                          }
+                        } catch {}
+                      }}
+                      className="px-2.5 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-white text-[11px] font-bold transition flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>Got it</span>
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between px-1 py-0.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowFavoriteAwarenessTip(true);
+                    try {
+                      if (typeof window !== 'undefined') {
+                        localStorage.removeItem('vantage_geomap_fav_tip_dismissed');
+                      }
+                    } catch {}
+                  }}
+                  className="text-[11px] text-rose-400 hover:text-rose-300 font-bold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
+                  <span>Personalize Top 3 Front & Center rotation ({favoritePropertyIds.length}/3 locked)</span>
+                </button>
+              </div>
+            )}
+
+            {/* Favorite Toast notification */}
+            {favoriteToast && (
+              <div className="p-2.5 rounded-xl bg-rose-950/90 border border-rose-500 text-rose-200 text-xs flex items-center justify-between gap-2 shadow-lg animate-in fade-in">
+                <div className="flex items-center gap-2">
+                  <Heart className="w-4 h-4 fill-rose-400 text-rose-400 shrink-0" />
+                  <span className="font-semibold">{favoriteToast}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFavoriteToast(null)}
+                  className="text-stone-400 hover:text-white"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* Success toast after pushing new listing */}
+            {pushSuccessFeedback && (
+              <div className="p-2.5 rounded-xl bg-emerald-950/80 border border-emerald-500/60 text-emerald-200 text-xs flex items-center justify-between gap-2 animate-in fade-in">
+                <span className="font-semibold">{pushSuccessFeedback}</span>
+                <button
+                  type="button"
+                  onClick={() => setPushSuccessFeedback(null)}
+                  className="text-stone-400 hover:text-white"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* CURATED PROPERTY LISTINGS PLAIN EXPLANATION BANNER (Desktop & Home Screen App) */}
+            <div className="p-3.5 bg-gradient-to-r from-stone-900 via-stone-950 to-stone-900 rounded-2xl border border-amber-500/40 shadow-lg space-y-2">
+              <div className="flex items-start gap-2.5">
+                <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40 shrink-0 mt-0.5">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div className="space-y-1.5 flex-1">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <h4 className="text-xs font-black text-white flex items-center gap-1.5">
+                      <span>Curated For Sale Property Listings & Direct Advisory</span>
+                    </h4>
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono">
+                      Desktop URL & Mobile Home Screen View
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-stone-200 leading-relaxed font-sans">
+                    These recently for sale property listings are curated to try and match your desired home purchase area+low or now downpayment home loan programs. You can always click the Zillow link inside the cards to verify current sales status or current price or any other details our GeoMap might be missing or is a little outdated even though we strive to keep data as fresh as possible for you and feel free to type in the NOTES of any card to reqeust a tour/showing or request a a new curated for sale property list in a different desired purchase city or have prequalifcation questions, etc and we will respond right back in the notes for you ASAP!
+                  </p>
+                  
+                  <div className="flex items-center gap-2 pt-1 flex-wrap text-[10px]">
+                    <span className="px-2 py-0.5 rounded-lg bg-sky-950/80 text-sky-300 border border-sky-500/40 font-semibold flex items-center gap-1">
+                      <ExternalLink className="w-3 h-3 text-sky-400" />
+                      <span>Verify on Zillow Link inside Cards</span>
+                    </span>
+                    <span className="px-2 py-0.5 rounded-lg bg-amber-950/80 text-amber-300 border border-amber-500/40 font-semibold flex items-center gap-1">
+                      <MessageSquare className="w-3 h-3 text-amber-400" />
+                      <span>Type in Card Notes (Tour, City, Prequal)</span>
+                    </span>
+                    <span className="px-2 py-0.5 rounded-lg bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 font-semibold flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                      <span>{hasPairedAgent ? 'LO + Agent Profile at Bottom of Notes' : 'Solo LO Profile at Bottom of Notes'}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* DeepSeek Swarm Zillow Sweep Control Deck */}
+            {activeFilter === 'zillow_sweep' && (
+              <ZillowSweepControlDeck
+                currentListings={properties}
+                selectedDates={zillowSweepSelectedDates}
+                onSelectedDatesChange={setZillowSweepSelectedDates}
+                selectedPropertyIds={zillowSweepSelectedPropertyIds}
+                onToggleSelectProperty={(id) => {
+                  setZillowSweepSelectedPropertyIds((prev) =>
+                    prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+                  );
+                }}
+                onSelectAllVisible={(ids) => setZillowSweepSelectedPropertyIds(ids)}
+                onClearSelectedProperties={() => setZillowSweepSelectedPropertyIds([])}
+                onOpenMatchModal={() => setShowZillowMatchModal(true)}
+                onSweepExecuted={handleSweepExecuted}
+              />
+            )}
+
+            {/* View Mode & Carousel Rotation Toolbar */}
+            <div className="p-2.5 bg-stone-900/80 rounded-xl border border-stone-800 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center p-0.5 rounded-lg bg-stone-950 border border-stone-800">
+                  <button
+                    type="button"
+                    onClick={() => setCarouselViewMode('carousel')}
+                    className={`px-2.5 py-1 rounded-md font-bold transition flex items-center gap-1.5 cursor-pointer text-[11px] ${
+                      carouselViewMode === 'carousel'
+                        ? 'bg-amber-500 text-stone-950 shadow-xs'
+                        : 'text-stone-400 hover:text-white'
+                    }`}
+                  >
+                    <Sliders className="w-3 h-3" />
+                    <span>Carousel Rotation</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCarouselViewMode('grid')}
+                    className={`px-2.5 py-1 rounded-md font-bold transition flex items-center gap-1.5 cursor-pointer text-[11px] ${
+                      carouselViewMode === 'grid'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-stone-400 hover:text-white'
+                    }`}
+                  >
+                    <LayoutGrid className="w-3 h-3" />
+                    <span>Grid View</span>
+                  </button>
+                </div>
+
+                {carouselViewMode === 'carousel' && (
+                  <button
+                    type="button"
+                    onClick={() => setAutoRotate(!autoRotate)}
+                    className={`px-2 py-1 rounded-lg border text-[10px] font-mono font-bold transition flex items-center gap-1 cursor-pointer ${
+                      autoRotate
+                        ? 'bg-emerald-950 text-emerald-300 border-emerald-500/50'
+                        : 'bg-stone-950 text-stone-400 border-stone-800 hover:text-stone-200'
+                    }`}
+                    title="Automatically rotate to next card every 5 seconds"
+                  >
+                    {autoRotate ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                    <span>{autoRotate ? 'Auto-Rotate ON' : 'Auto-Rotate'}</span>
+                  </button>
+                )}
+              </div>
+
+              {carouselViewMode === 'carousel' ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCarouselIndex(prev => (prev > 0 ? prev - 1 : filteredProperties.length - 1))}
+                    className="px-2.5 py-1 rounded-lg bg-stone-950 hover:bg-stone-800 text-stone-300 hover:text-white border border-stone-800 transition cursor-pointer flex items-center gap-1 font-bold text-[11px]"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                    <span>Prev</span>
+                  </button>
+
+                  <span className="text-[10px] font-mono font-bold text-stone-300 px-2 py-1 rounded bg-stone-950 border border-stone-800">
+                    Rotation #{carouselIndex + 1} of {filteredProperties.length}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => setCarouselIndex(prev => (prev < filteredProperties.length - 1 ? prev + 1 : 0))}
+                    className="px-2.5 py-1 rounded-lg bg-stone-950 hover:bg-stone-800 text-stone-300 hover:text-white border border-stone-800 transition cursor-pointer flex items-center gap-1 font-bold text-[11px]"
+                  >
+                    <span>Next</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <div className="text-[10px] text-stone-400 font-mono">
+                  Showing all {filteredProperties.length} properties (Top 3 favorites first)
+                </div>
+              )}
+            </div>
+
+            {/* Render Property Cards: Carousel 3-Card Rotation or Grid */}
+            {(() => {
+              const renderPropertyCard = (prop: SyncedPropertyListing, rotationPosition: number) => {
+                const isSelected = prop.id === selectedPropertyId;
+                const isDefault = prop.id === activeDefaultPropertyId;
+                const isCurated = curatedPropertyIds.includes(prop.id);
+                const favoriteIndex = favoritePropertyIds.indexOf(prop.id);
+                const isFavorite = favoriteIndex !== -1;
+
+                return (
+                  <div
+                    key={prop.id}
+                    onClick={() => {
+                      setSelectedPropertyId(prop.id);
+                      if (onPropertySelect) onPropertySelect(prop);
+                    }}
+                    className={`relative p-3 rounded-2xl border transition cursor-pointer flex flex-col justify-between gap-2.5 ${
+                      isFavorite
+                        ? 'bg-gradient-to-b from-rose-950/25 via-stone-900 to-stone-950 border-rose-500/80 shadow-lg ring-1 ring-rose-500/40'
+                        : isDefault
+                        ? 'bg-gradient-to-b from-amber-950/25 via-stone-900 to-stone-950 border-amber-500/80 shadow-lg ring-1 ring-amber-500/40'
+                        : isSelected
+                        ? 'bg-stone-900 border-emerald-500/80 shadow-md'
+                        : isCurated
+                        ? 'bg-stone-950/90 border-emerald-500/40 hover:border-emerald-500 hover:bg-stone-900/60'
+                        : 'bg-stone-950/90 border-stone-800 hover:border-stone-700 hover:bg-stone-900/60'
+                    }`}
+                  >
+                    {/* Header with price & badges */}
+                    <div>
+                      <div className="flex items-start justify-between gap-1.5">
+                        <div className="flex items-center gap-1.5">
+                          {/* Multi-Select Checkbox for Zillow Sweep Outreach */}
+                          <input
+                            type="checkbox"
+                            checked={zillowSweepSelectedPropertyIds.includes(prop.id)}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              setZillowSweepSelectedPropertyIds((prev) =>
+                                prev.includes(prop.id) ? prev.filter((id) => id !== prop.id) : [...prev, prop.id]
+                              );
+                            }}
+                            className="w-4 h-4 rounded text-amber-500 bg-stone-900 border-stone-700 focus:ring-amber-500 cursor-pointer shrink-0"
+                            title="Select property for 1-click buyer outreach matching"
+                          />
+                          <span className="text-xs font-extrabold text-white font-mono">
+                            {formatUSD(prop.price)}
+                          </span>
+                          <span className="text-[9px] font-mono font-bold px-1 py-0.5 rounded bg-stone-900 text-stone-400 border border-stone-800">
+                            #{rotationPosition + 1} in Rotation
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {/* Zillow Status Badge */}
+                          {prop.zillowStatus && (
+                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border ${
+                              prop.zillowStatus === 'Price Change'
+                                ? 'bg-amber-950/80 text-amber-300 border-amber-500/40'
+                                : prop.zillowStatus === 'Active'
+                                ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40'
+                                : prop.zillowStatus === 'Pending'
+                                ? 'bg-sky-950/80 text-sky-300 border-sky-500/40'
+                                : 'bg-stone-800 text-stone-400 border-stone-700'
+                            }`}>
+                              {prop.zillowStatus === 'Price Change' ? '⚡ Price Cut' : prop.zillowStatus}
+                            </span>
+                          )}
+
+                          {/* Zillow Sweep Date Badge */}
+                          {prop.zillowSweepDate && (
+                            <span className="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 text-[9px] font-mono font-semibold border border-amber-500/30">
+                              ⚡ {prop.zillowSweepDate === todayDateStr ? 'Swept Today' : prop.zillowSweepDate.slice(5)}
+                            </span>
+                          )}
+
+                          {/* Heart Favorite Button */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleFavorite(prop.id);
+                            }}
+                            className={`p-1.5 rounded-xl border transition cursor-pointer flex items-center gap-1 shrink-0 ${
+                              isFavorite
+                                ? 'bg-rose-500/25 border-rose-500 text-rose-300 ring-1 ring-rose-500/60 shadow-xs'
+                                : 'bg-stone-900 border-stone-800 text-stone-400 hover:text-rose-400 hover:border-rose-400/50 hover:bg-stone-800'
+                            }`}
+                            title={
+                              isFavorite
+                                ? `Favorited #${favoriteIndex + 1} for Front & Center! Click to remove.`
+                                : `Click ❤️ to add this card to your Top 3 Front & Center carousel rotation!`
+                            }
+                          >
+                            <Heart className={`w-3.5 h-3.5 transition ${isFavorite ? 'fill-rose-500 text-rose-500 scale-110' : 'text-stone-400'}`} />
+                            {isFavorite && (
+                              <span className="text-[9px] font-mono font-black text-rose-300">
+                                #{favoriteIndex + 1}
+                              </span>
+                            )}
+                          </button>
+
+                          {isFavorite && (
+                            <span className="px-1.5 py-0.5 rounded bg-rose-500 text-white text-[9px] font-black uppercase tracking-wider flex items-center gap-1 shadow-xs animate-in fade-in">
+                              <Heart className="w-2.5 h-2.5 fill-white" />
+                              <span>Front & Center #{favoriteIndex + 1}</span>
+                            </span>
+                          )}
+
+                          {isDefault && !isFavorite && (
+                            <span className="px-2 py-0.5 rounded-md bg-amber-500 text-stone-950 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-xs">
+                              <Star className="w-3 h-3 fill-stone-950" />
+                              <span>Default</span>
+                            </span>
+                          )}
+
+                          {isCurated && !isDefault && !isFavorite ? (
+                            <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[9px] font-bold">
+                              Curated
+                            </span>
+                          ) : null}
+
+                          {prop.priceDropAmount ? (
+                            <span className="px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[10px] font-bold">
+                              -${prop.priceDropAmount.toLocaleString()}
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      <h5 className="text-xs font-bold text-stone-200 mt-1 line-clamp-1">
+                        {prop.addressLine1}
+                      </h5>
+                      <p className="text-[11px] text-stone-400">
+                        {prop.city}, {prop.state} {prop.zipCode}
+                      </p>
+
+                      <div className="flex items-center gap-2 text-[10px] text-stone-400 mt-1.5 font-mono">
+                        <span>{prop.bedrooms}b/{prop.bathrooms}ba</span>
+                        <span>•</span>
+                        <span>{prop.squareFootage.toLocaleString()} sqft</span>
+                        <span>•</span>
+                        <span className="text-emerald-400 font-semibold">{prop.propertyType}</span>
+                      </div>
+
+                      {/* Zillow Verification Link & Direct Notes Request Button */}
+                      <div className="flex items-center justify-between gap-1.5 pt-2 flex-wrap">
+                        <a
+                          href={`https://www.zillow.com/homes/${encodeURIComponent(prop.formattedAddress || `${prop.addressLine1}, ${prop.city}, ${prop.state} ${prop.zipCode}`)}_rb/`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="px-2 py-1 rounded-lg bg-sky-950/80 hover:bg-sky-900 text-sky-200 hover:text-white border border-sky-500/40 transition text-[10px] font-bold flex items-center gap-1 shadow-xs cursor-pointer"
+                          title="Click to verify current sales status, price, or details on Zillow"
+                        >
+                          <span>Verify on Zillow</span>
+                          <ExternalLink className="w-3 h-3 text-sky-400" />
+                        </a>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveCardNotesId(prev => (prev === prop.id ? null : prop.id));
+                          }}
+                          className={`px-2 py-1 rounded-lg border text-[10px] font-bold transition flex items-center gap-1 cursor-pointer ${
+                            activeCardNotesId === prop.id
+                              ? 'bg-amber-500/25 border-amber-500 text-amber-200 shadow-xs'
+                              : 'bg-stone-900 border-stone-800 text-stone-300 hover:text-amber-300 hover:border-amber-500/40'
+                          }`}
+                          title="Open notes for this card to request a tour, new city list, or prequalification question"
+                        >
+                          <MessageSquare className="w-3 h-3 text-amber-400" />
+                          <span>{activeCardNotesId === prop.id ? 'Close Card Notes' : 'Card Notes & Inquiries'}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Loan Officer Proactive Strategy Note (if present) */}
+                    {prop.proactiveLoNote && (
+                      <div className="p-2 rounded-xl bg-amber-950/40 border border-amber-500/40 text-[10px] space-y-0.5">
+                        <div className="flex items-center justify-between text-amber-300 font-bold">
+                          <span className="flex items-center gap-1">
+                            <Sparkles className="w-2.5 h-2.5 text-amber-400 shrink-0" />
+                            <span>LO Strategy Note:</span>
+                          </span>
+                          {prop.sellerConcessionSuggestedUsd && (
+                            <span className="text-emerald-300 font-mono text-[9px]">
+                              +${prop.sellerConcessionSuggestedUsd.toLocaleString()} Seller Credits
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-stone-300 italic line-clamp-2 leading-relaxed">
+                          "{prop.proactiveLoNote}"
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Program Badges snippet */}
+                    <div className="flex flex-wrap gap-1 text-[9px] font-bold">
+                      {prop.specialPrograms.lakeviewNationalDpaEligible && (
+                        <span className="px-1.5 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-800/80">
+                          Lakeview DPA
+                        </span>
+                      )}
+                      {prop.specialPrograms.usdaRural100Financing && (
+                        <span className="px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-800/80">
+                          USDA 100%
+                        </span>
+                      )}
+                      {prop.specialPrograms.ohcsFlexLendingFirstHomeEligible && (
+                        <span className="px-1.5 py-0.5 rounded bg-teal-950/80 text-teal-300 border border-teal-800/80">
+                          OHCS FirstHome $15.4k
+                        </span>
+                      )}
+                      {prop.specialPrograms.lmiCraGrantEligible && (
+                        <span className="px-1.5 py-0.5 rounded bg-blue-950/80 text-blue-300 border border-blue-800/80">
+                          $5k CRA Grant
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Controls: Heart for Top 3, GeoMap Default & Curate for Lead */}
+                    <div className="pt-2 border-t border-stone-800/80 flex items-center justify-between flex-wrap gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {/* Heart for Front & Center Top 3 Button */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleFavorite(prop.id);
+                          }}
+                          className={`flex items-center gap-1 cursor-pointer px-2 py-1 rounded-lg border text-[10px] font-bold transition ${
+                            isFavorite
+                              ? 'bg-rose-500/25 border-rose-500/70 text-rose-200 shadow-xs'
+                              : 'bg-stone-900 border-stone-800 text-stone-400 hover:text-rose-300 hover:border-rose-500/40'
+                          }`}
+                          title="Heart this property to customize your Top 3 Front & Center rotation view"
+                        >
+                          <Heart className={`w-3 h-3 ${isFavorite ? 'fill-rose-400 text-rose-400' : 'text-stone-500'}`} />
+                          <span>{isFavorite ? `Top 3 (#${favoriteIndex + 1})` : 'Heart for Top 3'}</span>
+                        </button>
+
+                        {/* GeoMap Plugin Default Checkbox */}
+                        <label
+                          onClick={(e) => e.stopPropagation()}
+                          className={`flex items-center gap-1.5 cursor-pointer px-2 py-1 rounded-lg border text-[10px] font-bold transition ${
+                            isDefault
+                              ? 'bg-amber-500/20 border-amber-500/60 text-amber-200'
+                              : 'bg-stone-900 border-stone-800 text-stone-400 hover:text-white hover:border-stone-700'
+                          }`}
+                          title="Set this property as the default front-and-center featured listing for plugin export"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isDefault}
+                            onChange={() => handleToggleDefaultProperty(prop.id)}
+                            className="w-3.5 h-3.5 rounded border-stone-700 text-amber-500 focus:ring-amber-500 focus:ring-offset-stone-900 bg-stone-950 cursor-pointer"
+                          />
+                          <span className="flex items-center gap-1">
+                            <Star className={`w-3 h-3 ${isDefault ? 'text-amber-400 fill-amber-400' : 'text-stone-500'}`} />
+                            <span>Default</span>
+                          </span>
+                        </label>
+
+                        {/* Curate for Lead Export Checkbox */}
+                        <label
+                          onClick={(e) => e.stopPropagation()}
+                          className={`flex items-center gap-1.5 cursor-pointer px-2 py-1 rounded-lg border text-[10px] font-bold transition ${
+                            isCurated
+                              ? 'bg-emerald-500/20 border-emerald-500/60 text-emerald-200'
+                              : 'bg-stone-900 border-stone-800 text-stone-400 hover:text-white hover:border-stone-700'
+                          }`}
+                          title="Check box to include this property listing card in the curated lead app export build"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isCurated}
+                            onChange={() => handleToggleCuratedProperty(prop.id)}
+                            className="w-3.5 h-3.5 rounded border-stone-700 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-stone-900 bg-stone-950 cursor-pointer"
+                          />
+                          <span className="flex items-center gap-1">
+                            <CheckCircle2 className={`w-3 h-3 ${isCurated ? 'text-emerald-400' : 'text-stone-500'}`} />
+                            <span>Curate</span>
+                          </span>
+                        </label>
+                      </div>
+
+                      {isFavorite ? (
+                        <span className="text-[10px] text-rose-400 font-mono font-bold flex items-center gap-1">
+                          <Heart className="w-2.5 h-2.5 fill-rose-400" />
+                          <span>Front & Center #{favoriteIndex + 1}</span>
+                        </span>
+                      ) : isDefault ? (
+                        <span className="text-[10px] text-amber-400 font-mono font-bold animate-pulse">
+                          Front & Center
+                        </span>
+                      ) : isCurated ? (
+                        <span className="text-[10px] text-emerald-400 font-mono font-bold">
+                          In Export Build
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {/* Interactive Card Notes & Direct 2-Way Relay Section with LO/Agent Profile Cards */}
+                    <div className="mt-2.5 pt-2.5 border-t border-stone-800/90 space-y-2">
+                      <div className="flex items-center justify-between text-[10px] font-bold text-stone-300">
+                        <span className="flex items-center gap-1 text-amber-300">
+                          <MessageSquare className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Listing Notes & Direct Relay:</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveCardNotesId(prev => (prev === prop.id ? null : prop.id));
+                          }}
+                          className="text-stone-400 hover:text-white text-[9px] cursor-pointer"
+                        >
+                          {activeCardNotesId === prop.id ? 'Hide Note Input ▲' : 'Type Note / Request ▼'}
+                        </button>
+                      </div>
+
+                      {/* Display existing notes if any */}
+                      {prop.propertyNotes && (
+                        <div className="p-2 bg-stone-950/90 rounded-xl border border-stone-800 text-[10px] text-stone-300 font-mono whitespace-pre-line max-h-24 overflow-y-auto">
+                          {prop.propertyNotes}
+                        </div>
+                      )}
+
+                      {/* Success feedback toast */}
+                      {cardNoteSuccessFeedback[prop.id] && (
+                        <div className="p-2 rounded-xl bg-emerald-950/90 border border-emerald-500 text-emerald-200 text-[10px] font-bold flex items-center gap-1.5 animate-in fade-in">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <span>{cardNoteSuccessFeedback[prop.id]}</span>
+                        </div>
+                      )}
+
+                      {/* Active Note Input Box & Quick Prompt Chips */}
+                      {activeCardNotesId === prop.id && (
+                        <div className="space-y-1.5 pt-1 animate-in fade-in" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center gap-1 flex-wrap text-[9px]">
+                            <button
+                              type="button"
+                              onClick={() => setCardNoteInputs(prev => ({ ...prev, [prop.id]: `I'd like to request a private tour/showing for this home.` }))}
+                              className="px-2 py-0.5 rounded bg-stone-900 hover:bg-stone-800 text-amber-300 border border-amber-500/30 cursor-pointer"
+                            >
+                              🗓️ Request Tour
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setCardNoteInputs(prev => ({ ...prev, [prop.id]: `Please curate a new property list in a different desired city for me: ` }))}
+                              className="px-2 py-0.5 rounded bg-stone-900 hover:bg-stone-800 text-sky-300 border border-sky-500/30 cursor-pointer"
+                            >
+                              📍 Request New City
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setCardNoteInputs(prev => ({ ...prev, [prop.id]: `I have a prequalification and grant eligibility question on this property.` }))}
+                              className="px-2 py-0.5 rounded bg-stone-900 hover:bg-stone-800 text-emerald-300 border border-emerald-500/30 cursor-pointer"
+                            >
+                              💰 Prequal Question
+                            </button>
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="text"
+                              value={cardNoteInputs[prop.id] || ''}
+                              onChange={(e) => setCardNoteInputs(prev => ({ ...prev, [prop.id]: e.target.value }))}
+                              placeholder="Type in notes: request tour/showing, new city list, prequal question..."
+                              className="flex-1 bg-stone-950 border border-stone-800 rounded-lg px-2.5 py-1.5 text-[10px] text-white placeholder-stone-500 outline-none focus:border-amber-500"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleSendCardNote(prop.id);
+                                }
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleSendCardNote(prop.id)}
+                              disabled={!cardNoteInputs[prop.id]?.trim()}
+                              className="px-2.5 py-1.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-stone-950 font-bold text-[10px] rounded-lg transition cursor-pointer flex items-center gap-1"
+                            >
+                              <span>Send</span>
+                              <Send className="w-3 h-3" />
+                            </button>
+                          </div>
+                          <p className="text-[9px] text-stone-400 italic">
+                            Type in the NOTES of any card to request a tour/showing, new curated city list, or prequal questions, and we will respond right back in the notes for you ASAP!
+                          </p>
+                        </div>
+                      )}
+
+                      {/* ALWAYS AT THE BOTTOM OF THE NOTES SECTIONS OF EVERY PROPERTY LISTING CARD:
+                          Loan officer profile card if solo or LO+agent profile cards if co-branded pair */}
+                      <ListingNotesProfileFooter
+                        assignedLoanOfficerName={mergedConfig.assignedLoanOfficerName}
+                        assignedAgentName={mergedConfig.assignedAgentName}
+                        hasPairedAgent={hasPairedAgent}
+                        propertyAddress={`${prop.addressLine1}, ${prop.city}, ${prop.state} ${prop.zipCode}`}
+                        compact={true}
+                        onRequestTour={() => {
+                          setActiveCardNotesId(prop.id);
+                          setCardNoteInputs(prev => ({
+                            ...prev,
+                            [prop.id]: `Hi ${hasPairedAgent && mergedConfig.assignedAgentName ? mergedConfig.assignedAgentName : mergedConfig.assignedLoanOfficerName}, I would like to request a private tour/showing for ${prop.addressLine1}.`
+                          }));
+                        }}
+                        onAskQuestion={(topic) => {
+                          setActiveCardNotesId(prop.id);
+                          setCardNoteInputs(prev => ({
+                            ...prev,
+                            [prop.id]: `I have a ${topic.toLowerCase()} regarding ${prop.addressLine1}.`
+                          }));
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              };
+
+              if (filteredProperties.length === 0) {
+                return (
+                  <div className="p-8 text-center bg-stone-950 rounded-2xl border border-stone-800 text-stone-400 text-xs">
+                    No properties match the selected criteria.
+                  </div>
+                );
+              }
+
+              if (carouselViewMode === 'carousel') {
+                // Carousel Rotation View: 3 cards side-by-side on desktop, 1 on mobile, starting at carouselIndex
+                const count = Math.min(3, filteredProperties.length);
+                const visibleCards = [];
+                for (let i = 0; i < count; i++) {
+                  const idx = (carouselIndex + i) % filteredProperties.length;
+                  visibleCards.push({ prop: filteredProperties[idx], index: idx });
+                }
+
+                return (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {visibleCards.map(({ prop, index }) => renderPropertyCard(prop, index))}
+                    </div>
+
+                    {/* Carousel Rotation Quick Navigation Dots */}
+                    <div className="p-2 bg-stone-950 border border-stone-800 rounded-xl flex items-center justify-between gap-2 overflow-x-auto text-[10px] font-mono">
+                      <span className="text-stone-400 shrink-0">
+                        Rotation Rail:
+                      </span>
+                      <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
+                        {filteredProperties.map((p, idx) => {
+                          const isFav = favoritePropertyIds.includes(p.id);
+                          const isCurrent = idx === carouselIndex;
+                          return (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => {
+                                setCarouselIndex(idx);
+                                setSelectedPropertyId(p.id);
+                              }}
+                              className={`px-2 py-0.5 rounded-md font-bold transition cursor-pointer flex items-center gap-1 ${
+                                isCurrent
+                                  ? 'bg-amber-500 text-stone-950 ring-1 ring-amber-400 shadow-xs'
+                                  : isFav
+                                  ? 'bg-rose-950/60 text-rose-300 border border-rose-500/50 hover:bg-rose-900/60'
+                                  : 'bg-stone-900 text-stone-400 hover:text-white border border-stone-800'
+                              }`}
+                              title={`Jump to Listing #${idx + 1}: ${p.addressLine1} ${isFav ? '(Front & Center Top 3)' : ''}`}
+                            >
+                              {isFav && <Heart className="w-2.5 h-2.5 fill-rose-400 text-rose-400" />}
+                              <span>#{idx + 1}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <span className="text-amber-400 font-bold shrink-0">
+                        Cards 1–3 = Top 3 Front & Center
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Grid Deck View: all cards rendered simultaneously
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {filteredProperties.map((prop, idx) => renderPropertyCard(prop, idx))}
+                </div>
+              );
+            })()}
+          </div>
+
           {/* Selected Property Deep-Dive */}
           {selectedProperty && (
-            <div className="bg-stone-950 border border-stone-800 rounded-2xl p-4 space-y-3">
+            <div ref={defaultListingCardRef} className="bg-stone-950 border border-stone-800 rounded-2xl p-4 space-y-3">
+              {/* GEOMAP PLUGIN DEFAULT PROMOTION HERO BANNER */}
+              {(() => {
+                const isCurrentDefault = selectedProperty.id === activeDefaultPropertyId;
+                return (
+                  <div
+                    className={`p-3.5 rounded-2xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                      isCurrentDefault
+                        ? 'bg-gradient-to-r from-amber-950/40 via-stone-900 to-emerald-950/30 border-amber-500/60 shadow-lg ring-1 ring-amber-500/30'
+                        : 'bg-stone-900/90 border-stone-800'
+                    }`}
+                  >
+                    <div className="flex items-start sm:items-center gap-3">
+                      <label
+                        className="flex items-center gap-2.5 cursor-pointer bg-stone-950 px-3 py-2 rounded-xl border border-stone-800 hover:border-amber-500/60 transition shadow-xs"
+                        title="Set this property as the default featured listing for the GeoMap plugin export"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isCurrentDefault}
+                          onChange={() => handleToggleDefaultProperty(selectedProperty.id)}
+                          className="w-4 h-4 rounded border-stone-700 text-amber-500 focus:ring-amber-500 focus:ring-offset-stone-900 bg-stone-900 cursor-pointer"
+                        />
+                        <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                          <Star className={`w-4 h-4 ${isCurrentDefault ? 'text-amber-400 fill-amber-400' : 'text-stone-400'}`} />
+                          <span>GeoMap Plugin default</span>
+                        </span>
+                      </label>
+
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span
+                            className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                              isCurrentDefault
+                                ? 'bg-amber-500 text-stone-950'
+                                : 'bg-stone-800 text-stone-400'
+                            }`}
+                          >
+                            {isCurrentDefault ? '★ Promoted Default Listing' : 'Standard Listing'}
+                          </span>
+                          <span className="text-xs text-stone-300 font-semibold">
+                            {isCurrentDefault
+                              ? 'Highlighted first front & center for potential leads'
+                              : 'Check to highlight this property front & center on mobile & desktop'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-stone-400 mt-0.5">
+                          {isCurrentDefault
+                            ? 'Leads opening via QR code, SMS, email, messaging, or social links see this listing first.'
+                            : 'When checked, the GeoMap plugin export highlights this property as the first to review.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Quick Promotion Action Buttons */}
+                    <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const promoUrl = buildLeadPluginUrl('geomap', undefined, {
+                            leadMode: true,
+                            lo: mergedConfig.assignedLoanOfficerName ? 'lo-mike-ford' : undefined,
+                            agent: hasPairedAgent ? 'agent-kanndice-mclean' : 'none',
+                            pack: 'geomap_brain_combo',
+                            prop: selectedProperty.id
+                          });
+                          navigator.clipboard.writeText(promoUrl);
+                          setCopiedPromoLink(true);
+                          setTimeout(() => setCopiedPromoLink(false), 2500);
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-stone-950 hover:bg-stone-850 text-stone-200 border border-stone-800 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+                        title="Copy direct promotional link with default property pre-loaded"
+                      >
+                        {copiedPromoLink ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            <span className="text-emerald-400">Link Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5 text-stone-400" />
+                            <span>Copy Promo Link</span>
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (onOpenShareLinksModal) {
+                            onOpenShareLinksModal(selectedProperty.id);
+                          } else {
+                            const promoUrl = buildLeadPluginUrl('geomap', undefined, {
+                              leadMode: true,
+                              lo: 'lo-mike-ford',
+                              agent: hasPairedAgent ? 'agent-kanndice-mclean' : 'none',
+                              prop: selectedProperty.id
+                            });
+                            if (navigator.share) {
+                              navigator.share({
+                                title: `Featured Listing: ${selectedProperty.formattedAddress}`,
+                                text: `Check out ${selectedProperty.formattedAddress} ($${selectedProperty.price.toLocaleString()}) - $0-down grant eligible! Open our interactive AI GeoMap to view payments & chat with our 2nd Brain:`,
+                                url: promoUrl
+                              }).catch(() => {});
+                            } else {
+                              navigator.clipboard.writeText(promoUrl);
+                              setCopiedPromoLink(true);
+                              setTimeout(() => setCopiedPromoLink(false), 2500);
+                            }
+                          }
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white text-xs font-bold transition shadow-xs flex items-center gap-1.5 cursor-pointer"
+                        title="Open share modal for QR code, SMS, email, and social media campaigns"
+                      >
+                        <Share2 className="w-3.5 h-3.5 text-amber-200" />
+                        <span>Promote & Share</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <h4 className="text-sm font-bold text-white">{selectedProperty.formattedAddress}</h4>
@@ -952,7 +2410,10 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
 
               {/* Two-Way Communication Notes & Interactive Chat Bot */}
               <ListingChatBotNotesPanel
-                property={selectedProperty}
+                property={{
+                  ...selectedProperty,
+                  isGeoMapPluginDefault: selectedProperty.id === activeDefaultPropertyId
+                }}
                 buyerProfile={buyerProfile}
                 prequalResult={prequalResult}
                 assignedLoanOfficerName={mergedConfig.assignedLoanOfficerName}
@@ -1137,6 +2598,249 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
           </div>
         </div>
       )}
+
+      {/* Proactive Loan Officer Curation & Push Listing Modal */}
+      {showPushListingModal && (
+        <div
+          className="fixed inset-0 z-60 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-in fade-in"
+          onClick={() => setShowPushListingModal(false)}
+        >
+          <div
+            className="bg-stone-900 border border-stone-800 rounded-3xl max-w-2xl w-full max-h-[92vh] overflow-y-auto p-5 sm:p-6 space-y-4 shadow-2xl relative text-xs"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex justify-between items-start border-b border-stone-800 pb-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                    <PlusCircle className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-extrabold text-white">
+                      Proactively Curate & Push Listing to App
+                    </h3>
+                    <p className="text-[11px] text-stone-400">
+                      Sync from GeoSphere or add custom listing with low/no-down DPA and strategic notes
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPushListingModal(false)}
+                className="p-1.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-400 hover:text-white transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handlePushNewListingSubmit} className="space-y-4">
+              {/* City & Address */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1 sm:col-span-1">
+                  <label className="text-[10px] font-bold text-stone-300 uppercase">Target City</label>
+                  <input
+                    type="text"
+                    required
+                    value={newListingCity}
+                    onChange={(e) => setNewListingCity(e.target.value)}
+                    placeholder="e.g. Scappoose"
+                    className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-white focus:border-amber-500 outline-none"
+                  />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="text-[10px] font-bold text-stone-300 uppercase">Property Address</label>
+                  <input
+                    type="text"
+                    required
+                    value={newListingAddress}
+                    onChange={(e) => setNewListingAddress(e.target.value)}
+                    placeholder="e.g. 51842 SW Old Portland Rd, Scappoose, OR 97056"
+                    className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-white focus:border-amber-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Price & Price Reduction */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-stone-300 uppercase">Current List Price ($)</label>
+                  <input
+                    type="number"
+                    required
+                    min={50000}
+                    step={1000}
+                    value={newListingPrice}
+                    onChange={(e) => setNewListingPrice(Number(e.target.value))}
+                    className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-emerald-400 font-mono font-bold focus:border-amber-500 outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-stone-300 uppercase">Original Price ($)</label>
+                  <input
+                    type="number"
+                    min={50000}
+                    step={1000}
+                    value={newListingOriginalPrice}
+                    onChange={(e) => setNewListingOriginalPrice(Number(e.target.value))}
+                    className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-stone-300 font-mono focus:border-amber-500 outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-stone-300 uppercase">Suggested Seller Credits ($)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={500}
+                    value={newListingSellerConcession}
+                    onChange={(e) => setNewListingSellerConcession(Number(e.target.value))}
+                    className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-amber-300 font-mono font-bold focus:border-amber-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Beds / Baths / Sqft */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-stone-400">Bedrooms</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={newListingBeds}
+                    onChange={(e) => setNewListingBeds(Number(e.target.value))}
+                    className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-white focus:border-amber-500 outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-stone-400">Bathrooms</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={10}
+                    step={0.5}
+                    value={newListingBaths}
+                    onChange={(e) => setNewListingBaths(Number(e.target.value))}
+                    className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-white focus:border-amber-500 outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-stone-400">Square Feet</label>
+                  <input
+                    type="number"
+                    min={400}
+                    step={50}
+                    value={newListingSqft}
+                    onChange={(e) => setNewListingSqft(Number(e.target.value))}
+                    className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-white focus:border-amber-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Low/No Down Payment Program Tags */}
+              <div className="space-y-1.5 p-3 rounded-2xl bg-stone-950 border border-stone-800">
+                <span className="text-[10px] font-bold text-stone-300 uppercase block">
+                  Identified Low / No-Down Payment Mortgage Programs:
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                  <label className="flex items-center gap-2 text-stone-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newListingUsda}
+                      onChange={(e) => setNewListingUsda(e.target.checked)}
+                      className="rounded border-stone-700 text-emerald-500"
+                    />
+                    <span>🌾 USDA Rural Development 100% Zero-Down</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-stone-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newListingOhcs}
+                      onChange={(e) => setNewListingOhcs(e.target.checked)}
+                      className="rounded border-stone-700 text-teal-500"
+                    />
+                    <span>🌲 OHCS Flex Lending FirstHome ($15,400 Grant)</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-stone-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newListingLakeview}
+                      onChange={(e) => setNewListingLakeview(e.target.checked)}
+                      className="rounded border-stone-700 text-amber-500"
+                    />
+                    <span>🏞️ Lakeview National 100% DPA (FHA 1st + Soft 2nd)</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-stone-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newListingHomeReady}
+                      onChange={(e) => setNewListingHomeReady(e.target.checked)}
+                      className="rounded border-stone-700 text-indigo-500"
+                    />
+                    <span>🔑 Fannie Mae HomeReady 3% Down (Reduced PMI)</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-stone-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newListingCra}
+                      onChange={(e) => setNewListingCra(e.target.checked)}
+                      className="rounded border-stone-700 text-blue-500"
+                    />
+                    <span>🏛️ CRA LMI $5,000 Bank Grant Stack</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Custom Proactive Loan Officer Note */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold text-amber-400 uppercase flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-amber-400" />
+                    <span>Loan Officer Proactive Strategy Note:</span>
+                  </label>
+                  <span className="text-[10px] text-stone-400">Featured in Lead's App & Chat</span>
+                </div>
+                <textarea
+                  rows={3}
+                  required
+                  value={newListingLoNote}
+                  onChange={(e) => setNewListingLoNote(e.target.value)}
+                  placeholder="e.g. Checkout this house which just had a price reduction and we can reach out to Kanndice to see if seller will consider seller contributions towards your closing costs..what do you think?"
+                  className="w-full bg-stone-950 border border-stone-800 rounded-xl p-3 text-white focus:border-amber-500 outline-none leading-relaxed text-xs"
+                />
+              </div>
+
+              {/* Submit Button */}
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-800">
+                <button
+                  type="button"
+                  onClick={() => setShowPushListingModal(false)}
+                  className="px-4 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 font-bold transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-emerald-600 hover:from-amber-400 hover:to-emerald-500 text-stone-950 font-black shadow-lg transition cursor-pointer flex items-center gap-1.5"
+                >
+                  <PlusCircle className="w-4 h-4 text-stone-950" />
+                  <span>Push Directly to GeoMap App Deck</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Zillow Sweep 1-Click Match & Dispatch Outreach Modal */}
+      <ZillowSweepMatchModal
+        isOpen={showZillowMatchModal}
+        onClose={() => setShowZillowMatchModal(false)}
+        selectedProperties={properties.filter((p) => zillowSweepSelectedPropertyIds.includes(p.id))}
+        hasPairedAgent={hasPairedAgent}
+        onAppendNotesToProperties={handleAppendNotesToProperties}
+      />
 
       {/* Footer & Copyright */}
       <div className="pt-3 border-t border-stone-800 flex flex-col sm:flex-row items-center justify-between text-[10px] text-stone-500 font-mono">

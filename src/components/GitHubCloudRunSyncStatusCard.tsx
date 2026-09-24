@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { GitBranch, GitCommit, CheckCircle2, RefreshCw, Server, MapPin, Zap, ExternalLink, ShieldCheck, Radio, AlertCircle, Loader2, Play, AlertTriangle } from 'lucide-react';
+import { GitBranch, GitCommit, CheckCircle2, RefreshCw, Server, MapPin, Zap, ExternalLink, ShieldCheck, Radio, AlertCircle, Loader2, Play, AlertTriangle, Leaf } from 'lucide-react';
+import { useBatterySaver } from '../context/BatterySaverContext';
 
 interface SyncStatusData {
   status: string;
@@ -56,14 +57,17 @@ export const GitHubCloudRunSyncStatusCard: React.FC<{
     }
   };
 
-  // Poll status every 3 seconds for dynamic real-time updates
+  const { isBatterySaverActive, getAdjustedInterval } = useBatterySaver();
+
+  // Poll status dynamically: 3000ms normal, 9000ms on battery saver
   useEffect(() => {
     fetchStatus(false);
+    const intervalMs = getAdjustedInterval(3000);
     const interval = setInterval(() => {
       fetchStatus(true);
-    }, 3000);
+    }, intervalMs);
     return () => clearInterval(interval);
-  }, []);
+  }, [getAdjustedInterval, isBatterySaverActive]);
 
   const handleSimulateBuild = async (mode: 'success' | 'fail') => {
     setSimulatingMode(mode);
@@ -426,8 +430,19 @@ export const GitHubCloudRunSyncStatusCard: React.FC<{
       {/* Footer / Verification Bar */}
       <div className="mt-3.5 pt-2.5 border-t border-slate-800/80 flex flex-col xs:flex-row items-start xs:items-center justify-between gap-2 text-[11px] text-slate-400">
         <div className="flex items-center gap-1.5">
-          <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
-          <span>Real-time polling active (every 3s) | Target: <strong>us-west1 (Oregon)</strong></span>
+          {isBatterySaverActive ? (
+            <>
+              <Leaf className="w-3.5 h-3.5 text-amber-400" />
+              <span className="text-amber-300 font-semibold">
+                Battery-Saver Eco Polling (every {getAdjustedInterval(3000) / 1000}s) | Target: <strong>us-west1 (Oregon)</strong>
+              </span>
+            </>
+          ) : (
+            <>
+              <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
+              <span>Real-time polling active (every 3s) | Target: <strong>us-west1 (Oregon)</strong></span>
+            </>
+          )}
         </div>
         <div className="text-[10px] font-mono text-slate-400">
           Last poll: {data?.verifiedAt ? new Date(data.verifiedAt).toLocaleTimeString() : 'Just now'}
