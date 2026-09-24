@@ -3293,10 +3293,24 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
 
                     {/* Interactive Card Notes & Direct 2-Way Relay Section with LO/Agent Profile Cards */}
                     <div className="mt-2.5 pt-2.5 border-t border-stone-800/90 space-y-2">
+                      {/* Email Webhook Sync Live Status Indicator */}
+                      <div className="flex items-center justify-between bg-purple-950/40 border border-purple-500/30 rounded-xl px-2.5 py-1 text-[10px]">
+                        <div className="flex items-center gap-1.5 font-bold text-purple-300">
+                          <span className="relative flex h-2 w-2 shrink-0">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
+                          </span>
+                          <span>📧 Email Webhook Sync: <strong className="text-emerald-400 font-extrabold">ACTIVE</strong></span>
+                        </div>
+                        <span className="text-[9px] text-stone-400 font-mono hidden sm:inline">
+                          Listening for {mergedConfig.assignedAgentName || 'Kanndice'}
+                        </span>
+                      </div>
+
                       <div className="flex items-center justify-between text-[10px] font-bold text-stone-300">
                         <span className="flex items-center gap-1 text-amber-300">
                           <MessageSquare className="w-3.5 h-3.5 text-amber-400" />
-                          <span>Listing Notes & Direct Relay:</span>
+                          <span>Listing Notes &amp; Direct Relay:</span>
                         </span>
                         <button
                           type="button"

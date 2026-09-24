@@ -86,24 +86,34 @@ export const ListingNotesProfileFooter: React.FC<ListingNotesProfileFooterProps>
 
   return (
     <div className="mt-3 pt-3 border-t border-stone-800/90 space-y-2">
-      {/* Header bar indicating paired vs solo */}
+      {/* Header bar indicating paired vs solo & Email Webhook Sync Status */}
       <div className="flex items-center justify-between gap-2 flex-wrap text-[10px]">
         <div className="flex items-center gap-1.5 font-bold">
           {hasPairedAgent && agent ? (
             <span className="flex items-center gap-1 text-emerald-400">
-              <ShieldCheck className="w-3.5 h-3.5" />
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
               <span>Co-Branded Advisory Pair ({lo.name} & {agent.name})</span>
             </span>
           ) : (
             <span className="flex items-center gap-1 text-amber-400">
-              <ShieldCheck className="w-3.5 h-3.5" />
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
               <span>Solo Loan Officer Desk ({lo.name} • 0 Agent Relay)</span>
             </span>
           )}
         </div>
-        <span className="text-stone-400 font-mono text-[9px]">
-          Direct 2-Way Notes & Response
-        </span>
+
+        {/* Email Webhook Sync Status Badge */}
+        {hasPairedAgent && agent && (
+          <div className="flex items-center gap-1.5 bg-purple-950/80 border border-purple-500/50 px-2.5 py-0.5 rounded-full text-[9.5px]">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
+            </span>
+            <span className="text-purple-200 font-bold">📧 Email Webhook Sync:</span>
+            <span className="text-emerald-400 font-black">ACTIVE</span>
+            <span className="text-stone-400 font-mono text-[8.5px]">({agent.email})</span>
+          </div>
+        )}
       </div>
 
       {actionFeedback && (
