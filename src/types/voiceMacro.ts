@@ -107,3 +107,46 @@ export interface VoicePreQualParams {
   calculatedBackEndDti: number;
   maxPurchaseEnvelope: number;
 }
+
+export interface DriveTimeBriefingScheduleConfig {
+  enabled: boolean;
+  scheduledTime: string; // e.g. "07:30"
+  timezone: string; // e.g. "America/Los_Angeles"
+  repeatDays: string[]; // ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
+  voicePersona: 'Puck' | 'Fenrir' | 'Kore' | 'Aoede';
+  speakingSpeed: number; // 1.0, 1.15, 1.3
+  maxDurationSeconds: number; // 60, 90, 180
+  includeZillowPriceDrops: boolean;
+  minPriceDropAmount: number; // e.g. 10000
+  targetCounties: string[]; // e.g. ['Multnomah', 'Deschutes', 'Marion', 'Lane']
+  includeOhcsTargetedAreaHomes: boolean;
+  includeUsdaZeroDownHomes: boolean;
+  includeHotCrmLeads: boolean;
+  minCrmLeadScore: number; // e.g. 8
+  includeUnreadRealtorInquiries: boolean;
+  includeRateLockExpirations: boolean;
+  includeDpaGrantWaterfalls: boolean;
+  customPromptInstructions: string;
+  deliveryChannels: {
+    carPlayPush: boolean;
+    inAppAutoPlay: boolean;
+    smsAudioMemo: boolean;
+    calendarAttachment: boolean;
+  };
+  recipientPhone?: string;
+  lastRunAt?: string;
+}
+
+export interface DriveTimeBriefingLog {
+  id: string;
+  timestamp: string;
+  durationSeconds: number;
+  audioUrl?: string;
+  transcript: string;
+  zillowPriceDropCount: number;
+  hotLeadCount: number;
+  ohcsTargetedMatchCount: number;
+  currentMortgageRate30Y: string;
+  status: 'completed' | 'delivered' | 'failed';
+  voicePersonaUsed: string;
+}

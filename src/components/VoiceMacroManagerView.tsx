@@ -24,6 +24,7 @@ import {
   Home, 
   Mail, 
   Calendar, 
+  Clock,
   FileText, 
   CheckSquare, 
   Brain,
@@ -34,6 +35,7 @@ import { VoiceMacroRecipe, VoiceSafetyAirgapConfig } from '../types/voiceMacro';
 import { speakSpokenAirgap, DEFAULT_AIRGAP_CONFIG } from '../services/voiceMacroEngine';
 import { SpeechToIntentChiefOfStaffStudio } from './SpeechToIntentChiefOfStaffStudio';
 import { VisualNodeMacroEditor } from './VisualNodeMacroEditor';
+import { DriveTimeBriefingScheduler } from './DriveTimeBriefingScheduler';
 
 interface VoiceMacroManagerViewProps {
   onExecuteWorkflow?: (name: string) => void;
@@ -44,7 +46,7 @@ export const VoiceMacroManagerView: React.FC<VoiceMacroManagerViewProps> = ({
   onExecuteWorkflow,
   onExecuteCustomRecipe 
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'conditional_node_editor' | 'chief_of_staff' | 'recipes' | 'airgap'>('conditional_node_editor');
+  const [activeSubTab, setActiveSubTab] = useState<'briefing_scheduler' | 'conditional_node_editor' | 'chief_of_staff' | 'recipes' | 'airgap'>('briefing_scheduler');
 
   const [macros, setMacros] = useState<VoiceMacroRecipe[]>(() => {
     try {
@@ -200,6 +202,19 @@ export const VoiceMacroManagerView: React.FC<VoiceMacroManagerViewProps> = ({
       {/* Sub-Tab Navigation Bar */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1">
         <button
+          onClick={() => setActiveSubTab('briefing_scheduler')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
+            activeSubTab === 'briefing_scheduler'
+              ? 'bg-blue-600 text-white shadow-xs ring-2 ring-blue-400'
+              : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
+          }`}
+        >
+          <Clock className="w-4 h-4 text-amber-300" />
+          <span>Drive-Time Briefing Scheduler</span>
+          <span className="text-[10px] px-1.5 py-0.2 bg-emerald-500/40 text-emerald-100 rounded-full font-bold">Gemini Live</span>
+        </button>
+
+        <button
           onClick={() => setActiveSubTab('conditional_node_editor')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
             activeSubTab === 'conditional_node_editor'
@@ -257,6 +272,11 @@ export const VoiceMacroManagerView: React.FC<VoiceMacroManagerViewProps> = ({
           <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <span>{successMsg}</span>
         </div>
+      )}
+
+      {/* SUB-TAB: Drive-Time Briefing Scheduler */}
+      {activeSubTab === 'briefing_scheduler' && (
+        <DriveTimeBriefingScheduler />
       )}
 
       {/* SUB-TAB: Visual Node Macro Editor */}
