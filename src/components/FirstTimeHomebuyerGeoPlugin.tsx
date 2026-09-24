@@ -42,12 +42,14 @@ import {
   Target,
   Info,
   AlertTriangle,
-  Globe
+  Globe,
+  Bell
 } from 'lucide-react';
 import { usePwaInstallPrompt } from '../hooks/usePwaInstallPrompt';
 import { IosInstallGuideModal } from './IosInstallGuideModal';
 import { ListingChatBotNotesPanel } from './ListingChatBotNotesPanel';
 import { ListingNotesProfileFooter } from './ListingNotesProfileFooter';
+import { LoSmsAgentRelayModal } from './LoSmsAgentRelayModal';
 import { ZillowSweepControlDeck } from './ZillowSweepControlDeck';
 import { ZillowSweepMatchModal } from './ZillowSweepMatchModal';
 import { useBatterySaver } from '../context/BatterySaverContext';
@@ -284,6 +286,66 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
       ...prev,
       grossMonthlyIncome: newMonthly
     }));
+  };
+
+  // SMS Relay & Push Notification State for Agent Kanndice McLean
+  const [isSmsRelayModalOpen, setIsSmsRelayModalOpen] = useState<boolean>(false);
+  const [smsRelayProperty, setSmsRelayProperty] = useState<SyncedPropertyListing | null>(null);
+  const [activePushNotification, setActivePushNotification] = useState<{
+    id: string;
+    title: string;
+    message: string;
+    timestamp: string;
+  } | null>(null);
+
+  const handleOpenSmsRelay = (propToRelay?: SyncedPropertyListing) => {
+    const targetProp = propToRelay || properties.find(p => p.id === selectedPropertyId) || properties[0] || null;
+    setSmsRelayProperty(targetProp);
+    setIsSmsRelayModalOpen(true);
+  };
+
+  const handleSendSmsRelay = (
+    propertyId: string,
+    leadName: string,
+    propertyAddress: string,
+    outboundText: string,
+    agentReplyText: string
+  ) => {
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const formattedNote = `[Note from Kanndice McLean (Realtor®) • ${timeStr}]: ${agentReplyText}`;
+
+    setProperties(prev =>
+      prev.map(p => {
+        if (p.id === propertyId) {
+          const updatedNotes = p.propertyNotes
+            ? `${formattedNote}\n\n${p.propertyNotes}`
+            : formattedNote;
+          return { ...p, propertyNotes: updatedNotes };
+        }
+        return p;
+      })
+    );
+
+    const notifTitle = `${propertyAddress} has a NEW note from Kanndice`;
+    setActivePushNotification({
+      id: `push-${Date.now()}`,
+      title: notifTitle,
+      message: `Kanndice McLean: "${agentReplyText}"`,
+      timestamp: timeStr
+    });
+
+    try {
+      if (typeof window !== 'undefined') {
+        const key = `vantage_note_relay_${propertyId}`;
+        localStorage.setItem(key, JSON.stringify({
+          leadName,
+          propertyAddress,
+          outboundText,
+          agentReplyText,
+          timestamp: new Date().toISOString()
+        }));
+      }
+    } catch {}
   };
 
   const { isBatterySaverActive, getAdjustedInterval } = useBatterySaver();
@@ -2622,6 +2684,19 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                           <MessageSquare className="w-3 h-3 text-amber-400" />
                           <span>{activeCardNotesId === prop.id ? 'Close Card Notes' : 'Card Notes & Inquiries'}</span>
                         </button>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenSmsRelay(prop);
+                          }}
+                          className="px-2 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 hover:text-amber-200 border border-amber-500/40 text-[10px] font-bold transition flex items-center gap-1 cursor-pointer shadow-xs"
+                          title="Send SMS text note to Realtor Kanndice McLean regarding seller contributions"
+                        >
+                          <Smartphone className="w-3 h-3 text-amber-400" />
+                          <span>Text Note to Kanndice</span>
+                        </button>
                       </div>
                     </div>
 
@@ -3237,8 +3312,19 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
 
                       {/* Display existing notes if any */}
                       {prop.propertyNotes && (
-                        <div className="p-2 bg-stone-950/90 rounded-xl border border-stone-800 text-[10px] text-stone-300 font-mono whitespace-pre-line max-h-24 overflow-y-auto">
-                          {prop.propertyNotes}
+                        <div className="p-2 bg-stone-950/90 rounded-xl border border-stone-800 text-[10px] text-stone-300 font-mono whitespace-pre-line max-h-32 overflow-y-auto space-y-1.5">
+                          <div>{prop.propertyNotes}</div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenSmsRelay(prop);
+                            }}
+                            className="w-full py-1.5 px-3 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 text-[11px] font-black flex items-center justify-center gap-1.5 cursor-pointer shadow-md transition"
+                          >
+                            <Smartphone className="w-3.5 h-3.5 text-stone-950" />
+                            <span>📱 Relay Note to Kanndice via SMS</span>
+                          </button>
                         </div>
                       )}
 
@@ -3781,6 +3867,8 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                 assignedLoanOfficerName={mergedConfig.assignedLoanOfficerName}
                 assignedAgentName={mergedConfig.assignedAgentName}
                 hasPairedAgent={hasPairedAgent}
+                onUpdateCreditScore={(score) => handleCreditScoreChange(score)}
+                onOpenSmsRelay={() => handleOpenSmsRelay(selectedProperty)}
                 onOpenLeadCapture={(note) => {
                   setLeadCaptureInitialNote(note);
                   setShowLeadCaptureModal(true);
@@ -4573,6 +4661,48 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
               >
                 Got It
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* LO SMS Agent Relay Modal */}
+      <LoSmsAgentRelayModal
+        isOpen={isSmsRelayModalOpen}
+        onClose={() => setIsSmsRelayModalOpen(false)}
+        property={smsRelayProperty}
+        leadName={(initialBuyerProfile as any)?.buyerName || 'John Jones'}
+        loanOfficerName={mergedConfig.assignedLoanOfficerName || 'Mike Ford'}
+        agentName={mergedConfig.assignedAgentName || 'Kanndice McLean'}
+        onSendSmsRelay={handleSendSmsRelay}
+      />
+
+      {/* Real-Time Push Notification Toast Banner for LO & Lead Contact */}
+      {activePushNotification && (
+        <div className="fixed top-4 right-4 sm:right-6 z-[100] max-w-md w-full animate-bounceIn shadow-2xl">
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500 via-emerald-600 to-teal-600 text-stone-950 font-sans border-2 border-amber-300 space-y-1.5 shadow-2xl">
+            <div className="flex items-center justify-between font-black text-xs">
+              <span className="flex items-center gap-1.5 uppercase tracking-wide">
+                <Bell className="w-4 h-4 text-stone-950 animate-bounce" />
+                <span>🔔 Push Notification (LO + Lead Contact)</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setActivePushNotification(null)}
+                className="p-1 rounded-lg bg-stone-950/20 hover:bg-stone-950/40 text-stone-950 font-black cursor-pointer transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="font-black text-sm text-stone-950 leading-snug">
+              "{activePushNotification.title}"
+            </div>
+            <p className="text-xs font-bold text-stone-900 bg-white/40 p-2 rounded-xl backdrop-blur-xs leading-snug">
+              {activePushNotification.message}
+            </p>
+            <div className="flex items-center justify-between text-[10px] font-mono font-bold text-stone-900 pt-0.5">
+              <span>Dispatched to Mike Ford (LO) &amp; {(initialBuyerProfile as any)?.buyerName || 'John Jones'}</span>
+              <span>{activePushNotification.timestamp}</span>
             </div>
           </div>
         </div>

@@ -27,6 +27,29 @@ export interface SpecialLoanProgramBadges {
   targetedAreaGrantBonus: boolean;
 }
 
+export interface AgentNoteEntry {
+  id: string;
+  agentName: string; // e.g. "Kanndice McLean"
+  noteText: string;
+  timestamp: string;
+  sentBySms?: boolean;
+  leadName?: string; // e.g. "John Jones"
+  propertyAddress?: string; // e.g. "1234 Fake St"
+}
+
+export interface PushNotificationAlert {
+  id: string;
+  title: string; // e.g. "1234 Fake St has a NEW note from Kanndice"
+  body: string;
+  timestamp: string;
+  propertyId: string;
+  propertyAddress: string;
+  recipientRoles: ('lead' | 'loan_officer')[];
+  leadName: string;
+  agentName: string;
+  isRead: boolean;
+}
+
 export interface SyncedPropertyListing {
   id: string;
   formattedAddress: string;
@@ -66,6 +89,8 @@ export interface SyncedPropertyListing {
   isZillowSweepNew?: boolean;
   zillowSweepBatchId?: string;
   zillowSweepNotes?: string[];
+  agentNotesHistory?: AgentNoteEntry[];
+  latestAgentNote?: AgentNoteEntry;
 }
 
 export interface BuyerDtiProfile {

@@ -152,37 +152,35 @@ When promoting a specific for-sale property listing online, on social media (Ins
 
 ## 4. TWO-WAY SMS LEAD NOTES & INSTANT REPLY FUNCTION
 
-The Vantage platform features an integrated **Two-Way SMS Relay** that connects buyers, Mike Ford, and Kanndice McLean without requiring anyone to install specialized CRM software.
+The Vantage platform features an integrated **Two-Way Lead Notes Relay** connecting buyers, Loan Officer Mike Ford, and Realtor Kanndice McLean with **Dual Pathway Options** so you can use Twilio API integration or bypass Twilio completely!
 
 ```
-  ┌──────────────┐          ┌───────────────────────┐          ┌───────────────────────┐
-  │  HOMEBUYER   │ ───────► │  VANTAGE SMS GATEWAY  │ ───────► │  MIKE FORD & KANNDICE │
-  │ Enters Note  │          │  (Twilio / Firebase)  │          │   Both Receive SMS    │
-  └──────────────┘          └───────────────────────┘          └───────────────────────┘
-                                        ▲                                  │
-                                        │                                  ▼
-                                        └─────── 2-WAY TEXT REPLY ─────────┘
-                                                (Posts into Buyer UI)
+┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                      DUAL PATHWAY 2-WAY PROPERTY NOTES RELAY ARCHITECTURE                       │
+├────────────────────────────────────────────────────────┬────────────────────────────────────────┤
+│ PATHWAY A: Twilio Toll-Free Automated Webhook          │ PATHWAY B: Zero-Twilio Direct Carrier  │
+│ (Automatic 2-Way Cell SMS Webhook -> Firestore)        │ & LO Direct Push Relay (100% Free)     │
+├────────────────────────────────────────────────────────┼────────────────────────────────────────┤
+│ 1. LO sends text note via Toll-Free API (+1 833)      │ 1. LO taps "📱 Send Direct Carrier SMS"│
+│ 2. Kanndice receives SMS & replies on cell phone       │ 2. Opens phone/Mac native Messages app  │
+│ 3. Twilio Webhook /api/twilio/inbound-sms intercepts   │ 3. LO texts Kanndice with pre-filled body│
+│ 4. Auto-saves note to Firestore & dispatches push      │ 4. LO "pushes" Kanndice's reply into   │
+│    notification to Lead & LO                           │    Property Listing NOTES with 1-click │
+└────────────────────────────────────────────────────────┴────────────────────────────────────────┘
 ```
 
-### How the Inbound Note Relay Operates:
-1. When a buyer views a listing (e.g., `1042 Maple St, Scappoose, OR`) and submits a note or question in the **Listing Notes & Chatbot Panel**:
-   > *"Is the seller willing to cover closing costs if we offer full asking price?"*
-2. **Simultaneous SMS Blast:** An SMS is immediately dispatched to **both Mike Ford (`503-555-0192`) and Kanndice McLean (`503-555-0188`)**:
-   ```text
-   [VANTAGE LEAD ALERT] 📍 1042 Maple St ($425,000)
-   Buyer: Marcus Brooks (503-555-0133)
-   Question: "Is the seller willing to cover closing costs if we offer full asking price?"
-   
-   👉 Quick Reply: Text back "REPLY 1042 [your message]" to post directly to Marcus's app screen, or tap to call: tel:+15035550133
-   ```
+### Pathway A: Twilio Toll-Free Automated Webhook (`+1 833`)
+* **Best For**: Full hands-free automation where Kanndice's cell phone text replies are automatically intercepted by a Twilio Toll-Free Webhook (`/api/twilio/inbound-sms`) and written directly to the Property Listing Card NOTES in Firestore.
+* **Toll-Free Verification**: Uses a Twilio Toll-Free Number (`+1 833-826-8243`) which bypasses A2P 10DLC campaign registration rules entirely.
 
-### How the Two-Way SMS Reply Function Operates:
-1. Kanndice or Mike can reply directly from their native iPhone/Android Messages app:
-   ```text
-   REPLY 1042 Yes! The seller confirmed they will credit 3% ($12,750) towards closing costs, which Mike Ford can combine with your $10k CRA Grant.
-   ```
-2. The Vantage Webhook intercepts the message, verifies the sender phone number (`503-555-0188` or `503-555-0192`), formats the response with an official **"Verified Agent/LO Response"** badge, and pushes it into the buyer's live portal in real time.
+### Pathway B: Zero-Twilio Direct Carrier & LO Direct Push Relay (100% Free)
+* **Best For**: 0-cost, instant messaging without setting up or paying for a Twilio account.
+* **Outbound Texting**: Click **"📱 Send Direct Carrier SMS to Kanndice's Cell (+1 503-555-0188)"** in Tab 1. The app pre-fills the message text, pre-addresses to Kanndice's mobile phone, and launches your phone or Mac's native Messages app (iMessage / Android SMS).
+* **Direct Push to Listing Notes**: When Kanndice texts her reply back to your cell phone, switch to **Tab 2 (Agent Reply Simulator)** inside the modal and click **Submit Reply & Fire Push Notifications**. The Loan Officer "pushes" her text reply directly onto the property card NOTES in Firestore and triggers live push alerts to the lead buyer!
+
+### Pathway C: Inbound Email Webhook Relay (`/api/email/inbound-notes`)
+* **Best For**: Forwarding seller counter-offers, MLS listing flyers, and inspection PDFs directly to property card notes.
+* **AI Engine**: Gemini 3.8 Flash automatically parses long email threads and PDF attachments, creating a 2-bullet summary saved directly into the property card NOTES in Firestore.
 
 ---
 

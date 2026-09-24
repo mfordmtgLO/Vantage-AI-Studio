@@ -65,6 +65,8 @@ interface ListingChatBotNotesPanelProps {
   buyerProfile: BuyerDtiProfile;
   prequalResult: BuyerPrequalificationResult;
   onUpdatePropertyNotes?: (propertyId: string, updatedNotes: string) => void;
+  onUpdateCreditScore?: (creditScore: number) => void;
+  onOpenSmsRelay?: () => void;
   className?: string;
   assignedLoanOfficerName?: string;
   assignedAgentName?: string;
@@ -77,6 +79,8 @@ export const ListingChatBotNotesPanel: React.FC<ListingChatBotNotesPanelProps> =
   buyerProfile,
   prequalResult,
   onUpdatePropertyNotes,
+  onUpdateCreditScore,
+  onOpenSmsRelay,
   className = '',
   assignedLoanOfficerName = 'Mike Ford',
   assignedAgentName,
@@ -398,6 +402,24 @@ export const ListingChatBotNotesPanel: React.FC<ListingChatBotNotesPanelProps> =
       return;
     }
 
+    if (text === 'TRIGGER_SMS_RELAY') {
+      if (onOpenSmsRelay) {
+        onOpenSmsRelay();
+      } else {
+        setShowInquiryModal(true);
+      }
+      return;
+    }
+
+    // Auto-detect credit score intake in user message (e.g., "my credit score is 720", "FICO 650", "credit score 680")
+    const ficoMatch = text.match(/(?:credit\s*score|fico|score)\s*(?:is|=|:)?\s*(\d{3})/i) || text.match(/\b(5[89]\d|[67]\d{2}|8[0-4]\d|850)\b/);
+    if (ficoMatch && onUpdateCreditScore) {
+      const parsedScore = parseInt(ficoMatch[1] || ficoMatch[0], 10);
+      if (parsedScore >= 500 && parsedScore <= 850) {
+        onUpdateCreditScore(parsedScore);
+      }
+    }
+
     const userMsg: ChatMessage = {
       id: `msg-user-${Date.now()}`,
       sender: 'user',
@@ -476,14 +498,19 @@ Thank you!`;
   };
 
   const quickPrompts = [
+    { label: '📱 Text Note to Kanndice (SMS Relay)', text: 'TRIGGER_SMS_RELAY' },
+    { label: '💳 Check Minimum Credit Scores', text: 'What credit score do I need for Lakeview, FirstHome, USDA RD, and NHF DPA?' },
+    { label: '💳 Self-Input Credit Score (720 FICO)', text: 'My credit score is 720' },
+    { label: '💳 Self-Input Credit Score (660 FICO)', text: 'My credit score is 660' },
+    { label: '💳 Self-Input Credit Score (620 FICO)', text: 'My credit score is 620' },
     { label: '❤️ Top 3 Front & Center Tip', text: 'How do I customize my Top 3 Front & Center carousel property listings?' },
     { label: '📍 What City?', text: 'What city are you planning to purchase a house in?' },
     { label: '✨ Curate Low/No-Down Shortlist', text: 'Would you like us to curate a short list of for sale properties in your desired home purchase area that likely qualify for low or no down payment mortgage financing?' },
     { label: '🏷️ Price Cut & Seller Credits', text: 'Can the seller pay closing costs or offer seller concessions with a price reduction?' },
     { label: '✉️ Email LO Re: Lakeview/NHF', text: 'TRIGGER_EMAIL_INQUIRY' },
-    { label: '🏞️ Lakeview 100% DPA', text: 'Can I use Lakeview 100% Zero-Down on this home?' },
-    { label: '🌲 OHCS Flex FirstHome', text: 'What is my grant eligibility with OHCS Flex Lending?' },
-    { label: '🌾 USDA 0% Down Zone', text: 'Is this home inside an eligible USDA Rural Zone?' },
+    { label: '🏞️ Lakeview 100% DPA (660+ Min)', text: 'Can I use Lakeview 100% Zero-Down on this home?' },
+    { label: '🌲 OHCS Flex FirstHome (620+ Min)', text: 'What is my grant eligibility with OHCS Flex Lending?' },
+    { label: '🌾 USDA 0% Down Zone (680+ Min)', text: 'Is this home inside an eligible USDA Rural Zone?' },
     { label: '🏛️ Stack CRA $5k Grant', text: 'Can I stack a $5,000 CRA grant with DPA assistance?' },
     { label: '💰 Cash Needed at Close', text: 'How much cash do I need at closing for this property?' },
     { label: '🔑 HomeReady 3% Down', text: 'Check Fannie Mae HomeReady eligibility and PMI savings' }

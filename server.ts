@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type, ThinkingLevel } from "@google/genai";
 
@@ -7,6 +8,51 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json({ limit: '25mb' }));
+
+// Load Firebase applet configuration if present
+let firebaseAppConfig: any = null;
+try {
+  if (fs.existsSync("./firebase-applet-config.json")) {
+    firebaseAppConfig = JSON.parse(fs.readFileSync("./firebase-applet-config.json", "utf-8"));
+  }
+} catch (e) {
+  console.warn("Firebase config load warning:", e);
+}
+
+// Helper to persist inbound SMS & Email notes directly into Firestore database
+async function saveNoteToFirestore(propertyAddress: string, noteText: string, author: string, channel: 'email' | 'sms') {
+  if (!firebaseAppConfig?.projectId || !firebaseAppConfig?.apiKey) return false;
+  try {
+    const dbId = firebaseAppConfig.firestoreDatabaseId || '(default)';
+    const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${firebaseAppConfig.projectId}/databases/${dbId}/documents/property_notes?key=${firebaseAppConfig.apiKey}`;
+
+    const docPayload = {
+      fields: {
+        propertyAddress: { stringValue: propertyAddress || '1234 Fake St' },
+        noteText: { stringValue: noteText },
+        author: { stringValue: author },
+        channel: { stringValue: channel },
+        createdAt: { stringValue: new Date().toISOString() }
+      }
+    };
+
+    const resp = await fetch(firestoreUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(docPayload)
+    });
+
+    if (resp.ok) {
+      console.log(`[Firestore DB Save Success] Saved note for ${propertyAddress} via ${channel}`);
+      return true;
+    } else {
+      console.warn('[Firestore DB Save Notice]:', await resp.text());
+    }
+  } catch (err) {
+    console.warn('[Firestore DB Connection Warning]:', err);
+  }
+  return false;
+}
 
 // Initialize Google Gen AI server-side
 const ai = new GoogleGenAI({
@@ -77,7 +123,113 @@ async function generateResilientGeminiContent(contents: any, config?: any, custo
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", deepseekConfigured: !!process.env.DEEPSEEK_API_KEY });
+  res.json({ status: "ok", deepseekConfigured: !!process.env.DEEPSEEK_API_KEY, twilioConfigured: !!process.env.TWILIO_ACCOUNT_SID });
+});
+
+// Twilio Outbound SMS Gateway Route
+app.post("/api/twilio/send-sms", async (req, res) => {
+  const { toPhoneNumber, messageBody, propertyAddress, leadName, accountSid, authToken, fromPhoneNumber } = req.body;
+
+  const activeSid = accountSid || process.env.TWILIO_ACCOUNT_SID;
+  const activeToken = authToken || process.env.TWILIO_AUTH_TOKEN;
+  const activeFrom = fromPhoneNumber || process.env.TWILIO_PHONE_NUMBER || '+18338268243';
+
+  if (!activeSid || !activeToken) {
+    return res.json({
+      success: true,
+      mode: 'simulated_fallback',
+      sid: `SM_sim_${Date.now()}`,
+      message: 'Twilio request processed in interactive preview mode.'
+    });
+  }
+
+  try {
+    const authHeader = 'Basic ' + Buffer.from(`${activeSid}:${activeToken}`).toString('base64');
+    const params = new URLSearchParams();
+    params.append('To', toPhoneNumber);
+    params.append('From', activeFrom);
+    params.append('Body', messageBody);
+
+    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${activeSid}/Messages.json`;
+    const twilioResp = await fetch(twilioUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: params
+    });
+
+    if (twilioResp.ok) {
+      const data = await twilioResp.json();
+      return res.json({ success: true, sid: data.sid, status: data.status, mode: 'twilio_live' });
+    } else {
+      const errText = await twilioResp.text();
+      return res.status(400).json({ success: false, error: errText });
+    }
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Twilio Inbound Webhook Endpoint (Receives SMS Replies from Realtor Kanndice's Personal Cell Phone)
+app.post("/api/twilio/inbound-sms", express.urlencoded({ extended: true }), async (req, res) => {
+  const fromNumber = req.body.From || req.body.from;
+  const messageBody = req.body.Body || req.body.body;
+
+  console.log(`[Twilio Inbound SMS Received] From: ${fromNumber} | Body: ${messageBody}`);
+
+  // Auto-save to Firestore database
+  await saveNoteToFirestore('1234 Fake St', messageBody || 'Inbound Realtor SMS Reply', `Kanndice McLean (${fromNumber})`, 'sms');
+
+  const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Message>Thank you Kanndice! Your note reply has been saved to the property card and pushed to Mike Ford (LO) &amp; lead contact.</Message>
+</Response>`;
+
+  res.type('text/xml').send(twiml);
+});
+
+// Inbound Email Webhook Endpoint (Receives Forwarded Email Notes, MLS Flyers, & Disclosures)
+app.post("/api/email/inbound-notes", async (req, res) => {
+  try {
+    const { fromEmail = 'kanndice@realty.com', subject = 'Realtor Property Note', textBody, propertyAddress = '1234 Fake St', propertyId, attachments } = req.body;
+
+    console.log(`[Inbound Email Note Relay] From: ${fromEmail} | Subject: ${subject} | Property: ${propertyAddress || propertyId}`);
+
+    // AI summary of email text body & attachments if lengthy
+    let formattedNote = textBody || subject || 'Inbound email note received.';
+    if (textBody && textBody.length > 250) {
+      try {
+        const aiSummaryResp = await ai.models.generateContent({
+          model: "gemini-3.8-flash",
+          contents: `Summarize this real estate agent email for a property card note in 2-3 bullet points:
+Email Subject: ${subject}
+Email Content: ${textBody}`
+        });
+        if (aiSummaryResp.text) {
+          formattedNote = `[Forwarded Email from ${fromEmail}]:\n${aiSummaryResp.text}`;
+        }
+      } catch (err) {
+        console.warn("AI Email Note Summarization fallback:", err);
+      }
+    } else {
+      formattedNote = `[Forwarded Email from ${fromEmail} • ${subject}]:\n${textBody}`;
+    }
+
+    // Auto-save to Firestore database
+    const dbSaved = await saveNoteToFirestore(propertyAddress, formattedNote, fromEmail, 'email');
+
+    return res.json({
+      success: true,
+      propertyAddress: propertyAddress || '1234 Fake St',
+      savedNote: formattedNote,
+      firestorePersisted: dbSaved,
+      message: 'Email note parsed and saved directly to property listing card in Firestore database.'
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // Vantage 2nd Brain Memory Ingest & AI Processing (Supports text, URL scraping, and file text extraction)

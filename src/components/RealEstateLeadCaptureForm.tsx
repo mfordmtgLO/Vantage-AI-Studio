@@ -114,6 +114,7 @@ export const RealEstateLeadCaptureForm: React.FC<RealEstateLeadCaptureFormProps>
   const [tourRequested, setTourRequested] = useState(false);
   const [preferredTourDate, setPreferredTourDate] = useState('');
   const [preferredTourTime, setPreferredTourTime] = useState('Afternoon (1pm - 4pm)');
+  const [selfInputCreditScore, setSelfInputCreditScore] = useState<number>(680);
   const [notesAndQuestions, setNotesAndQuestions] = useState(initialNote);
 
   // Status & AI Triage Modal State
@@ -501,8 +502,8 @@ export const RealEstateLeadCaptureForm: React.FC<RealEstateLeadCaptureFormProps>
               </div>
             </div>
 
-            {/* Preferred Contact Method & Pre-Approval Status */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+            {/* Preferred Contact Method, Timeframe, Pre-Approval & Self-Input Credit Score */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-1">
               <div>
                 <label className="text-[11px] font-bold text-slate-400 block mb-1">
                   Preferred Contact Method
@@ -548,6 +549,63 @@ export const RealEstateLeadCaptureForm: React.FC<RealEstateLeadCaptureFormProps>
                   <option value="not_sure">Not Sure / Want Guidance</option>
                   <option value="cash_buyer">Cash Buyer</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-slate-400 block mb-1 flex items-center justify-between">
+                  <span>Estimated Credit Score</span>
+                  <span className="text-[9.5px] text-teal-400 font-mono font-bold">{selfInputCreditScore} FICO</span>
+                </label>
+                <input
+                  type="number"
+                  min={580}
+                  max={850}
+                  step={5}
+                  value={selfInputCreditScore}
+                  onChange={(e) => setSelfInputCreditScore(Number(e.target.value))}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white font-mono focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  placeholder="e.g. 680"
+                />
+              </div>
+            </div>
+
+            {/* Credit Score Program Minimum Qualification Indicator Strip */}
+            <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-[10px] space-y-1">
+              <span className="text-slate-400 font-bold block uppercase tracking-wider text-[9px]">
+                Program Minimum FICO Threshold Check (Based on {selfInputCreditScore} FICO):
+              </span>
+              <div className="flex flex-wrap gap-1.5 font-mono text-[9.5px] font-bold">
+                <span className={`px-2 py-0.5 rounded border ${
+                  selfInputCreditScore >= 660
+                    ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40'
+                    : 'bg-rose-950/80 text-rose-300 border-rose-500/40'
+                }`}>
+                  {selfInputCreditScore >= 660 ? '✓' : '✕'} Lakeview 100% DPA (Min 660)
+                </span>
+
+                <span className={`px-2 py-0.5 rounded border ${
+                  selfInputCreditScore >= 620
+                    ? 'bg-teal-950/80 text-teal-300 border-teal-500/40'
+                    : 'bg-rose-950/80 text-rose-300 border-rose-500/40'
+                }`}>
+                  {selfInputCreditScore >= 620 ? '✓' : '✕'} FirstHome OHCS (Min 620)
+                </span>
+
+                <span className={`px-2 py-0.5 rounded border ${
+                  selfInputCreditScore >= 620
+                    ? 'bg-blue-950/80 text-blue-300 border-blue-500/40'
+                    : 'bg-rose-950/80 text-rose-300 border-rose-500/40'
+                }`}>
+                  {selfInputCreditScore >= 620 ? '✓' : '✕'} NHF DPA (Min 620)
+                </span>
+
+                <span className={`px-2 py-0.5 rounded border ${
+                  selfInputCreditScore >= 680
+                    ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40'
+                    : 'bg-rose-950/80 text-rose-300 border-rose-500/40'
+                }`}>
+                  {selfInputCreditScore >= 680 ? '✓' : '✕'} USDA RD 100% (Min 680)
+                </span>
               </div>
             </div>
           </div>

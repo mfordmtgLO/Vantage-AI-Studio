@@ -47,8 +47,30 @@ export const ProfileCardsAdminPortal: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
 
-  // Modal State for Adding New Profile Card
+  // Modal State for Adding & Editing Profile Card
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingAgent, setEditingAgent] = useState<AgentProfileCard | null>(null);
+  const [editingLo, setEditingLo] = useState<LoanOfficerProfileCard | null>(null);
+
+  const handleSaveEditAgent = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAgent) return;
+    const updated = ProfileCardSyncService.saveAgent(editingAgent);
+    setAgents(updated);
+    setSyncNotice(`✓ Successfully updated ${editingAgent.name}'s contact profile card!`);
+    setEditingAgent(null);
+    setTimeout(() => setSyncNotice(null), 4000);
+  };
+
+  const handleSaveEditLo = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingLo) return;
+    const updated = ProfileCardSyncService.saveLoanOfficer(editingLo);
+    setLoanOfficers(updated);
+    setSyncNotice(`✓ Successfully updated ${editingLo.name}'s contact profile card!`);
+    setEditingLo(null);
+    setTimeout(() => setSyncNotice(null), 4000);
+  };
   const [addCardType, setAddCardType] = useState<'lo' | 'agent'>('lo');
   const [newCardName, setNewCardName] = useState('');
   const [newCardNumber, setNewCardNumber] = useState(''); // NMLS or License
@@ -529,6 +551,15 @@ export const ProfileCardsAdminPortal: React.FC = () => {
                         <span>Verified Pair</span>
                       </span>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => setEditingAgent(agent)}
+                      className="p-1.5 rounded-lg bg-slate-950 hover:bg-emerald-950 text-slate-400 hover:text-emerald-300 border border-slate-800 transition cursor-pointer flex items-center gap-1 text-[11px] font-bold"
+                      title="Edit Agent Contact Info"
+                    >
+                      <Edit className="w-3.5 h-3.5" />
+                      <span>Edit</span>
+                    </button>
                     <button
                       type="button"
                       onClick={() => handleDeleteAgent(agent.id)}
@@ -1016,6 +1047,112 @@ export const ProfileCardsAdminPortal: React.FC = () => {
               >
                 Save Profile Card
               </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT REALTOR / AGENT PROFILE CARD MODAL */}
+      {editingAgent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-slate-900 border border-emerald-500/40 rounded-3xl max-w-lg w-full p-5 space-y-4 shadow-2xl relative text-xs text-slate-100">
+            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Edit className="w-4 h-4 text-emerald-400" />
+                <h3 className="text-sm font-bold text-white">Edit Realtor Contact Profile: {editingAgent.name}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingAgent(null)}
+                className="p-1 rounded-lg bg-slate-800 text-slate-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditAgent} className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-slate-400 font-bold block mb-1">Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingAgent.name}
+                    onChange={(e) => setEditingAgent({ ...editingAgent, name: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-emerald-500 font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-slate-400 font-bold block mb-1">License Number</label>
+                  <input
+                    type="text"
+                    value={editingAgent.licenseNumber}
+                    onChange={(e) => setEditingAgent({ ...editingAgent, licenseNumber: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-emerald-500 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-slate-400 font-bold block mb-1">Brokerage / Firm</label>
+                  <input
+                    type="text"
+                    value={editingAgent.brokerage}
+                    onChange={(e) => setEditingAgent({ ...editingAgent, brokerage: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-slate-400 font-bold block mb-1">Title</label>
+                  <input
+                    type="text"
+                    value={editingAgent.title}
+                    onChange={(e) => setEditingAgent({ ...editingAgent, title: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-slate-400 font-bold block mb-1">Email Address *</label>
+                  <input
+                    type="email"
+                    required
+                    value={editingAgent.email}
+                    onChange={(e) => setEditingAgent({ ...editingAgent, email: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-emerald-300 outline-none focus:border-emerald-500 font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-slate-400 font-bold block mb-1">Mobile Cell Phone *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingAgent.phone}
+                    onChange={(e) => setEditingAgent({ ...editingAgent, phone: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-amber-300 outline-none focus:border-emerald-500 font-mono font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setEditingAgent(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black transition cursor-pointer shadow-lg shadow-emerald-600/30 flex items-center gap-1.5"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Update Kanndice Profile</span>
+                </button>
+              </div>
             </form>
           </div>
         </div>
