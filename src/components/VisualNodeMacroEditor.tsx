@@ -261,7 +261,7 @@ export const VisualNodeMacroEditor: React.FC<VisualNodeMacroEditorProps> = ({
   const handleCopyJson = () => {
     navigator.clipboard.writeText(JSON.stringify(activeMacro, null, 2));
     setCopiedJson(true);
-    setTimeout(() => setCopiedJson(null), 2000);
+    setTimeout(() => setCopiedJson(false), 2000);
   };
 
   return (

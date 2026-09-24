@@ -22,8 +22,259 @@ import {
   MortgageLoanEligibilityService,
   mortgageEligibilityService
 } from './mortgageLoanEligibilityService';
+import { OREGON_2026_CONFORMING_LOAN_LIMITS } from '../types/mortgageLoanProducts';
+import {
+  resolveOregonCountyFannieMaeAmi,
+  evaluateLakeviewNationalIncomeEligibility,
+  OREGON_36_COUNTIES_FANNIE_AMI,
+  FANNIE_MAE_SCHEDULE_CONSTANTS,
+  OregonCountyFannieMaeAmiData,
+  LakeviewIncomeCheckResult,
+  getOregonCountyOhcsData,
+  evaluateOhcsFlexFirstHomeIncomeEligibility,
+  OHCS_FLEX_SCHEDULE_CONSTANTS,
+  OhcsCountyIncomeData,
+  OhcsIncomeCheckResult,
+  getOregonCountyUsdaRdData,
+  evaluateUsdaRdIncomeEligibility,
+  USDA_RD_SCHEDULE_CONSTANTS,
+  UsdaRdCountyIncomeData,
+  UsdaRdIncomeCheckResult,
+  NHF_PROGRAM_CONSTANTS,
+  FHA_HUD_SCHEDULE_CONSTANTS,
+  getOregonCountyFhaHudData,
+  evaluateNhfDpaEligibility,
+  NhfCountyProgramData,
+  NhfEvaluationResult
+} from '../data/oregonFannieMaeCountyAmi';
 
-export { MortgageLoanEligibilityService, mortgageEligibilityService };
+export {
+  MortgageLoanEligibilityService,
+  mortgageEligibilityService,
+  OREGON_2026_CONFORMING_LOAN_LIMITS,
+  resolveOregonCountyFannieMaeAmi,
+  evaluateLakeviewNationalIncomeEligibility,
+  OREGON_36_COUNTIES_FANNIE_AMI,
+  FANNIE_MAE_SCHEDULE_CONSTANTS,
+  getOregonCountyOhcsData,
+  evaluateOhcsFlexFirstHomeIncomeEligibility,
+  OHCS_FLEX_SCHEDULE_CONSTANTS,
+  getOregonCountyUsdaRdData,
+  evaluateUsdaRdIncomeEligibility,
+  USDA_RD_SCHEDULE_CONSTANTS,
+  NHF_PROGRAM_CONSTANTS,
+  FHA_HUD_SCHEDULE_CONSTANTS,
+  getOregonCountyFhaHudData,
+  evaluateNhfDpaEligibility
+};
+export type {
+  OregonCountyFannieMaeAmiData,
+  LakeviewIncomeCheckResult,
+  OhcsCountyIncomeData,
+  OhcsIncomeCheckResult,
+  UsdaRdCountyIncomeData,
+  UsdaRdIncomeCheckResult,
+  NhfCountyProgramData,
+  NhfEvaluationResult
+};
+
+/**
+ * Returns the 2026 Fannie Mae Conforming Loan Limit for Oregon based on property unit count.
+ * Note: All 36 counties in Oregon share the exact same baseline conforming loan limits for 2026.
+ * (No designated high-cost loan areas in Oregon for 2026 per Fannie Mae and FHFA guidelines).
+ */
+export function getOregon2026ConformingLoanLimit(unitCount: 1 | 2 | 3 | 4 = 1): number {
+  switch (unitCount) {
+    case 2:
+      return OREGON_2026_CONFORMING_LOAN_LIMITS.twoUnit; // $1,066,250
+    case 3:
+      return OREGON_2026_CONFORMING_LOAN_LIMITS.threeUnit; // $1,288,800
+    case 4:
+      return OREGON_2026_CONFORMING_LOAN_LIMITS.fourUnit; // $1,601,750
+    case 1:
+    default:
+      return OREGON_2026_CONFORMING_LOAN_LIMITS.oneUnit; // $832,750
+  }
+}
+
+export interface OregonLakeviewNationalEvaluation {
+  isEligible: boolean;
+  isProgramActive: boolean;
+  statewideOregonEligible: boolean;
+  unitCount: 1 | 2 | 3 | 4;
+  propertyType?: string;
+  occupancyType?: string;
+  isStickBuilt?: boolean;
+  isPrimaryResidence?: boolean;
+  conformingLoanLimitUsd: number;
+  isWithinConformingLimit: boolean;
+  propertyPrice: number;
+  calculatedFirstMortgageUsd: number;
+  maxDpaGrantPercent: number;
+  estimatedGrantAmountUsd: number;
+  effectiveRequiredDownPaymentUsd: number;
+  minFicoRequired: number;
+  maxAmiPercentage: number;
+  countyName?: string;
+  countyBaseAmiUsd?: number;
+  countyAmi140CapUsd?: number;
+  disqualificationReasons: string[];
+  guidelineNotes: string;
+  scheduleUpdateNotes?: string;
+}
+
+/**
+ * Evaluates property & borrower eligibility for Lakeview National in Oregon.
+ * All census tracts, cities, and all 36 counties in OR are eligible.
+ *
+ * Program Eligibility Criteria:
+ * - Must be strictly 1-Unit property only (No multi-units allowed).
+ * - Must be Primary Residence owner-occupied (No second homes or investment properties).
+ * - Must be stick-built Single Family Residence (SFR), Planned Unit Development (PUD), or Condominium (No manufactured homes).
+ * - Maximum loan amount strictly follows Fannie Mae 2026 Oregon 1-Unit Conforming Loan Limit ($832,750).
+ *   (All 36 Oregon counties share the same $832,750 baseline conforming limit; no designated high-cost areas in OR for 2026 per FHFA).
+ * - All borrowers' combined annualized gross income must be 140% or less of Fannie Mae Area Median Income (AMI) per county.
+ *   (Fannie Mae updates AMI schedules annually by 12/1 and Max Loan Limit schedules annually by 7/1).
+ */
+export function evaluateOregonLakeviewNationalEligibility(params: {
+  price: number;
+  state?: string;
+  county?: string;
+  city?: string;
+  address?: string;
+  fipsGeoId?: string;
+  unitCount?: 1 | 2 | 3 | 4;
+  creditScore?: number;
+  grossAnnualIncome?: number;
+  areaMedianIncomeUsd?: number;
+  isTargetedCensusTract?: boolean;
+  propertyType?: string;
+  occupancyType?: string;
+  isPrimaryResidence?: boolean;
+  isStickBuilt?: boolean;
+  isProgramActive?: boolean;
+}): OregonLakeviewNationalEvaluation {
+  const {
+    price,
+    state = 'OR',
+    county,
+    city,
+    address,
+    fipsGeoId,
+    unitCount = 1,
+    creditScore = 650,
+    grossAnnualIncome = 0,
+    areaMedianIncomeUsd,
+    isTargetedCensusTract = false,
+    propertyType = 'Single Family',
+    occupancyType = 'Primary',
+    isPrimaryResidence = true,
+    isStickBuilt = true,
+    isProgramActive = true
+  } = params;
+
+  const conformingLimit = getOregon2026ConformingLoanLimit(1); // Lakeview only permits 1-Unit ($832,750)
+  const disqualificationReasons: string[] = [];
+
+  // Resolve county Fannie Mae AMI schedule
+  const countyAmiData = resolveOregonCountyFannieMaeAmi(county || fipsGeoId || city || address);
+  const effectiveBaseAmi = areaMedianIncomeUsd && areaMedianIncomeUsd > 0 ? areaMedianIncomeUsd : countyAmiData.baseAmiUsd;
+  const effectiveAmi140Cap = Math.round(effectiveBaseAmi * 1.40);
+
+  // 1. Statewide Oregon Eligibility Check: All census tracts, cities, and counties in OR are eligible.
+  const isOregon = state.toUpperCase() === 'OR';
+
+  // 2. Unit Count Requirement: Strictly 1-Unit Only (No Multi-Units)
+  if (unitCount > 1) {
+    disqualificationReasons.push(
+      `Lakeview National strictly requires a 1-Unit property. Multi-unit properties (${unitCount}-Unit) are not permitted.`
+    );
+  }
+
+  // 3. Occupancy Requirement: Strictly Primary Residence Only
+  if (occupancyType && occupancyType.toLowerCase() !== 'primary') {
+    disqualificationReasons.push(
+      `Lakeview National requires a Primary Residence. Occupancy type "${occupancyType}" is not eligible.`
+    );
+  } else if (isPrimaryResidence === false) {
+    disqualificationReasons.push(
+      'Lakeview National requires 1-Unit Primary Residence owner-occupancy (second homes and investment properties not permitted).'
+    );
+  }
+
+  // 4. Property Type Requirement: Stick-built SFR, PUD, or Condominium ONLY (No Manufactured Homes)
+  const normalizedPropType = (propertyType || '').toLowerCase();
+  const isManufactured = normalizedPropType.includes('manufactured') || normalizedPropType.includes('mobile') || isStickBuilt === false;
+  const isMultiUnitType = normalizedPropType.includes('multi') || normalizedPropType.includes('duplex') || normalizedPropType.includes('triplex') || normalizedPropType.includes('fourplex');
+
+  if (isManufactured) {
+    disqualificationReasons.push(
+      'Lakeview National requires a stick-built SFR, PUD, or Condominium. Manufactured and mobile homes are not permitted.'
+    );
+  } else if (isMultiUnitType) {
+    disqualificationReasons.push(
+      'Lakeview National does not allow multi-family or multi-unit properties.'
+    );
+  }
+
+  // 5. Conforming Loan Limit Check: 2026 Fannie Mae Oregon 1-Unit limit ($832,750)
+  const calculatedFirstMortgage = Math.round(price * 0.965);
+  const isWithinConformingLimit = calculatedFirstMortgage <= conformingLimit && price <= conformingLimit * 1.035;
+
+  if (isProgramActive && !isWithinConformingLimit) {
+    disqualificationReasons.push(
+      `Loan amount / purchase price ($${price.toLocaleString()}) exceeds the 2026 Fannie Mae Oregon 1-Unit Conforming Loan Limit of $${conformingLimit.toLocaleString()}. (All 36 OR counties share this baseline limit with no high-cost exceptions per FHFA).`
+    );
+  }
+
+  // 6. Minimum FICO check: Lakeview National requires 660+ FICO
+  if (creditScore < 660) {
+    disqualificationReasons.push(`FICO score (${creditScore}) is below Lakeview National minimum requirement of 660.`);
+  }
+
+  // 7. 140% Area Median Income (AMI) Check per County
+  // All borrowers combined annualized income must be 140% or less of Fannie Mae AMI per county
+  if (isProgramActive && grossAnnualIncome > 0 && effectiveAmi140Cap > 0) {
+    if (grossAnnualIncome > effectiveAmi140Cap && !isTargetedCensusTract) {
+      disqualificationReasons.push(
+        `All borrowers combined annualized income ($${grossAnnualIncome.toLocaleString()}) exceeds 140% Fannie Mae Area Median Income (AMI) limit ($${effectiveAmi140Cap.toLocaleString()}) for ${countyAmiData.countyName} County. (Fannie Mae updates AMI schedule annually by 12/1 and max loan limits annually by 7/1).`
+      );
+    }
+  }
+
+  const isEligible = disqualificationReasons.length === 0;
+  const maxDpaGrantPercent = creditScore >= 660 ? 5.0 : 3.5;
+  const rawGrant = Math.round((price * maxDpaGrantPercent) / 100);
+  const estimatedGrantAmountUsd = Math.min(25000, rawGrant); // $25k DPA cap
+
+  return {
+    isEligible,
+    isProgramActive,
+    statewideOregonEligible: isOregon,
+    unitCount,
+    propertyType,
+    occupancyType,
+    isStickBuilt: !isManufactured,
+    isPrimaryResidence,
+    conformingLoanLimitUsd: conformingLimit,
+    isWithinConformingLimit,
+    propertyPrice: price,
+    calculatedFirstMortgageUsd: calculatedFirstMortgage,
+    maxDpaGrantPercent,
+    estimatedGrantAmountUsd,
+    effectiveRequiredDownPaymentUsd: Math.max(0, Math.round(price * 0.035) - estimatedGrantAmountUsd),
+    minFicoRequired: 660,
+    maxAmiPercentage: 140,
+    countyName: countyAmiData.countyName,
+    countyBaseAmiUsd: effectiveBaseAmi,
+    countyAmi140CapUsd: effectiveAmi140Cap,
+    disqualificationReasons,
+    guidelineNotes: isProgramActive
+      ? `Lakeview National 100% DPA is active across all 36 Oregon counties with 2026 Fannie Mae Conforming Limit of $${conformingLimit.toLocaleString()} (1-Unit stick-built SFR/PUD/Condo primary residence only; Max 140% County AMI: $${effectiveAmi140Cap.toLocaleString()}). Fannie Mae updates AMI annually by 12/1 and Loan Limits annually by 7/1.`
+      : `Lakeview National program filter is TOGGLED OFF. Income and conforming loan limit caps are bypassed.`,
+    scheduleUpdateNotes: FANNIE_MAE_SCHEDULE_CONSTANTS.FANNIE_SCHEDULE_NOTE
+  };
+}
 
 /**
  * Monthly P&I calculation
@@ -410,6 +661,7 @@ export function getOregonOhcsPurchasePriceLimit(fipsCode: string, isTargetedArea
 
 export interface OhcsFlexFirstHomeEvaluationResult {
   isEligible: boolean;
+  isProgramActive: boolean;
   grantPercent: number; // 4.0% standard or 5.0% LMI/Targeted
   grantAmountUsd: number; // Calculated on 1st mortgage amount (96.5% LTV)
   firstMortgageAmountUsd: number;
@@ -438,15 +690,18 @@ export function evaluateOregonOhcsFlexFirstHomeEligibility(property: {
   isVeteranBorrower?: boolean;
   ownsOtherRealEstate?: boolean;
   dtiPercent?: number;
+  isProgramActive?: boolean;
 }): OhcsFlexFirstHomeEvaluationResult {
   const fips = property.fipsGeoId || property.geoid || '41051001202';
   const isOregon = isOregonStateAndCounty(fips, property.state);
+  const isProgramActive = property.isProgramActive ?? true;
   const disqualificationReasons: string[] = [];
 
   if (!isOregon) {
     disqualificationReasons.push('OHCS Flex Lending FirstHome is exclusively available for Oregon real estate.');
     return {
       isEligible: false,
+      isProgramActive,
       grantPercent: 0,
       grantAmountUsd: 0,
       firstMortgageAmountUsd: 0,
@@ -496,15 +751,15 @@ export function evaluateOregonOhcsFlexFirstHomeEligibility(property: {
 
   // 5. County Purchase Price Cap Check
   const priceLimit = getOregonOhcsPurchasePriceLimit(fips, isLmi);
-  const isWithinPriceLimit = property.price <= priceLimit;
-  if (!isWithinPriceLimit) {
+  const isWithinPurchasePriceLimit = property.price <= priceLimit;
+  if (isProgramActive && !isWithinPurchasePriceLimit) {
     disqualificationReasons.push(`Property price ($${property.price.toLocaleString()}) exceeds the OHCS county limit ($${priceLimit.toLocaleString()}).`);
   }
 
   // 6. County Household Income Limit Check (1-2 persons vs 3+ persons)
   const incomeLimit = getOregonOhcsIncomeLimit(fips, hhSize, isLmi);
   const isWithinIncomeLimit = income === 0 || income <= incomeLimit;
-  if (!isWithinIncomeLimit) {
+  if (isProgramActive && !isWithinIncomeLimit) {
     disqualificationReasons.push(`Annual household income ($${income.toLocaleString()}) exceeds OHCS limit ($${incomeLimit.toLocaleString()}) for household size ${hhSize} in county.`);
   }
 
@@ -519,6 +774,7 @@ export function evaluateOregonOhcsFlexFirstHomeEligibility(property: {
 
   return {
     isEligible,
+    isProgramActive,
     grantPercent,
     grantAmountUsd,
     firstMortgageAmountUsd: firstMortgageAmount,

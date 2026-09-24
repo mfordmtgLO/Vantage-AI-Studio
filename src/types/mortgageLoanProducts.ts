@@ -11,7 +11,8 @@ export type MortgageProductCategory =
   | 'State HFA'
   | 'Government 0-Down'
   | 'Conventional Specialty'
-  | 'Portfolio CRA Grant';
+  | 'Portfolio CRA Grant'
+  | 'Tax Credit / MCC';
 
 export type DpaAssistanceType = 
   | 'Forgivable Grant'
@@ -19,6 +20,22 @@ export type DpaAssistanceType =
   | 'Deferred Repayable 2nd'
   | 'Closing Cost Subsidy'
   | 'Matched Savings Grant';
+
+/**
+ * 2026 Fannie Mae & FHFA Oregon Conforming Loan Limits
+ * All 36 counties in Oregon share the exact same baseline conforming loan limits for 2026.
+ * There are no designated high-cost loan areas in Oregon for 2026.
+ */
+export const OREGON_2026_CONFORMING_LOAN_LIMITS = {
+  year: 2026,
+  state: 'OR',
+  hasHighCostAreas: false,
+  oneUnit: 832750,
+  twoUnit: 1066250,
+  threeUnit: 1288800,
+  fourUnit: 1601750,
+  notes: 'All 36 counties in Oregon share the exact same baseline conforming loan limits for 2026 per Fannie Mae and FHFA guidelines (No designated high-cost loan areas in OR).'
+} as const;
 
 export interface MortgageLoanProduct {
   id: string;
@@ -39,6 +56,7 @@ export interface MortgageLoanProduct {
   underwritingGuidelines: string[];
   requiredDocumentation: string[];
   isFeaturedSpecialtyProduct?: boolean;
+  maxConformingLoanLimit2026?: number;
 }
 
 export interface BuyerEligibilityCheckInput {
@@ -55,6 +73,11 @@ export interface BuyerEligibilityCheckInput {
   ownsOtherRealEstate?: boolean; // Default false (Prohibited in OHCS Flex Lending)
   countyFipsOrName?: string; // e.g. '41051' or 'Multnomah'
   dtiPercent?: number; // e.g. 43.5%
+  propertyUnitCount?: 1 | 2 | 3 | 4; // Default 1-Unit
+  propertyType?: 'Single Family' | 'Townhouse' | 'Condo' | 'SFR' | 'PUD' | 'Manufactured' | 'Multi-Family' | 'MultiUnit' | string;
+  occupancyType?: 'Primary' | 'Secondary' | 'Investment' | string;
+  isStickBuilt?: boolean;
+  isPrimaryResidence?: boolean;
 }
 
 export interface BuyerEligibilityProductResult {
@@ -69,4 +92,6 @@ export interface BuyerEligibilityProductResult {
   countyIncomeLimitUsd?: number;
   grantPercentApplied?: number;
   isForgivableDpa?: boolean;
+  conformingLoanLimitUsd?: number;
+  isWithinConformingLimit?: boolean;
 }

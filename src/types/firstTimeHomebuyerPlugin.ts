@@ -36,6 +36,7 @@ export interface SyncedPropertyListing {
   zipCode: string;
   county?: string;
   geoid: string;
+  fipsGeoId?: string;
   coordinates: GeoCoordinate;
   price: number;
   originalPrice?: number;
@@ -71,6 +72,7 @@ export interface BuyerDtiProfile {
   grossMonthlyIncome: number;
   totalMonthlyDebtObligations: number;
   availableDownPayment: number;
+  creditScore?: number; // Default: 680 (interactive FICO slider)
   targetInterestRate: number; // e.g., 6.25
   loanTermYears: number; // 30
   maxBackEndDtiPercent: number; // Default: 50.0%

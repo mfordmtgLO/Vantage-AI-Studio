@@ -516,7 +516,7 @@ Vantage AI Studio Integrated Workspace
             {/* Career Persona Badge */}
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-purple-950/60 to-indigo-950/60 border border-purple-500/30 text-purple-300">
               <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
-              <span>{currentProfile.activePersonaBadge || 'Mortgage Loan Officer & Real Estate Broker'}</span>
+              <span>{(currentProfile as any).activePersonaBadge || currentProfile.industryName || 'Mortgage Loan Officer & Real Estate Broker'}</span>
             </div>
           </div>
 
@@ -855,9 +855,7 @@ Vantage AI Studio Integrated Workspace
         {/* --- VIEWPORT 1: GMAIL & SMART INBOX --- */}
         {selectedApp === 'gmail' && (
           <div className="space-y-4">
-            <ExecutiveSmartInboxStudio
-              onOpenDraftsModal={() => setSelectedApp('drafts')}
-            />
+            <ExecutiveSmartInboxStudio />
           </div>
         )}
 

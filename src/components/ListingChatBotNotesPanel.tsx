@@ -34,7 +34,20 @@ import {
 } from 'lucide-react';
 import { SyncedPropertyListing, BuyerDtiProfile, BuyerPrequalificationResult } from '../types/firstTimeHomebuyerPlugin';
 import mortgageEligibilityService from '../services/mortgageEligibility';
-import { calculateMonthlyPI, formatUSD } from '../services/geomapMortgageEngine';
+import {
+  calculateMonthlyPI,
+  formatUSD,
+  resolveOregonCountyFannieMaeAmi,
+  evaluateLakeviewNationalIncomeEligibility,
+  evaluateOregonLakeviewNationalEligibility,
+  evaluateOregonOhcsFlexFirstHomeEligibility,
+  evaluateUsdaRdIncomeEligibility,
+  FANNIE_MAE_SCHEDULE_CONSTANTS,
+  OHCS_FLEX_SCHEDULE_CONSTANTS,
+  USDA_RD_SCHEDULE_CONSTANTS,
+  evaluateNhfDpaEligibility,
+  NHF_PROGRAM_CONSTANTS
+} from '../services/geomapMortgageEngine';
 import { useAccountPathway } from '../context/AccountPathwayContext';
 import { ListingNotesProfileFooter } from './ListingNotesProfileFooter';
 
@@ -195,39 +208,139 @@ export const ListingChatBotNotesPanel: React.FC<ListingChatBotNotesPanelProps> =
              `• **Combined with DPA**: When stacked with Lakeview 100% or OHCS FirstHome ($15.4k), seller contributions can result in a **True $0 Out-of-Pocket Closing**!`;
     }
 
-    if (lower.includes('lakeview') || lower.includes('100%')) {
-      const lakeviewAmount = special.lakeviewGrantAmountUsd || Math.round(price * 0.035);
-      return `🏞️ **Lakeview National 100% DPA Analysis**:\n` +
-             `• Program LTV: 100% financing (FHA 1st + soft 2nd DPA)\n` +
-             `• Estimated Assistance: ${formatUSD(lakeviewAmount)} (${special.lakeviewNationalDpaEligible ? 'Eligible' : 'Check FICO 620 requirement'})\n` +
-             `• Required Down Payment from Buyer: $0\n` +
-             `• Guideline: No 1st-time homebuyer restriction in non-targeted areas. Minimum credit score is 620 FICO.`;
+    if (lower.includes('credit') || lower.includes('fico') || lower.includes('score')) {
+      const buyerFico = buyerProfile.creditScore || 680;
+      return `💳 **Program Minimum Credit Score (FICO) Requirements**:\n\n` +
+             `• **Lakeview National 100% DPA**: **660+ FICO** (${buyerFico >= 660 ? '✓ Your score meets threshold' : `⚠️ Your score ${buyerFico} is below 660 min`})\n` +
+             `• **FirstHome (OHCS Flex Lending)**: **620+ FICO** (${buyerFico >= 620 ? '✓ Your score meets threshold' : `⚠️ Your score ${buyerFico} is below 620 min`})\n` +
+             `• **National Homebuyers Fund (NHF DPA)**: **620+ FICO** (${buyerFico >= 620 ? '✓ Your score meets threshold' : `⚠️ Your score ${buyerFico} is below 620 min`})\n` +
+             `• **USDA Rural Development (100% Zero-Down)**: **680+ FICO** (${buyerFico >= 680 ? '✓ Your score meets threshold' : `⚠️ Your score ${buyerFico} is below 680 min`})\n\n` +
+             `💡 You can self-input your credit score or adjust the FICO slider in the LO Underwriting Deck to test program eligibility in real time!`;
     }
 
-    if (lower.includes('ohcs') || lower.includes('oregon')) {
-      const ohcsAmount = special.ohcsGrantAmountUsd || Math.round(price * 0.04);
-      return `🌲 **OHCS Flex Lending FirstHome Analysis**:\n` +
-             `• Program Status: ${special.ohcsFlexLendingFirstHomeEligible ? 'Eligible in Oregon' : 'Available statewide across Oregon'}\n` +
-             `• Cash Grant Assistance: ${formatUSD(ohcsAmount)} (3.5% - 5.0% of loan amount)\n` +
-             `• Minimum FICO: 640\n` +
-             `• Note: Can be paired with competitive Oregon HFA fixed 1st mortgage rates.`;
-    }
-
-    if (lower.includes('usda') || lower.includes('rural')) {
-      const usdaEval = mortgageEligibilityService.prescreenUsdaRuralZone(property, {
+    if (lower.includes('lakeview') || lower.includes('100%') || lower.includes('ami') || lower.includes('income limit')) {
+      const countyData = resolveOregonCountyFannieMaeAmi(property.county || property.fipsGeoId || property.city || property.formattedAddress);
+      const lakeviewEval = evaluateOregonLakeviewNationalEligibility({
+        price: property.price,
+        state: property.state,
+        county: property.county,
+        city: property.city,
+        address: property.formattedAddress,
+        fipsGeoId: property.fipsGeoId || property.geoid,
+        propertyType: property.propertyType,
         grossAnnualIncome: annualIncome,
-        creditScore: 680,
-        areaMedianIncomeUsd: 92000,
-        propertyState: property.state || 'OR',
-        propertyPrice: price,
-        liquidDownPayment: buyerProfile.availableDownPayment,
-        isTargetedCensusTract: Boolean(special.lmiCraGrantEligible)
+        isPrimaryResidence: true,
+        isStickBuilt: property.propertyType !== 'Manufactured'
       });
-      return `🌾 **USDA 100% Rural Development Pre-Screen**:\n` +
-             `• Zone Status: ${usdaEval.isUsdaZoneEligible ? '✓ Property is located inside eligible USDA rural boundaries' : 'Outside USDA designated zone'}\n` +
-             `• Income Limit: ${formatUSD(usdaEval.maxUsdaIncomeCapUsd)} (115% AMI)\n` +
-             `• Buyer Down Payment: $0 Required\n` +
-             `• Details: ${usdaEval.reason}`;
+
+      const incomeStatus = annualIncome <= countyData.ami140CapUsd
+        ? `✓ Your combined annualized income (${formatUSD(annualIncome)}) meets the 140% Fannie Mae AMI cap (${formatUSD(countyData.ami140CapUsd)}) for ${countyData.countyName} County.`
+        : `✕ Current combined income (${formatUSD(annualIncome)}) exceeds the 140% AMI cap (${formatUSD(countyData.ami140CapUsd)}) for ${countyData.countyName} County. (Adjust income slider in LO dashboard if co-borrower incomes differ).`;
+
+      return `🏞️ **Lakeview National 100% DPA & County AMI Analysis**:\n` +
+             `• **Eligibility Status**: ${lakeviewEval.isEligible ? '✓ 100% Eligible for $0 Down Financing' : '⚠️ Ineligible for this property / income profile'}\n` +
+             `• **Subject County**: ${countyData.countyName} County (${countyData.msaName})\n` +
+             `• **Fannie Mae 100% AMI**: ${formatUSD(countyData.baseAmiUsd)} | **140% AMI Cap**: ${formatUSD(countyData.ami140CapUsd)}\n` +
+             `• **Income Check**: ${incomeStatus}\n` +
+             `• **Conforming Loan Limit**: $832,750 (2026 Oregon 1-Unit Conforming Baseline across all 36 counties)\n` +
+             `• **Property Type Rule**: Strictly 1-Unit Primary Residence stick-built SFR, PUD, or Condominium (Manufactured & Multi-Unit ineligible)\n` +
+             `• **Estimated DPA Assistance**: ${formatUSD(lakeviewEval.estimatedGrantAmountUsd)} (Soft 2nd lien)\n` +
+             `• **Fannie Mae Statutory Schedules**: Area Median Income (AMI) updated annually by **12/1**; Maximum Loan Limits updated annually by **7/1**.\n` +
+             (lakeviewEval.disqualificationReasons.length > 0 ? `• **Notes**: ${lakeviewEval.disqualificationReasons.join('; ')}` : '');
+    }
+
+    if (lower.includes('ohcs') || lower.includes('firsthome') || lower.includes('hfa') || lower.includes('flex lending')) {
+      const countyData = resolveOregonCountyFannieMaeAmi(property.county || property.fipsGeoId || property.city || property.formattedAddress);
+      const ohcsEval = evaluateOregonOhcsFlexFirstHomeEligibility({
+        state: property.state,
+        price: property.price,
+        grossAnnualIncome: annualIncome,
+        householdSize: 1,
+        fipsGeoId: property.fipsGeoId || property.geoid,
+        geoid: property.geoid
+      });
+
+      const incomeStatus = ohcsEval.isWithinIncomeLimit
+        ? `✓ Your combined annualized income (${formatUSD(annualIncome)}) meets the OHCS limit (${formatUSD(ohcsEval.householdIncomeLimitUsd)}) for ${countyData.countyName} County.`
+        : `✕ Current combined income (${formatUSD(annualIncome)}) exceeds the OHCS limit (${formatUSD(ohcsEval.householdIncomeLimitUsd)}) for ${countyData.countyName} County. (Check 3+ household size or targeted tract options in LO dashboard).`;
+
+      const priceStatus = ohcsEval.isWithinPurchasePriceLimit
+        ? `✓ Purchase price (${formatUSD(property.price)}) is under the county cap (${formatUSD(ohcsEval.purchasePriceLimitUsd)}).`
+        : `✕ Purchase price (${formatUSD(property.price)}) exceeds the county cap (${formatUSD(ohcsEval.purchasePriceLimitUsd)}).`;
+
+      return `🌲 **OHCS Flex Lending FirstHome (Oregon HFA) Analysis**:\n` +
+             `• **Eligibility Status**: ${ohcsEval.isEligible ? `✓ Eligible for ${ohcsEval.grantPercent}% Cash Assistance DPA` : '⚠️ Ineligible for this property / income profile'}\n` +
+             `• **Subject County**: ${countyData.countyName} County ${ohcsEval.isLmiTargetedArea ? '(🎯 Targeted Census Tract: 5.0% Grant + 3-Yr FTHB Waiver)' : '(Standard Area: 4.0% Grant)'}\n` +
+             `• **Income Limit**: ${formatUSD(ohcsEval.householdIncomeLimitUsd)} (1-2 Persons)\n` +
+             `• **Income Check**: ${incomeStatus}\n` +
+             `• **Purchase Price Cap**: ${formatUSD(ohcsEval.purchasePriceLimitUsd)} (${priceStatus})\n` +
+             `• **Estimated Cash DPA Grant**: ${formatUSD(ohcsEval.grantAmountUsd)} (${ohcsEval.grantPercent}% of 1st Mortgage - No Repayment Required!)\n` +
+             `• **Annual Update Note**: OHCS and eHousingPlus update county income and purchase price schedules annually.\n` +
+             (ohcsEval.disqualificationReasons.length > 0 ? `• **Notes**: ${ohcsEval.disqualificationReasons.join('; ')}` : '');
+    }
+
+    if (lower.includes('usda') || lower.includes('rural') || lower.includes('section 502')) {
+      const isUsdaZone = Boolean(
+        property.specialPrograms?.usdaRural100Financing ||
+        property.specialPrograms?.usdaRuralEligible
+      );
+      const usdaEval = evaluateUsdaRdIncomeEligibility(
+        annualIncome,
+        1,
+        property.county || property.fipsGeoId || property.city || property.formattedAddress,
+        {
+          isUsdaZoneEligible: isUsdaZone,
+          isProgramActive: true
+        }
+      );
+
+      const incomeStatus = usdaEval.isWithinIncomeLimit
+        ? `✓ Your combined annualized household income (${formatUSD(annualIncome)}) meets the USDA limit (${formatUSD(usdaEval.applicableIncomeLimitUsd)}) for 1-4 person households in ${usdaEval.countyName} County.`
+        : `✕ Current combined income (${formatUSD(annualIncome)}) exceeds the USDA limit (${formatUSD(usdaEval.applicableIncomeLimitUsd)}) for 1-4 person households in ${usdaEval.countyName} County. (Note: 5-8 person household limit is ${formatUSD(usdaEval.incomeLimit5to8Usd)}).`;
+
+      const zoneStatus = isUsdaZone
+        ? '✓ Property is located within USDA RD designated rural geographic boundaries.'
+        : '✕ Property is located inside an ineligible metro core boundary (Portland, Salem, Eugene, or Bend core).';
+
+      return `🌾 **USDA Rural Development 100% Guaranteed Financing Pre-Screen**:\n` +
+             `• **Eligibility Status**: ${usdaEval.isEligible ? '✓ 100% Eligible for $0 Down Financing ($0 Required at Close)' : '⚠️ Ineligible for this property / income profile'}\n` +
+             `• **Geographic Zone**: ${zoneStatus}\n` +
+             `• **Subject County**: ${usdaEval.countyName} County\n` +
+             `• **Household Income Limits**: ${formatUSD(usdaEval.incomeLimit1to4Usd)} (1-4 Persons) | ${formatUSD(usdaEval.incomeLimit5to8Usd)} (5-8 Persons)\n` +
+             `• **Income Verification**: ${incomeStatus}\n` +
+             `• **Guarantee Fees**: 1.00% Upfront Guarantee Fee (financed into loan) + 0.35% Annual Guarantee Fee (~$${Math.round((price * 0.0035) / 12)}/mo)\n` +
+             `• **Statutory Update Schedule**: USDA Rural Development updates household income limits annually by **August 1st (8/1)**.\n` +
+             (usdaEval.disqualificationReasons.length > 0 ? `• **Notes**: ${usdaEval.disqualificationReasons.join('; ')}` : '');
+    }
+
+    if (lower.includes('nhf') || lower.includes('national homebuyer') || lower.includes('nhfloan')) {
+      const nhfEval = evaluateNhfDpaEligibility(
+        annualIncome,
+        price,
+        'FHA',
+        property.county || property.fipsGeoId || property.city || property.formattedAddress,
+        {
+          creditScore: 660,
+          isProgramActive: true
+        }
+      );
+
+      const priceStatus = nhfEval.isWithinPurchasePriceLimit
+        ? `✓ Listing price (${formatUSD(price)}) is within the 2026 FHA county purchase price limit (${formatUSD(nhfEval.fhaMaxPurchasePriceLimitUsd)} / max loan: ${formatUSD(nhfEval.fhaMaxLoanLimitUsd)}).`
+        : `✕ Listing price (${formatUSD(price)}) exceeds the 2026 FHA county purchase price cap (${formatUSD(nhfEval.fhaMaxPurchasePriceLimitUsd)}) for ${nhfEval.countyName} County.`;
+
+      return `🇺🇸 **National Homebuyers Fund (NHF) Down Payment Assistance Program**:\n` +
+             `• **Official Programs**: ${NHF_PROGRAM_CONSTANTS.OFFICIAL_URL}\n` +
+             `• **Eligibility Status**: ${nhfEval.isEligible ? `✓ Qualified for up to ${formatUSD(nhfEval.maxEstimatedAssistanceUsd)} DPA Assistance (${nhfEval.maxAssistancePercent}% of loan)` : '⚠️ Criteria check required'}\n` +
+             `• **First-Time Homebuyer Rule**: 🌟 **NO First-Time Homebuyer Requirement** (open to repeat buyers & first-time buyers alike!)\n` +
+             `• **Loan Types Supported**: FHA (covers full 3.5% down payment), Conventional, VA, and USDA Rural Development\n` +
+             `• **2026 FHA Purchase Price Limit**: ${formatUSD(nhfEval.fhaMaxPurchasePriceLimitUsd)} in ${nhfEval.countyName} County (${priceStatus})\n` +
+             `• **140% AMI County Income Cap**: ${formatUSD(nhfEval.applicableIncomeLimitUsd)} (Your income: ${formatUSD(annualIncome)})\n` +
+             `• **Assistance Options**: Non-repayable gift / grant, forgivable soft 2nd, or 0% interest deferred subordinate lien\n` +
+             `• **Net Out-of-Pocket Down Payment**: ${formatUSD(nhfEval.netOutOfPocketDownPaymentUsd)} for FHA\n` +
+             `• **Annual Update Schedule**: HUD and FHA update forward mortgage loan limits and maximum purchase price limits annually on **January 1st (1/1)**.\n` +
+             `• **Organization Track Record**: ${NHF_PROGRAM_CONSTANTS.ORGANIZATION_TYPE} delivering ${NHF_PROGRAM_CONSTANTS.TOTAL_AID_DELIVERED}.\n` +
+             (nhfEval.disqualificationReasons.length > 0 ? `• **Notes**: ${nhfEval.disqualificationReasons.join('; ')}` : '');
     }
 
     if (lower.includes('cra') || lower.includes('lmi') || lower.includes('grant')) {

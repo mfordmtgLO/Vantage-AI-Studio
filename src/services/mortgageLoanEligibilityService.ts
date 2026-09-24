@@ -17,17 +17,48 @@ import {
   checkBuyerProductEligibility
 } from '../data/defaultMortgageLoanProducts';
 import { SyncedPropertyListing } from '../types/firstTimeHomebuyerPlugin';
-import { evaluateOregonOhcsFlexFirstHomeEligibility } from './geomapMortgageEngine';
+import {
+  evaluateOregonOhcsFlexFirstHomeEligibility,
+  resolveOregonCountyFannieMaeAmi,
+  evaluateLakeviewNationalIncomeEligibility,
+  evaluateUsdaRdIncomeEligibility,
+  getOregonCountyUsdaRdData,
+  USDA_RD_SCHEDULE_CONSTANTS,
+  evaluateNhfDpaEligibility,
+  NHF_PROGRAM_CONSTANTS
+} from './geomapMortgageEngine';
 
 export interface PropertyDownPaymentEligibility {
   propertyId: string;
   propertyPrice: number;
   qualifiesZeroDownPayment: boolean; // 100% LTV (USDA, Lakeview National, NHF, etc.)
   qualifiesLakeviewNational: boolean;
+  lakeviewCountyName?: string;
+  lakeviewCountyAmiUsd?: number;
+  lakeviewCountyAmi140CapUsd?: number;
+  lakeviewIncomeQualified?: boolean;
+  lakeviewIneligibilityReason?: string;
   qualifiesOhcsFlexLending: boolean;
+  ohcsCountyIncomeCapUsd?: number;
+  ohcsCountyPriceCapUsd?: number;
+  ohcsIncomeQualified?: boolean;
+  ohcsGrantPercent?: number;
+  ohcsGrantAmountUsd?: number;
+  ohcsIneligibilityReason?: string;
   qualifiesUsdaRuralZone: boolean;
+  usdaCountyName?: string;
+  usdaIncomeCapUsd?: number;
+  usdaIncomeQualified?: boolean;
+  usdaIneligibilityReason?: string;
   qualifiesFannieMaeHomeReady: boolean;
   qualifiesNhfFallbackDpa: boolean;
+  nhfCountyName?: string;
+  nhfMaxPurchasePriceCapUsd?: number;
+  nhfMaxLoanLimitUsd?: number;
+  nhfIncomeCapUsd?: number;
+  nhfIncomeQualified?: boolean;
+  nhfPriceQualified?: boolean;
+  nhfIneligibilityReason?: string;
   maxAvailableDpaGrantUsd: number;
   minEffectiveDownPaymentUsd: number;
   matchingProductNames: string[];
@@ -119,30 +150,37 @@ export class MortgageLoanEligibilityService {
       property.specialPrograms.usdaRuralEligible
     );
 
-    let isBuyerIncomeEligible = true;
-    let maxUsdaIncomeCapUsd = 125000;
-
-    if (buyerInput && buyerInput.areaMedianIncomeUsd > 0) {
-      maxUsdaIncomeCapUsd = (buyerInput.areaMedianIncomeUsd * 1.15); // 115% AMI cap
-      isBuyerIncomeEligible = buyerInput.grossAnnualIncome <= maxUsdaIncomeCapUsd;
-    }
-
-    const isEligible = isUsdaZoneEligible && isBuyerIncomeEligible && this.isProductActive('usda_rural_100_guaranteed');
+    const isProgramActive = this.isProductActive('usda_rural_100_guaranteed');
+    const hhCount = buyerInput?.householdSize || 1;
+    const grossIncome = buyerInput?.grossAnnualIncome || 0;
+    const usdaEval = evaluateUsdaRdIncomeEligibility(
+      grossIncome,
+      hhCount,
+      property.county || property.fipsGeoId || property.city || property.formattedAddress,
+      {
+        isUsdaZoneEligible,
+        isProgramActive
+      }
+    );
 
     let reason = 'Qualified USDA RD 100% Rural Financing Zone';
     if (!isUsdaZoneEligible) {
-      reason = 'Property location is outside USDA designated rural geographic boundaries';
-    } else if (!isBuyerIncomeEligible && buyerInput) {
-      reason = `Household income ($${buyerInput.grossAnnualIncome.toLocaleString()}) exceeds USDA 115% AMI limit ($${Math.round(maxUsdaIncomeCapUsd).toLocaleString()})`;
+      reason = 'Property location is outside USDA designated rural geographic boundaries (ineligible metro core)';
+    } else if (!usdaEval.isWithinIncomeLimit && grossIncome > 0) {
+      reason = `Total household income ($${grossIncome.toLocaleString()}) exceeds USDA limit ($${usdaEval.applicableIncomeLimitUsd.toLocaleString()}) for household of ${hhCount} member(s) in ${usdaEval.countyName} County. (USDA updates schedules annually by 8/1).`;
     }
 
     return {
-      isEligible,
+      isEligible: usdaEval.isEligible,
       isUsdaZoneEligible,
-      isBuyerIncomeEligible,
-      maxUsdaIncomeCapUsd: Math.round(maxUsdaIncomeCapUsd),
+      isBuyerIncomeEligible: usdaEval.isWithinIncomeLimit,
+      maxUsdaIncomeCapUsd: usdaEval.applicableIncomeLimitUsd,
+      householdMemberCount: hhCount,
+      householdTierLabel: usdaEval.householdTierLabel,
+      countyName: usdaEval.countyName,
       reason,
-      productName: 'USDA 100% Rural Development Guaranteed'
+      productName: 'USDA 100% Rural Development Guaranteed',
+      scheduleUpdateNotes: usdaEval.scheduleUpdateNotes
     };
   }
 
@@ -184,23 +222,32 @@ export class MortgageLoanEligibilityService {
   }
 
   /**
-   * Universal Fallback Pre-screen: National Homebuyer Fund (NHF) FHA 0% Down DPA
+   * Universal Fallback Pre-screen: National Homebuyer Fund (NHF) Down Payment Assistance
+   * Official programs: https://www.nhfloan.org/programs.html
    */
   public prescreenNationalHomebuyerFund(buyerInput: BuyerEligibilityCheckInput, propertyPrice: number) {
     const isActive = this.isProductActive('nhf_fha_zero_down_dpa');
-    const meetsCredit = buyerInput.creditScore >= 620;
-
-    const isEligible = isActive && meetsCredit;
-    const estimatedGrantUsd = Math.round(propertyPrice * 0.035); // 3.5% default NHF grant
-    const effectiveDownPaymentUsd = Math.max(0, (propertyPrice * 0.035) - estimatedGrantUsd);
+    const nhfEval = evaluateNhfDpaEligibility(
+      buyerInput.grossAnnualIncome,
+      propertyPrice,
+      'FHA',
+      buyerInput.propertyState,
+      {
+        creditScore: buyerInput.creditScore,
+        isProgramActive: isActive
+      }
+    );
 
     return {
-      isEligible,
-      estimatedGrantUsd,
-      effectiveDownPaymentUsd,
-      notes: isEligible
-        ? 'NHF FHA 0% Down DPA available as nationwide fallback option (up to 5% assistance).'
-        : 'Credit score below 620 or NHF product disabled.'
+      isEligible: nhfEval.isEligible,
+      estimatedGrantUsd: nhfEval.maxEstimatedAssistanceUsd,
+      effectiveDownPaymentUsd: nhfEval.netOutOfPocketDownPaymentUsd,
+      applicableIncomeLimitUsd: nhfEval.applicableIncomeLimitUsd,
+      maxAssistancePercent: nhfEval.maxAssistancePercent,
+      officialUrl: nhfEval.officialProgramUrl,
+      notes: nhfEval.isEligible
+        ? `NHF FHA DPA available nationwide (up to 5% assistance, no FTHB requirement). Source: ${nhfEval.officialProgramUrl}`
+        : (nhfEval.disqualificationReason || 'NHF product disabled or criteria not met.')
     };
   }
 
@@ -275,47 +322,134 @@ export class MortgageLoanEligibilityService {
   /**
    * Evaluates down payment requirements for a specific property listing
    */
-  public evaluatePropertyDownPayment(property: SyncedPropertyListing): PropertyDownPaymentEligibility {
+  public evaluatePropertyDownPayment(
+    property: SyncedPropertyListing,
+    borrowerIncomeOrInput?: number | BuyerEligibilityCheckInput
+  ): PropertyDownPaymentEligibility {
     const price = property.price;
     const special = property.specialPrograms;
 
+    // Resolve county and Fannie Mae AMI
+    const countyIdentifier = property.county || property.fipsGeoId || property.geoid || property.city || property.formattedAddress;
+    const countyAmiData = resolveOregonCountyFannieMaeAmi(countyIdentifier);
+    const countyName = property.county || countyAmiData.countyName;
+    const baseAmi = countyAmiData.baseAmiUsd;
+    const maxAmiCap140 = countyAmiData.ami140CapUsd;
+
+    // Extract annual income and credit score if supplied
+    let annualIncome = 0;
+    let borrowerCreditScore = 680;
+    if (typeof borrowerIncomeOrInput === 'number') {
+      annualIncome = borrowerIncomeOrInput;
+    } else if (borrowerIncomeOrInput && typeof borrowerIncomeOrInput === 'object') {
+      annualIncome = borrowerIncomeOrInput.grossAnnualIncome || 0;
+      if (typeof borrowerIncomeOrInput.creditScore === 'number' && borrowerIncomeOrInput.creditScore > 0) {
+        borrowerCreditScore = borrowerIncomeOrInput.creditScore;
+      }
+    }
+
+    // Lakeview National 2026 Oregon Rules:
+    // - All census tracts, cities, and all 36 counties in OR are eligible up to 2026 Fannie Mae 1-Unit conforming limit ($832,750).
+    // - No designated high-cost areas in Oregon for 2026 per FHFA (all 36 counties share $832,750 baseline).
+    // - Strictly requires: 1-Unit, Primary Residence, stick-built SFR, PUD (Townhouse), or Condominium.
+    // - Disqualifies: Manufactured homes and Multi-Family (multi-unit) properties.
+    // - Minimum credit score: 660+ FICO.
+    // - All borrowers' combined annualized gross income must be <= 140% Fannie Mae Area Median Income (AMI) for the county.
+    const isOregon = !property.state || property.state.toUpperCase() === 'OR' || property.formattedAddress?.includes(', OR');
+    const isWithin2026ConformingLimit = price <= 832750;
+    const isStickBuilt1Unit = property.propertyType === 'Single Family' || property.propertyType === 'Townhouse' || property.propertyType === 'Condo';
+    const isNotManufacturedOrMulti = property.propertyType !== 'Manufactured' && property.propertyType !== 'Multi-Family';
+
+    let lakeviewIncomeQualified = true;
+    let lakeviewIneligibilityReason: string | undefined = undefined;
+
+    if (borrowerCreditScore < 660) {
+      lakeviewIncomeQualified = false;
+      lakeviewIneligibilityReason = `Credit score (${borrowerCreditScore}) is below Lakeview National minimum requirement of 660 FICO.`;
+    } else if (annualIncome > 0 && annualIncome > maxAmiCap140) {
+      lakeviewIncomeQualified = false;
+      lakeviewIneligibilityReason = `Combined annualized income ($${annualIncome.toLocaleString()}) exceeds 140% Fannie Mae AMI cap ($${maxAmiCap140.toLocaleString()}) for ${countyName} County.`;
+    }
+
     const qualifiesLakeview = Boolean(
-      special.lakeviewNationalDpaEligible &&
+      (special.lakeviewNationalDpaEligible || isOregon) &&
+      isWithin2026ConformingLimit &&
+      isStickBuilt1Unit &&
+      isNotManufacturedOrMulti &&
+      lakeviewIncomeQualified &&
       this.isProductActive('lakeview_national_bayview')
     );
 
+    const hhSize = typeof borrowerIncomeOrInput === 'object' && borrowerIncomeOrInput?.householdSize ? borrowerIncomeOrInput.householdSize : 1;
+    const isVet = typeof borrowerIncomeOrInput === 'object' && borrowerIncomeOrInput?.isVeteranBorrower ? borrowerIncomeOrInput.isVeteranBorrower : false;
     const ohcsEval = evaluateOregonOhcsFlexFirstHomeEligibility({
       state: property.state,
       price: property.price,
+      grossAnnualIncome: annualIncome,
+      householdSize: hhSize,
+      creditScore: borrowerCreditScore,
+      isVeteranBorrower: isVet,
       fipsGeoId: property.fipsGeoId || property.geoid,
       geoid: property.geoid
     });
 
     const qualifiesOhcs = Boolean(
-      (special.ohcsFlexLendingFirstHomeEligible || ohcsEval.isEligible) &&
+      isOregon &&
+      ohcsEval.isEligible &&
       this.isProductActive('ohcs_flex_lending_firsthome')
     );
 
-    const qualifiesUsda = Boolean(
-      (special.usdaRural100Financing || special.usdaRuralEligible) &&
-      this.isProductActive('usda_rural_100_guaranteed')
+    const isUsdaZone = Boolean(
+      special.usdaRural100Financing ||
+      special.usdaRuralEligible
+    );
+    const isUsdaActive = this.isProductActive('usda_rural_100_guaranteed');
+    const usdaEval = evaluateUsdaRdIncomeEligibility(
+      annualIncome,
+      hhSize,
+      countyName || property.county || property.fipsGeoId || property.city || property.formattedAddress,
+      {
+        isUsdaZoneEligible: isUsdaZone,
+        isProgramActive: isUsdaActive,
+        creditScore: borrowerCreditScore
+      }
     );
 
-    const qualifiesNhf = this.isProductActive('nhf_fha_zero_down_dpa');
+    const qualifiesUsda = Boolean(
+      usdaEval.isEligible && isUsdaActive
+    );
+
+    const isNhfActive = this.isProductActive('nhf_fha_zero_down_dpa');
+    const nhfEval = evaluateNhfDpaEligibility(
+      annualIncome,
+      price,
+      'FHA',
+      countyName || property.county || property.fipsGeoId || property.city || property.formattedAddress,
+      {
+        creditScore: borrowerCreditScore,
+        isProgramActive: isNhfActive
+      }
+    );
+
+    const qualifiesNhf = Boolean(
+      nhfEval.isEligible && isNhfActive
+    );
     const qualifiesHomeReady = this.isProductActive('fnma_homeready_3pct');
 
     const qualifiesZeroDown = qualifiesLakeview || qualifiesOhcs || qualifiesUsda || qualifiesNhf;
 
     // Calculate maximum available grant
     let maxGrant = 0;
-    if (qualifiesLakeview && special.lakeviewGrantAmountUsd) {
-      maxGrant = Math.max(maxGrant, special.lakeviewGrantAmountUsd);
+    if (qualifiesLakeview) {
+      const lakeviewGrant = special.lakeviewGrantAmountUsd || Math.min(25000, Math.round(price * 0.05));
+      maxGrant = Math.max(maxGrant, lakeviewGrant);
     }
-    if (qualifiesOhcs && special.ohcsGrantAmountUsd) {
-      maxGrant = Math.max(maxGrant, special.ohcsGrantAmountUsd);
+    if (qualifiesOhcs) {
+      const ohcsGrant = ohcsEval.grantAmountUsd || special.ohcsGrantAmountUsd || Math.round(price * 0.965 * 0.04);
+      maxGrant = Math.max(maxGrant, ohcsGrant);
     }
     if (qualifiesNhf) {
-      maxGrant = Math.max(maxGrant, price * 0.035); // 3.5% NHF grant
+      maxGrant = Math.max(maxGrant, nhfEval.maxEstimatedAssistanceUsd || Math.round(price * 0.035)); // 3.5%-5.0% NHF grant
     }
     if (special.lmiCraGrantEligible && special.craGrantAmountUsd) {
       maxGrant += special.craGrantAmountUsd; // CRA Grant stackable
@@ -326,9 +460,9 @@ export class MortgageLoanEligibilityService {
 
     const matchingProductNames: string[] = [];
     if (qualifiesLakeview) matchingProductNames.push('Lakeview National 100% DPA');
-    if (qualifiesOhcs) matchingProductNames.push('OHCS Flex Lending FirstHome');
+    if (qualifiesOhcs) matchingProductNames.push(`OHCS Flex FirstHome (${ohcsEval.grantPercent}% Grant)`);
     if (qualifiesUsda) matchingProductNames.push('USDA 100% Rural Development');
-    if (qualifiesNhf) matchingProductNames.push('NHF FHA 0% Down DPA (Fallback)');
+    if (qualifiesNhf) matchingProductNames.push('NHF DPA (Up to 5% Assistance)');
     if (qualifiesHomeReady) matchingProductNames.push('Fannie Mae HomeReady 3% Down');
     if (special.lmiCraGrantEligible) matchingProductNames.push(`CRA $${(special.craGrantAmountUsd || 5000).toLocaleString()} Grant`);
 
@@ -337,10 +471,32 @@ export class MortgageLoanEligibilityService {
       propertyPrice: price,
       qualifiesZeroDownPayment: qualifiesZeroDown,
       qualifiesLakeviewNational: qualifiesLakeview,
+      lakeviewCountyName: countyName,
+      lakeviewCountyAmiUsd: baseAmi,
+      lakeviewCountyAmi140CapUsd: maxAmiCap140,
+      lakeviewIncomeQualified,
+      lakeviewIneligibilityReason,
       qualifiesOhcsFlexLending: qualifiesOhcs,
+      ohcsCountyIncomeCapUsd: ohcsEval.householdIncomeLimitUsd,
+      ohcsCountyPriceCapUsd: ohcsEval.purchasePriceLimitUsd,
+      ohcsIncomeQualified: ohcsEval.isWithinIncomeLimit,
+      ohcsGrantPercent: ohcsEval.grantPercent,
+      ohcsGrantAmountUsd: ohcsEval.grantAmountUsd,
+      ohcsIneligibilityReason: ohcsEval.disqualificationReasons.length > 0 ? ohcsEval.disqualificationReasons.join('; ') : undefined,
       qualifiesUsdaRuralZone: qualifiesUsda,
+      usdaCountyName: usdaEval.countyName,
+      usdaIncomeCapUsd: usdaEval.applicableIncomeLimitUsd,
+      usdaIncomeQualified: usdaEval.isWithinIncomeLimit,
+      usdaIneligibilityReason: usdaEval.disqualificationReason,
       qualifiesFannieMaeHomeReady: qualifiesHomeReady,
       qualifiesNhfFallbackDpa: qualifiesNhf,
+      nhfCountyName: nhfEval.countyName,
+      nhfMaxPurchasePriceCapUsd: nhfEval.fhaMaxPurchasePriceLimitUsd,
+      nhfMaxLoanLimitUsd: nhfEval.fhaMaxLoanLimitUsd,
+      nhfIncomeCapUsd: nhfEval.applicableIncomeLimitUsd,
+      nhfIncomeQualified: nhfEval.isWithinIncomeLimit,
+      nhfPriceQualified: nhfEval.isWithinPurchasePriceLimit,
+      nhfIneligibilityReason: nhfEval.disqualificationReason,
       maxAvailableDpaGrantUsd: maxGrant,
       minEffectiveDownPaymentUsd,
       matchingProductNames
@@ -352,10 +508,11 @@ export class MortgageLoanEligibilityService {
    */
   public filterGeoMapPropertiesByDownPayment(
     properties: SyncedPropertyListing[],
-    filterType: 'all' | 'zero_down' | 'lakeview_national' | 'ohcs_flex' | 'usda_zone' | 'homeready' | 'nhf_fallback' | 'max_grant' | 'under_5k_down'
+    filterType: 'all' | 'zero_down' | 'lakeview_national' | 'ohcs_flex' | 'usda_zone' | 'homeready' | 'nhf_fallback' | 'max_grant' | 'under_5k_down',
+    borrowerIncomeOrInput?: number | BuyerEligibilityCheckInput
   ): SyncedPropertyListing[] {
     return properties.filter((property) => {
-      const evalResult = this.evaluatePropertyDownPayment(property);
+      const evalResult = this.evaluatePropertyDownPayment(property, borrowerIncomeOrInput);
 
       switch (filterType) {
         case 'zero_down':
@@ -371,7 +528,7 @@ export class MortgageLoanEligibilityService {
         case 'nhf_fallback':
           return evalResult.qualifiesNhfFallbackDpa;
         case 'max_grant':
-          return evalResult.maxAvailableDpaGrantUsd > 5000;
+          return evalResult.maxAvailableDpaGrantUsd >= 10000;
         case 'under_5k_down':
           return evalResult.minEffectiveDownPaymentUsd <= 5000;
         case 'all':
@@ -381,7 +538,14 @@ export class MortgageLoanEligibilityService {
     });
   }
 
-  private isProductActive(productId: string): boolean {
+  public setProductActive(productId: string, isActive: boolean): void {
+    const p = this.products.find((prod) => prod.id === productId);
+    if (p) {
+      p.isEligibleActive = isActive;
+    }
+  }
+
+  public isProductActive(productId: string): boolean {
     const p = this.products.find((prod) => prod.id === productId);
     return p ? p.isEligibleActive : true;
   }

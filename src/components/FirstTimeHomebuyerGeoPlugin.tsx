@@ -39,7 +39,10 @@ import {
   Check,
   MessageSquare,
   Calendar,
-  Target
+  Target,
+  Info,
+  AlertTriangle,
+  Globe
 } from 'lucide-react';
 import { usePwaInstallPrompt } from '../hooks/usePwaInstallPrompt';
 import { IosInstallGuideModal } from './IosInstallGuideModal';
@@ -48,7 +51,7 @@ import { ListingNotesProfileFooter } from './ListingNotesProfileFooter';
 import { ZillowSweepControlDeck } from './ZillowSweepControlDeck';
 import { ZillowSweepMatchModal } from './ZillowSweepMatchModal';
 import { useBatterySaver } from '../context/BatterySaverContext';
-import { zillowSwarmSweepService } from '../services/zillowSwarmSweepService';
+import { zillowSwarmSweepService, ZillowSwarmSweepResult } from '../services/zillowSwarmSweepService';
 import { buildLeadPluginUrl } from '../data/leadMobilePluginUrls';
 import {
   getOregonCensusTractLmiCategory,
@@ -69,7 +72,21 @@ import {
   calculateMonthlyPI,
   formatUSD,
   parseZillowListingUrl,
-  submitAreaListingRequest
+  submitAreaListingRequest,
+  resolveOregonCountyFannieMaeAmi,
+  evaluateLakeviewNationalIncomeEligibility,
+  evaluateOregonLakeviewNationalEligibility,
+  FANNIE_MAE_SCHEDULE_CONSTANTS,
+  OREGON_36_COUNTIES_FANNIE_AMI,
+  getOregonCountyOhcsData,
+  evaluateOhcsFlexFirstHomeIncomeEligibility,
+  evaluateOregonOhcsFlexFirstHomeEligibility,
+  OHCS_FLEX_SCHEDULE_CONSTANTS,
+  getOregonCountyUsdaRdData,
+  evaluateUsdaRdIncomeEligibility,
+  USDA_RD_SCHEDULE_CONSTANTS,
+  evaluateNhfDpaEligibility,
+  NHF_PROGRAM_CONSTANTS
 } from '../services/geomapMortgageEngine';
 import mortgageEligibilityService from '../services/mortgageEligibility';
 import {
@@ -234,6 +251,40 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
     maxBackEndDtiPercent: 50.0,
     maxFrontEndDtiPercent: 36.0
   });
+
+  // All borrowers combined annualized income state for LO dashboard slider & Fannie Mae 140% county AMI calculations
+  const [allBorrowersCombinedAnnualIncome, setAllBorrowersCombinedAnnualIncome] = useState<number>(() => {
+    return (initialBuyerProfile?.grossMonthlyIncome || 8500) * 12;
+  });
+  const [isLoIncomeSliderActive, setIsLoIncomeSliderActive] = useState<boolean>(true);
+  const [isLakeviewProgramActive, setIsLakeviewProgramActive] = useState<boolean>(true);
+  const [isOhcsProgramActive, setIsOhcsProgramActive] = useState<boolean>(true);
+  const [isUsdaProgramActive, setIsUsdaProgramActive] = useState<boolean>(true);
+  const [isNhfProgramActive, setIsNhfProgramActive] = useState<boolean>(true);
+  const [loHouseholdSize, setLoHouseholdSize] = useState<number>(1);
+  const [usdaHouseholdCount, setUsdaHouseholdCount] = useState<number>(1);
+  const [isVeteranBorrower, setIsVeteranBorrower] = useState<boolean>(false);
+
+  // Lead borrower credit score state for LO dashboard slider & program qualification
+  const [borrowerCreditScore, setBorrowerCreditScore] = useState<number>(() => {
+    return initialBuyerProfile?.creditScore || 680;
+  });
+
+  const handleCreditScoreChange = (newScore: number) => {
+    setBorrowerCreditScore(newScore);
+    setBuyerProfile(prev => ({
+      ...prev,
+      creditScore: newScore
+    }));
+  };
+  const handleCombinedAnnualIncomeChange = (newAnnualIncome: number) => {
+    setAllBorrowersCombinedAnnualIncome(newAnnualIncome);
+    const newMonthly = Math.round(newAnnualIncome / 12);
+    setBuyerProfile(prev => ({
+      ...prev,
+      grossMonthlyIncome: newMonthly
+    }));
+  };
 
   const { isBatterySaverActive, getAdjustedInterval } = useBatterySaver();
 
@@ -716,19 +767,54 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
       return zillowSwarmSweepService.filterListingsBySweepDates(properties, zillowSweepSelectedDates);
     }
     if (activeFilter === 'lakeview_national') {
-      return mortgageEligibilityService.filterGeoMapPropertiesByDownPayment(properties, 'lakeview_national');
+      // If Lakeview National program is toggled off, then slider bar income eligibility and maximum loan amount caps filter do not apply!
+      if (!isLakeviewProgramActive) {
+        return properties;
+      }
+      return mortgageEligibilityService.filterGeoMapPropertiesByDownPayment(
+        properties,
+        'lakeview_national',
+        allBorrowersCombinedAnnualIncome
+      );
     }
     if (activeFilter === 'ohcs_flex_firsthome') {
-      return mortgageEligibilityService.filterGeoMapPropertiesByDownPayment(properties, 'ohcs_flex');
+      // If FirstHome program is toggled off, then slider bar income eligibility and maximum purchase price do not apply!
+      if (!isOhcsProgramActive) {
+        return properties;
+      }
+      return mortgageEligibilityService.filterGeoMapPropertiesByDownPayment(
+        properties,
+        'ohcs_flex',
+        {
+          grossAnnualIncome: allBorrowersCombinedAnnualIncome,
+          householdSize: loHouseholdSize,
+          isVeteranBorrower: isVeteranBorrower
+        } as any
+      );
     }
     if (activeFilter === 'usda') {
-      return mortgageEligibilityService.filterGeoMapPropertiesByDownPayment(properties, 'usda_zone');
+      // If USDA RD program is toggled off, then slider bar income eligibility and geographic boundary filters do not apply!
+      if (!isUsdaProgramActive) {
+        return properties;
+      }
+      return mortgageEligibilityService.filterGeoMapPropertiesByDownPayment(
+        properties,
+        'usda_zone',
+        {
+          grossAnnualIncome: allBorrowersCombinedAnnualIncome,
+          householdSize: usdaHouseholdCount
+        } as any
+      );
     }
     if (activeFilter === 'homeready') {
-      return mortgageEligibilityService.filterGeoMapPropertiesByDownPayment(properties, 'homeready');
+      return mortgageEligibilityService.filterGeoMapPropertiesByDownPayment(properties, 'homeready', allBorrowersCombinedAnnualIncome);
     }
     if (activeFilter === 'nhf_fallback') {
-      return mortgageEligibilityService.filterGeoMapPropertiesByDownPayment(properties, 'nhf_fallback');
+      // If NHF program is toggled off, then DPA eligibility and criteria filters do not apply!
+      if (!isNhfProgramActive) {
+        return properties;
+      }
+      return mortgageEligibilityService.filterGeoMapPropertiesByDownPayment(properties, 'nhf_fallback', allBorrowersCombinedAnnualIncome);
     }
     return properties.filter((prop) => {
       if (activeFilter === 'lmi_cra') return prop.specialPrograms.lmiCraGrantEligible;
@@ -736,7 +822,20 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
       if (activeFilter === 'prequalified') return prop.price <= prequalResult.estimatedMaxPurchasePrice;
       return true;
     });
-  }, [properties, activeFilter, prequalResult.estimatedMaxPurchasePrice]);
+  }, [
+    properties,
+    activeFilter,
+    prequalResult.estimatedMaxPurchasePrice,
+    allBorrowersCombinedAnnualIncome,
+    zillowSweepSelectedDates,
+    isLakeviewProgramActive,
+    isOhcsProgramActive,
+    isUsdaProgramActive,
+    isNhfProgramActive,
+    loHouseholdSize,
+    usdaHouseholdCount,
+    isVeteranBorrower
+  ]);
 
   // Highlight lead's top 3 favorited properties as ALWAYS FIRST in the carousel rotation, followed by default and curated!
   const filteredProperties = useMemo(() => {
@@ -768,6 +867,181 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
       return 0;
     });
   }, [rawFilteredProperties, favoritePropertyIds, activeDefaultPropertyId, showCuratedOnly, curatedPropertyIds]);
+
+  // Real-time Lakeview 140% County AMI Curation Statistics across checkboxed curated listings
+  const curatedLakeviewStats = useMemo(() => {
+    const curatedListings = properties.filter(p => curatedPropertyIds.includes(p.id));
+    let eligibleCount = 0;
+    let capBustedCount = 0;
+    let loanLimitBustedCount = 0;
+    let otherIneligibleCount = 0;
+
+    curatedListings.forEach(prop => {
+      const countyData = resolveOregonCountyFannieMaeAmi(prop.county || prop.fipsGeoId || prop.city || prop.formattedAddress);
+      const evalResult = evaluateOregonLakeviewNationalEligibility({
+        price: prop.price,
+        state: prop.state,
+        county: prop.county,
+        city: prop.city,
+        address: prop.formattedAddress,
+        fipsGeoId: prop.fipsGeoId || prop.geoid,
+        propertyType: prop.propertyType,
+        grossAnnualIncome: allBorrowersCombinedAnnualIncome,
+        creditScore: borrowerCreditScore,
+        isPrimaryResidence: true,
+        isStickBuilt: prop.propertyType !== 'Manufactured',
+        isProgramActive: isLakeviewProgramActive
+      });
+
+      if (evalResult.isEligible) {
+        eligibleCount++;
+      } else {
+        if (!evalResult.isWithinConformingLimit) {
+          loanLimitBustedCount++;
+        } else if (allBorrowersCombinedAnnualIncome > countyData.ami140CapUsd) {
+          capBustedCount++;
+        } else {
+          otherIneligibleCount++;
+        }
+      }
+    });
+
+    return {
+      totalCurated: curatedListings.length,
+      eligibleCount,
+      capBustedCount,
+      loanLimitBustedCount,
+      otherIneligibleCount,
+      isProgramActive: isLakeviewProgramActive
+    };
+  }, [properties, curatedPropertyIds, allBorrowersCombinedAnnualIncome, borrowerCreditScore, isLakeviewProgramActive]);
+
+  // Real-time OHCS Flex Lending FirstHome Curation Statistics across checkboxed curated listings
+  const curatedOhcsStats = useMemo(() => {
+    const curatedListings = properties.filter(p => curatedPropertyIds.includes(p.id));
+    let eligibleCount = 0;
+    let incomeBustedCount = 0;
+    let priceBustedCount = 0;
+    let targetedBonusCount = 0;
+
+    curatedListings.forEach(prop => {
+      const ohcsEval = evaluateOregonOhcsFlexFirstHomeEligibility({
+        state: prop.state,
+        price: prop.price,
+        grossAnnualIncome: allBorrowersCombinedAnnualIncome,
+        householdSize: loHouseholdSize,
+        creditScore: borrowerCreditScore,
+        isVeteranBorrower: isVeteranBorrower,
+        fipsGeoId: prop.fipsGeoId || prop.geoid,
+        geoid: prop.geoid,
+        isProgramActive: isOhcsProgramActive
+      });
+
+      if (ohcsEval.isEligible) {
+        eligibleCount++;
+        if (ohcsEval.grantPercent === 5.0) {
+          targetedBonusCount++;
+        }
+      } else {
+        if (!ohcsEval.isWithinIncomeLimit) {
+          incomeBustedCount++;
+        } else if (!ohcsEval.isWithinPurchasePriceLimit) {
+          priceBustedCount++;
+        }
+      }
+    });
+
+    return {
+      totalCurated: curatedListings.length,
+      eligibleCount,
+      incomeBustedCount,
+      priceBustedCount,
+      targetedBonusCount,
+      isProgramActive: isOhcsProgramActive
+    };
+  }, [properties, curatedPropertyIds, allBorrowersCombinedAnnualIncome, borrowerCreditScore, loHouseholdSize, isVeteranBorrower, isOhcsProgramActive]);
+
+  // Real-time USDA Rural Development 100% Curation Statistics across checkboxed curated listings
+  const curatedUsdaStats = useMemo(() => {
+    const curatedListings = properties.filter(p => curatedPropertyIds.includes(p.id));
+    let eligibleCount = 0;
+    let incomeBustedCount = 0;
+    let zoneIneligibleCount = 0;
+
+    curatedListings.forEach(prop => {
+      const isUsdaZone = Boolean(
+        prop.specialPrograms.usdaRural100Financing ||
+        prop.specialPrograms.usdaRuralEligible
+      );
+      const usdaEval = evaluateUsdaRdIncomeEligibility(
+        allBorrowersCombinedAnnualIncome,
+        usdaHouseholdCount,
+        prop.county || prop.fipsGeoId || prop.city || prop.formattedAddress,
+        {
+          isUsdaZoneEligible: isUsdaZone,
+          isProgramActive: isUsdaProgramActive,
+          creditScore: borrowerCreditScore
+        }
+      );
+
+      if (usdaEval.isEligible) {
+        eligibleCount++;
+      } else {
+        if (!usdaEval.isUsdaZoneEligible) {
+          zoneIneligibleCount++;
+        } else if (!usdaEval.isWithinIncomeLimit) {
+          incomeBustedCount++;
+        }
+      }
+    });
+
+    return {
+      totalCurated: curatedListings.length,
+      eligibleCount,
+      incomeBustedCount,
+      zoneIneligibleCount,
+      isProgramActive: isUsdaProgramActive
+    };
+  }, [properties, curatedPropertyIds, allBorrowersCombinedAnnualIncome, borrowerCreditScore, usdaHouseholdCount, isUsdaProgramActive]);
+
+  // Real-time National Homebuyers Fund (NHF) Curation Statistics across checkboxed curated listings
+  const curatedNhfStats = useMemo(() => {
+    const curatedListings = properties.filter(p => curatedPropertyIds.includes(p.id));
+    let eligibleCount = 0;
+    let incomeBustedCount = 0;
+    let priceBustedCount = 0;
+
+    curatedListings.forEach(prop => {
+      const nhfEval = evaluateNhfDpaEligibility(
+        allBorrowersCombinedAnnualIncome,
+        prop.price,
+        'FHA',
+        prop.county || prop.fipsGeoId || prop.city || prop.formattedAddress,
+        {
+          creditScore: borrowerCreditScore,
+          isProgramActive: isNhfProgramActive
+        }
+      );
+
+      if (nhfEval.isEligible) {
+        eligibleCount++;
+      } else {
+        if (!nhfEval.isWithinPurchasePriceLimit) {
+          priceBustedCount++;
+        } else if (!nhfEval.isWithinIncomeLimit) {
+          incomeBustedCount++;
+        }
+      }
+    });
+
+    return {
+      totalCurated: curatedListings.length,
+      eligibleCount,
+      incomeBustedCount,
+      priceBustedCount,
+      isProgramActive: isNhfProgramActive
+    };
+  }, [properties, curatedPropertyIds, allBorrowersCombinedAnnualIncome, borrowerCreditScore, isNhfProgramActive]);
 
   // Auto-rotate effect if enabled by client (dynamically throttled under Battery Saver)
   useEffect(() => {
@@ -1423,78 +1697,494 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
 
           {/* PROPERTY LISTING CARDS DECK & CURATED SHORTLIST EXPORT SELECTOR */}
           <div className="space-y-2.5">
-            {/* Curated Lead Shortlist & Loan Officer Strategy Toolbar */}
-            <div className="p-3 bg-gradient-to-r from-stone-900 via-stone-900/90 to-emerald-950/30 rounded-2xl border border-stone-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-black text-white flex items-center gap-1.5">
-                    <Building className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Curated Shortlist for Lead Export</span>
-                  </span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
-                    {curatedPropertyIds.length} Selected of {properties.length} Total
-                  </span>
-                  {activeDefaultPropertyId && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
-                      <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-                      <span>Default Front & Center: {properties.find(p => p.id === activeDefaultPropertyId)?.addressLine1 || 'Active'}</span>
+            {/* Curated Lead Shortlist & Loan Officer Strategy Toolbar with Dynamic Income Slider */}
+            <div className="p-3.5 bg-gradient-to-r from-stone-900 via-stone-900/95 to-emerald-950/40 rounded-2xl border border-stone-800 shadow-md space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-black text-white flex items-center gap-1.5">
+                      <Building className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Curated Shortlist for Lead Export</span>
                     </span>
-                  )}
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
+                      {curatedPropertyIds.length} Selected of {properties.length} Total
+                    </span>
+                    {activeDefaultPropertyId && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                        <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                        <span>Default Front & Center: {properties.find(p => p.id === activeDefaultPropertyId)?.addressLine1 || 'Active'}</span>
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-stone-400">
+                    Curate low/no down properties (Lakeview 100%, OHCS Flex FirstHome, USDA, HomeReady) synced from GeoSphere. Exported URL/app includes all checkboxed listings.
+                  </p>
                 </div>
-                <p className="text-[10px] text-stone-400">
-                  Curate low/no down properties (USDA, OHCS Flex FirstHome, Lakeview 100%, HomeReady) synced from GeoSphere. Exported URL/app includes all checkboxed listings.
-                </p>
+
+                {/* Action Buttons: Toggle Curated Filter, Push New Listing, Export App Link */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => setShowCuratedOnly(!showCuratedOnly)}
+                    className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer flex items-center gap-1.5 ${
+                      showCuratedOnly
+                        ? 'bg-emerald-600 text-white border-emerald-500 shadow-xs'
+                        : 'bg-stone-950 text-stone-300 border-stone-700 hover:text-white hover:bg-stone-800'
+                    }`}
+                    title="Toggle between showing only curated checkboxed listings or all listings"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>{showCuratedOnly ? `Curated Only (${curatedPropertyIds.length})` : 'Show Curated Only'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPushListingModal(true)}
+                    className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 transition cursor-pointer flex items-center gap-1.5 shadow-xs"
+                    title="Proactively curate and push a new property listing with custom Loan Officer notes directly into the GeoMap app"
+                  >
+                    <PlusCircle className="w-3.5 h-3.5 text-amber-400" />
+                    <span>+ Push Listing & Note</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const exportUrl = getExportedCuratedAppUrl(hasPairedAgent ? 'paired' : 'solo');
+                      navigator.clipboard.writeText(exportUrl);
+                      setCopiedCuratedLink(true);
+                      setTimeout(() => setCopiedCuratedLink(false), 3000);
+                    }}
+                    className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md transition cursor-pointer flex items-center gap-1.5"
+                    title="Copy shareable link with all checkboxed curated listings and default featured listing"
+                  >
+                    {copiedCuratedLink ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-white" />
+                        <span>Copied Curated URL!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Share2 className="w-3.5 h-3.5 text-white" />
+                        <span>Export Curated App</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
 
-              {/* Action Buttons: Toggle Curated Filter, Push New Listing, Export App Link */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => setShowCuratedOnly(!showCuratedOnly)}
-                  className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer flex items-center gap-1.5 ${
-                    showCuratedOnly
-                      ? 'bg-emerald-600 text-white border-emerald-500 shadow-xs'
-                      : 'bg-stone-950 text-stone-300 border-stone-700 hover:text-white hover:bg-stone-800'
-                  }`}
-                  title="Toggle between showing only curated checkboxed listings or all listings"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>{showCuratedOnly ? `Curated Only (${curatedPropertyIds.length})` : 'Show Curated Only'}</span>
-                </button>
+              {/* LO DASHBOARD: ALL BORROWERS COMBINED ANNUAL INCOME SLIDER & TRIPLE LAKEVIEW / OHCS / USDA RD STRESS-TEST ENGINE */}
+              <div className="pt-2.5 border-t border-stone-800/80 space-y-3 bg-stone-950/60 p-3.5 rounded-xl border border-stone-800/60">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      <Sliders className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-black text-amber-300">
+                          Loan Officer Underwriting: All Borrowers Combined Annual Income
+                        </span>
+                        <span className="px-1.5 py-0.2 rounded bg-amber-950 text-amber-300 border border-amber-500/40 text-[9px] font-mono font-bold">
+                          Lakeview 140% AMI • OHCS FirstHome • USDA RD (8/1 Update)
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-stone-400">
+                        Dynamically stress-test combined household earnings against Fannie Mae 140% County AMI, OHCS Flex Lending FirstHome, and USDA Rural Development household income tiers.
+                      </p>
+                    </div>
+                  </div>
 
-                <button
-                  type="button"
-                  onClick={() => setShowPushListingModal(true)}
-                  className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 transition cursor-pointer flex items-center gap-1.5 shadow-xs"
-                  title="Proactively curate and push a new property listing with custom Loan Officer notes directly into the GeoMap app"
-                >
-                  <PlusCircle className="w-3.5 h-3.5 text-amber-400" />
-                  <span>+ Push Listing & Note</span>
-                </button>
+                  {/* Live Income Readout & Monthly Equivalent */}
+                  <div className="flex items-center gap-2 self-start sm:self-auto">
+                    <div className="px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/40 text-right">
+                      <span className="text-[10px] text-stone-400 block leading-tight">Combined Annual Income</span>
+                      <span className="text-sm font-black font-mono text-amber-300">
+                        {formatUSD(allBorrowersCombinedAnnualIncome)}
+                        <span className="text-[10px] font-normal text-stone-400 ml-1">
+                          ({formatUSD(Math.round(allBorrowersCombinedAnnualIncome / 12))}/mo)
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    const exportUrl = getExportedCuratedAppUrl(hasPairedAgent ? 'paired' : 'solo');
-                    navigator.clipboard.writeText(exportUrl);
-                    setCopiedCuratedLink(true);
-                    setTimeout(() => setCopiedCuratedLink(false), 3000);
-                  }}
-                  className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md transition cursor-pointer flex items-center gap-1.5"
-                  title="Copy shareable link with all checkboxed curated listings and default featured listing"
-                >
-                  {copiedCuratedLink ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-white" />
-                      <span>Copied Curated URL!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Share2 className="w-3.5 h-3.5 text-white" />
-                      <span>Export Curated App</span>
-                    </>
-                  )}
-                </button>
+                {/* Slider Bar Control with Quick Preset Buttons */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-mono text-stone-500">$30k</span>
+                    <input
+                      type="range"
+                      min={30000}
+                      max={260000}
+                      step={1000}
+                      value={allBorrowersCombinedAnnualIncome}
+                      onChange={(e) => handleCombinedAnnualIncomeChange(Number(e.target.value))}
+                      className="w-full h-2 bg-stone-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                      title="Slide to dynamically test combined borrower income against Lakeview 140% AMI, OHCS, and USDA RD county limits"
+                    />
+                    <span className="text-[10px] font-mono text-stone-500">$260k</span>
+                  </div>
+
+                  {/* Quick Preset Buttons & Household Size / Veteran Qualifiers */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-stone-900">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[9px] text-stone-400 font-bold uppercase tracking-wider">Presets:</span>
+                      {[
+                        { label: '$65k (Single)', val: 65000 },
+                        { label: '$95k (Rural/Mid)', val: 95000 },
+                        { label: '$120k (Median)', val: 120000 },
+                        { label: '$145k (Metro Cap)', val: 145000 },
+                        { label: '$175k (High/Cap Bust)', val: 175000 }
+                      ].map((preset) => (
+                        <button
+                          key={preset.val}
+                          type="button"
+                          onClick={() => handleCombinedAnnualIncomeChange(preset.val)}
+                          className={`px-2 py-0.5 rounded text-[9px] font-bold border transition cursor-pointer ${
+                            allBorrowersCombinedAnnualIncome === preset.val
+                              ? 'bg-amber-500 text-stone-950 border-amber-400 font-black'
+                              : 'bg-stone-900 text-stone-300 border-stone-800 hover:border-amber-500/50 hover:text-white'
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+
+                      <button
+                        type="button"
+                        onClick={() => handleCombinedAnnualIncomeChange((initialBuyerProfile?.grossMonthlyIncome || 8500) * 12)}
+                        className="px-2 py-0.5 rounded text-[9px] font-bold bg-stone-900 text-stone-400 border border-stone-800 hover:text-white hover:border-stone-700 transition cursor-pointer"
+                        title="Reset slider to original lead intake self-reported income"
+                      >
+                        ↺ Reset Intake ({formatUSD((initialBuyerProfile?.grossMonthlyIncome || 8500) * 12)})
+                      </button>
+                    </div>
+
+                    {/* OHCS & USDA Household Family Member Count Controls */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {/* OHCS Household Size Selector */}
+                      <div className="flex items-center gap-1 bg-stone-900 p-0.5 rounded-lg border border-stone-800 text-[9px] font-bold">
+                        <span className="text-stone-400 px-1">OHCS HH:</span>
+                        <button
+                          type="button"
+                          onClick={() => setLoHouseholdSize(1)}
+                          className={`px-2 py-0.5 rounded transition cursor-pointer ${
+                            loHouseholdSize <= 2
+                              ? 'bg-teal-600 text-white font-black shadow-xs'
+                              : 'text-stone-400 hover:text-white'
+                          }`}
+                        >
+                          1-2
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setLoHouseholdSize(3)}
+                          className={`px-2 py-0.5 rounded transition cursor-pointer ${
+                            loHouseholdSize >= 3
+                              ? 'bg-teal-600 text-white font-black shadow-xs'
+                              : 'text-stone-400 hover:text-white'
+                          }`}
+                        >
+                          3+
+                        </button>
+                      </div>
+
+                      {/* USDA RD Household Family Member Count Selector */}
+                      <div className="flex items-center gap-1 bg-stone-900 p-0.5 rounded-lg border border-stone-800 text-[9px] font-bold">
+                        <span className="text-emerald-400 px-1">USDA Members (8/1):</span>
+                        <button
+                          type="button"
+                          onClick={() => setUsdaHouseholdCount(1)}
+                          className={`px-2 py-0.5 rounded transition cursor-pointer ${
+                            usdaHouseholdCount <= 4
+                              ? 'bg-emerald-600 text-white font-black shadow-xs'
+                              : 'text-stone-400 hover:text-white'
+                          }`}
+                        >
+                          1-4 Pers
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setUsdaHouseholdCount(5)}
+                          className={`px-2 py-0.5 rounded transition cursor-pointer ${
+                            usdaHouseholdCount >= 5
+                              ? 'bg-emerald-600 text-white font-black shadow-xs'
+                              : 'text-stone-400 hover:text-white'
+                          }`}
+                        >
+                          5-8 Pers
+                        </button>
+                      </div>
+
+                      <label className="flex items-center gap-1 cursor-pointer text-[9px] text-teal-300 bg-teal-950/60 px-2 py-1 rounded-lg border border-teal-800/60 font-bold">
+                        <input
+                          type="checkbox"
+                          checked={isVeteranBorrower}
+                          onChange={(e) => setIsVeteranBorrower(e.target.checked)}
+                          className="w-3 h-3 rounded text-teal-500 bg-stone-900 border-stone-700 focus:ring-teal-500 cursor-pointer"
+                        />
+                        <span>Veteran</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Credit Score Slider Control */}
+                <div className="pt-2.5 border-t border-stone-800/80 space-y-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1 rounded-lg bg-teal-500/20 text-teal-300 border border-teal-500/30">
+                        <Sliders className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-black text-teal-300">
+                            Lead Borrower Credit Score (FICO)
+                          </span>
+                          <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono font-bold border ${
+                            borrowerCreditScore >= 740
+                              ? 'bg-emerald-950 text-emerald-300 border-emerald-500/40'
+                              : borrowerCreditScore >= 680
+                              ? 'bg-teal-950 text-teal-300 border-teal-500/40'
+                              : borrowerCreditScore >= 660
+                              ? 'bg-amber-950 text-amber-300 border-amber-500/40'
+                              : borrowerCreditScore >= 620
+                              ? 'bg-orange-950 text-orange-300 border-orange-500/40'
+                              : 'bg-rose-950 text-rose-300 border-rose-500/40'
+                          }`}>
+                            {borrowerCreditScore >= 740
+                              ? '740+ Prime Tier'
+                              : borrowerCreditScore >= 680
+                              ? '680+ USDA RD Qualified'
+                              : borrowerCreditScore >= 660
+                              ? '660+ Lakeview Qualified'
+                              : borrowerCreditScore >= 620
+                              ? '620+ FHA / OHCS / NHF Qualified'
+                              : 'Under 620 (Credit Enhancement Required)'}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-stone-400">
+                          Dynamically test eligibility across programs: Lakeview (660+), OHCS FirstHome (620+), USDA RD (680+), NHF DPA (620+).
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="px-2.5 py-1 rounded-lg bg-teal-500/15 border border-teal-500/40 text-right self-start sm:self-auto shrink-0">
+                      <span className="text-[10px] text-stone-400 block leading-tight">Borrower Credit Score</span>
+                      <span className="text-sm font-black font-mono text-teal-300">
+                        {borrowerCreditScore} FICO
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] font-mono text-stone-500">580</span>
+                      <input
+                        type="range"
+                        min={580}
+                        max={850}
+                        step={1}
+                        value={borrowerCreditScore}
+                        onChange={(e) => handleCreditScoreChange(Number(e.target.value))}
+                        className="w-full h-2 bg-stone-800 rounded-lg appearance-none cursor-pointer accent-teal-400"
+                        title="Slide to dynamically test borrower credit score against program minimum FICO requirements"
+                      />
+                      <span className="text-[10px] font-mono text-stone-500">850</span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-1.5 pt-1">
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <span className="text-[9px] text-stone-400 font-bold uppercase tracking-wider">Presets:</span>
+                        {[
+                          { label: '620 (OHCS/NHF Min)', val: 620 },
+                          { label: '640', val: 640 },
+                          { label: '660 (Lakeview Min)', val: 660 },
+                          { label: '680 (USDA Min)', val: 680 },
+                          { label: '740 (Prime)', val: 740 }
+                        ].map((preset) => (
+                          <button
+                            key={preset.val}
+                            type="button"
+                            onClick={() => handleCreditScoreChange(preset.val)}
+                            className={`px-2 py-0.5 rounded text-[9px] font-bold border transition cursor-pointer ${
+                              borrowerCreditScore === preset.val
+                                ? 'bg-teal-400 text-stone-950 border-teal-300 font-black'
+                                : 'bg-stone-900 text-stone-300 border-stone-800 hover:border-teal-500/50 hover:text-white'
+                            }`}
+                          >
+                            {preset.label}
+                          </button>
+                        ))}
+
+                        <button
+                          type="button"
+                          onClick={() => handleCreditScoreChange(initialBuyerProfile?.creditScore || 680)}
+                          className="px-2 py-0.5 rounded text-[9px] font-bold bg-stone-900 text-stone-400 border border-stone-800 hover:text-white hover:border-stone-700 transition cursor-pointer"
+                          title="Reset credit score slider to lead intake self-reported score"
+                        >
+                          ↺ Reset Intake ({initialBuyerProfile?.creditScore || 680})
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quad Program Curation Statistics & Statutory Schedule Callouts with Toggle Switches */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-[10px]">
+                  {/* Lakeview Status Box */}
+                  <div className={`p-2.5 rounded-lg border space-y-1.5 transition ${
+                    isLakeviewProgramActive
+                      ? 'bg-stone-900/90 border-stone-800'
+                      : 'bg-stone-950/80 border-stone-800/60 opacity-80'
+                  }`}>
+                    <div className="flex items-center justify-between font-bold gap-2">
+                      <span className="text-amber-300 flex items-center gap-1.5">
+                        <Sparkles className="w-3 h-3 text-amber-400 shrink-0" />
+                        <span className="truncate">Lakeview 100% DPA</span>
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setIsLakeviewProgramActive(!isLakeviewProgramActive)}
+                          className={`px-1.5 py-0.5 rounded-full text-[8.5px] font-mono font-black transition border flex items-center gap-1 cursor-pointer ${
+                            isLakeviewProgramActive
+                              ? 'bg-emerald-500 text-stone-950 border-emerald-400 shadow-xs'
+                              : 'bg-stone-800 text-stone-400 border-stone-700 hover:text-stone-200'
+                          }`}
+                          title="Toggle Lakeview National 140% AMI & conforming loan limit stress-test filter on/off"
+                        >
+                          <span>{isLakeviewProgramActive ? 'ON' : 'OFF'}</span>
+                        </button>
+                        {isLakeviewProgramActive && (
+                          <span className="px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/40 font-mono font-bold text-[8.5px]">
+                            {curatedLakeviewStats.eligibleCount}/{curatedLakeviewStats.totalCurated} Pass
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-[8.5px] text-stone-400 leading-snug">
+                      {isLakeviewProgramActive
+                        ? `Max 140% County AMI • Conforming Limit: $832,750 (1-Unit). Schedules: AMI by 12/1, Loan Limits by 7/1.`
+                        : `⚠️ Filter OFF: 140% County AMI & $832k limits bypassed.`}
+                    </p>
+                  </div>
+
+                  {/* OHCS Flex FirstHome Status Box */}
+                  <div className={`p-2.5 rounded-lg border space-y-1.5 transition ${
+                    isOhcsProgramActive
+                      ? 'bg-teal-950/40 border-teal-800/60'
+                      : 'bg-stone-950/80 border-stone-800/60 opacity-80'
+                  }`}>
+                    <div className="flex items-center justify-between font-bold gap-2">
+                      <span className="text-teal-300 flex items-center gap-1.5">
+                        <Target className="w-3 h-3 text-teal-400 shrink-0" />
+                        <span className="truncate">OHCS FirstHome</span>
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setIsOhcsProgramActive(!isOhcsProgramActive)}
+                          className={`px-1.5 py-0.5 rounded-full text-[8.5px] font-mono font-black transition border flex items-center gap-1 cursor-pointer ${
+                            isOhcsProgramActive
+                              ? 'bg-teal-400 text-stone-950 border-teal-300 shadow-xs'
+                              : 'bg-stone-800 text-stone-400 border-stone-700 hover:text-stone-200'
+                          }`}
+                          title="Toggle OHCS Flex Lending FirstHome income & purchase price limit stress-test filter on/off"
+                        >
+                          <span>{isOhcsProgramActive ? 'ON' : 'OFF'}</span>
+                        </button>
+                        {isOhcsProgramActive && (
+                          <span className="px-1.5 py-0.2 rounded bg-teal-900 text-teal-200 border border-teal-500/40 font-mono font-bold text-[8.5px]">
+                            {curatedOhcsStats.eligibleCount}/{curatedOhcsStats.totalCurated} Pass
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-[8.5px] text-stone-300 leading-snug">
+                      {isOhcsProgramActive
+                        ? `4.0%/5.0% Grant. HH ${loHouseholdSize >= 3 ? '3+' : '1-2'}. eHousingPlus updates schedules annually.`
+                        : `⚠️ Filter OFF: Income limits & price caps bypassed.`}
+                    </p>
+                  </div>
+
+                  {/* USDA RD 100% Guaranteed Status Box */}
+                  <div className={`p-2.5 rounded-lg border space-y-1.5 transition ${
+                    isUsdaProgramActive
+                      ? 'bg-emerald-950/40 border-emerald-800/60'
+                      : 'bg-stone-950/80 border-stone-800/60 opacity-80'
+                  }`}>
+                    <div className="flex items-center justify-between font-bold gap-2">
+                      <span className="text-emerald-300 flex items-center gap-1.5">
+                        <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
+                        <span className="truncate">USDA RD 100% ($0 Down)</span>
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setIsUsdaProgramActive(!isUsdaProgramActive)}
+                          className={`px-1.5 py-0.5 rounded-full text-[8.5px] font-mono font-black transition border flex items-center gap-1 cursor-pointer ${
+                            isUsdaProgramActive
+                              ? 'bg-emerald-400 text-stone-950 border-emerald-300 shadow-xs'
+                              : 'bg-stone-800 text-stone-400 border-stone-700 hover:text-stone-200'
+                          }`}
+                          title="Toggle USDA Rural Development 100% income and geographic boundary stress-test filter on/off"
+                        >
+                          <span>{isUsdaProgramActive ? 'ON' : 'OFF'}</span>
+                        </button>
+                        {isUsdaProgramActive && (
+                          <span className="px-1.5 py-0.2 rounded bg-emerald-900 text-emerald-200 border border-emerald-500/40 font-mono font-bold text-[8.5px]">
+                            {curatedUsdaStats.eligibleCount}/{curatedUsdaStats.totalCurated} Pass
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-[8.5px] text-stone-300 leading-snug">
+                      {isUsdaProgramActive
+                        ? `100% Financing ($0 Down). Tier: ${usdaHouseholdCount >= 5 ? '5-8 Persons' : '1-4 Persons'}. USDA updates income limits annually by 8/1.`
+                        : `⚠️ Filter OFF: USDA income & boundary filters bypassed.`}
+                    </p>
+                  </div>
+
+                  {/* NHF DPA (Up to 5%) Status Box */}
+                  <div className={`p-2.5 rounded-lg border space-y-1.5 transition ${
+                    isNhfProgramActive
+                      ? 'bg-indigo-950/40 border-indigo-800/60'
+                      : 'bg-stone-950/80 border-stone-800/60 opacity-80'
+                  }`}>
+                    <div className="flex items-center justify-between font-bold gap-2">
+                      <span className="text-indigo-300 flex items-center gap-1.5">
+                        <Globe className="w-3 h-3 text-indigo-400 shrink-0" />
+                        <span className="truncate">NHF DPA (Up to 5%)</span>
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setIsNhfProgramActive(!isNhfProgramActive)}
+                          className={`px-1.5 py-0.5 rounded-full text-[8.5px] font-mono font-black transition border flex items-center gap-1 cursor-pointer ${
+                            isNhfProgramActive
+                              ? 'bg-indigo-400 text-stone-950 border-indigo-300 shadow-xs'
+                              : 'bg-stone-800 text-stone-400 border-stone-700 hover:text-stone-200'
+                          }`}
+                          title="Toggle National Homebuyers Fund (NHF) DPA stress-test filter on/off"
+                        >
+                          <span>{isNhfProgramActive ? 'ON' : 'OFF'}</span>
+                        </button>
+                        {isNhfProgramActive && (
+                          <span className="px-1.5 py-0.2 rounded bg-indigo-900 text-indigo-200 border border-indigo-500/40 font-mono font-bold text-[8.5px]">
+                            {curatedNhfStats.eligibleCount}/{curatedNhfStats.totalCurated} Pass
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-[8.5px] text-stone-300 leading-snug">
+                      {isNhfProgramActive
+                        ? `Up to 5% DPA. NO FTHB rule. Max 140% AMI. FHA Purchase Caps: $560k–$744k (HUD updates annually 1/1).`
+                        : `⚠️ Filter OFF: NHF criteria & FHA purchase caps bypassed.`}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1996,6 +2686,453 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                         </span>
                       )}
                     </div>
+
+                    {/* Dynamic Real-Time Lakeview 140% County AMI & Fannie Mae Maximum Loan Limit Qualification Card */}
+                    {(() => {
+                      const countyData = resolveOregonCountyFannieMaeAmi(prop.county || prop.fipsGeoId || prop.city || prop.formattedAddress);
+                      const lakeviewEval = evaluateOregonLakeviewNationalEligibility({
+                        price: prop.price,
+                        state: prop.state,
+                        county: prop.county,
+                        city: prop.city,
+                        address: prop.formattedAddress,
+                        fipsGeoId: prop.fipsGeoId || prop.geoid,
+                        propertyType: prop.propertyType,
+                        grossAnnualIncome: allBorrowersCombinedAnnualIncome,
+                        creditScore: borrowerCreditScore,
+                        isPrimaryResidence: true,
+                        isStickBuilt: prop.propertyType !== 'Manufactured',
+                        isProgramActive: isLakeviewProgramActive
+                      });
+
+                      const isCreditBusted = isLakeviewProgramActive && borrowerCreditScore < 660;
+                      const isLoanLimitBusted = !lakeviewEval.isWithinConformingLimit;
+                      const isIncomeCapBusted = isLakeviewProgramActive && allBorrowersCombinedAnnualIncome > countyData.ami140CapUsd;
+
+                      if (!isLakeviewProgramActive) {
+                        return (
+                          <div className="p-2 rounded-xl border border-stone-800 bg-stone-950/60 text-stone-400 text-[10px] space-y-0.5">
+                            <div className="flex items-center justify-between">
+                              <span className="flex items-center gap-1.5 font-bold text-stone-300">
+                                <span className="w-2 h-2 rounded-full bg-stone-500" />
+                                <span>Lakeview 100% DPA: Filter Toggled OFF</span>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setIsLakeviewProgramActive(true);
+                                }}
+                                className="px-1.5 py-0.2 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[9px] font-bold cursor-pointer transition"
+                              >
+                                Activate Stress Test
+                              </button>
+                            </div>
+                            <p className="text-[8.5px] text-stone-500 italic">
+                              140% County AMI, 660 FICO min, and $832,750 conforming loan limit filters are bypassed.
+                            </p>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className={`p-2 rounded-xl border text-[10px] space-y-1 transition ${
+                          lakeviewEval.isEligible
+                            ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-200 shadow-xs'
+                            : isCreditBusted
+                            ? 'bg-orange-950/30 border-orange-500/40 text-orange-200'
+                            : isLoanLimitBusted
+                            ? 'bg-amber-950/30 border-amber-500/40 text-amber-200'
+                            : isIncomeCapBusted
+                            ? 'bg-rose-950/30 border-rose-500/40 text-rose-200'
+                            : 'bg-stone-900/80 border-stone-800 text-stone-400'
+                        }`}>
+                          <div className="flex items-center justify-between font-bold">
+                            <span className="flex items-center gap-1.5">
+                              {lakeviewEval.isEligible ? (
+                                <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                              ) : isCreditBusted ? (
+                                <X className="w-3 h-3 text-orange-400 shrink-0" />
+                              ) : isLoanLimitBusted ? (
+                                <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
+                              ) : isIncomeCapBusted ? (
+                                <X className="w-3 h-3 text-rose-400 shrink-0" />
+                              ) : (
+                                <Info className="w-3 h-3 text-stone-400 shrink-0" />
+                              )}
+                              <span>
+                                {lakeviewEval.isEligible
+                                  ? 'Lakeview 100% DPA: Eligible'
+                                  : isCreditBusted
+                                  ? 'Lakeview: Min 660 FICO Req'
+                                  : isLoanLimitBusted
+                                  ? 'Lakeview: Max Loan Limit Exceeded'
+                                  : isIncomeCapBusted
+                                  ? 'Lakeview: 140% County AMI Cap Busted'
+                                  : 'Lakeview: Property Ineligible'}
+                              </span>
+                            </span>
+                            <span className="font-mono text-[9px] px-1.5 py-0.2 rounded bg-stone-900 text-stone-300 border border-stone-800">
+                              {countyData.countyName} Co. • Min 660
+                            </span>
+                          </div>
+                          <div className="text-[9px] flex items-center justify-between text-stone-300 flex-wrap gap-1">
+                            <span>
+                              140% AMI Cap:{' '}
+                              <strong className={isIncomeCapBusted ? 'text-rose-300 font-bold' : 'text-emerald-300 font-bold'}>
+                                {formatUSD(countyData.ami140CapUsd)}
+                              </strong>
+                              {' '}• Max Loan: {formatUSD(lakeviewEval.conformingLoanLimitUsd)}
+                            </span>
+                            {lakeviewEval.isEligible ? (
+                              <span className="text-emerald-400 font-bold font-mono">
+                                +{formatUSD(lakeviewEval.estimatedGrantAmountUsd)} DPA
+                              </span>
+                            ) : (
+                              <span className="text-stone-400 text-[8.5px] italic">
+                                {isCreditBusted
+                                  ? `Borrower FICO (${borrowerCreditScore}) < 660 min`
+                                  : isLoanLimitBusted
+                                  ? `Price over limit by ${formatUSD(prop.price - lakeviewEval.conformingLoanLimitUsd)}`
+                                  : isIncomeCapBusted
+                                  ? `Income exceeds by ${formatUSD(allBorrowersCombinedAnnualIncome - countyData.ami140CapUsd)}`
+                                  : '1-Unit SFR/PUD/Condo Only'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Dynamic Real-Time OHCS Flex Lending FirstHome Qualification Card */}
+                    {(() => {
+                      const ohcsEval = evaluateOregonOhcsFlexFirstHomeEligibility({
+                        state: prop.state,
+                        price: prop.price,
+                        grossAnnualIncome: allBorrowersCombinedAnnualIncome,
+                        householdSize: loHouseholdSize,
+                        creditScore: borrowerCreditScore,
+                        isVeteranBorrower: isVeteranBorrower,
+                        fipsGeoId: prop.fipsGeoId || prop.geoid,
+                        geoid: prop.geoid,
+                        isProgramActive: isOhcsProgramActive
+                      });
+
+                      const isCreditBusted = isOhcsProgramActive && borrowerCreditScore < 620;
+                      const isIncomeBusted = isOhcsProgramActive && !ohcsEval.isWithinIncomeLimit;
+                      const isPriceBusted = isOhcsProgramActive && !ohcsEval.isWithinPurchasePriceLimit;
+
+                      if (!isOhcsProgramActive) {
+                        return (
+                          <div className="p-2 rounded-xl border border-stone-800 bg-stone-950/60 text-stone-400 text-[10px] space-y-0.5">
+                            <div className="flex items-center justify-between">
+                              <span className="flex items-center gap-1.5 font-bold text-stone-300">
+                                <span className="w-2 h-2 rounded-full bg-stone-500" />
+                                <span>OHCS FirstHome: Filter Toggled OFF</span>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setIsOhcsProgramActive(true);
+                                }}
+                                className="px-1.5 py-0.2 rounded bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 border border-teal-500/40 text-[9px] font-bold cursor-pointer transition"
+                              >
+                                Activate Stress Test
+                              </button>
+                            </div>
+                            <p className="text-[8.5px] text-stone-500 italic">
+                              County household income limits and purchase price caps are bypassed.
+                            </p>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className={`p-2 rounded-xl border text-[10px] space-y-1 transition ${
+                          ohcsEval.isEligible
+                            ? 'bg-teal-950/40 border-teal-500/50 text-teal-100 shadow-xs'
+                            : isCreditBusted
+                            ? 'bg-orange-950/30 border-orange-500/40 text-orange-200'
+                            : isIncomeBusted
+                            ? 'bg-rose-950/30 border-rose-500/40 text-rose-200'
+                            : isPriceBusted
+                            ? 'bg-amber-950/30 border-amber-500/40 text-amber-200'
+                            : 'bg-stone-900/80 border-stone-800 text-stone-400'
+                        }`}>
+                          <div className="flex items-center justify-between font-bold">
+                            <span className="flex items-center gap-1.5">
+                              {ohcsEval.isEligible ? (
+                                <CheckCircle2 className="w-3 h-3 text-teal-400 shrink-0" />
+                              ) : isCreditBusted ? (
+                                <X className="w-3 h-3 text-orange-400 shrink-0" />
+                              ) : isIncomeBusted ? (
+                                <X className="w-3 h-3 text-rose-400 shrink-0" />
+                              ) : isPriceBusted ? (
+                                <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
+                              ) : (
+                                <Info className="w-3 h-3 text-stone-400 shrink-0" />
+                              )}
+                              <span>
+                                {ohcsEval.isEligible
+                                  ? `OHCS FirstHome: Eligible (${ohcsEval.grantPercent}% Grant)`
+                                  : isCreditBusted
+                                  ? 'OHCS FirstHome: Min 620 FICO Req'
+                                  : isIncomeBusted
+                                  ? 'OHCS FirstHome: Income Cap Busted'
+                                  : isPriceBusted
+                                  ? 'OHCS FirstHome: Price Cap Exceeded'
+                                  : 'OHCS FirstHome: Ineligible'}
+                              </span>
+                            </span>
+                            <span className="font-mono text-[9px] px-1.5 py-0.2 rounded bg-stone-900 text-teal-300 border border-teal-800/60">
+                              {ohcsEval.isLmiTargetedArea ? '🎯 Targeted' : 'Standard'} • Min 620
+                            </span>
+                          </div>
+                          <div className="text-[9px] flex items-center justify-between text-stone-300 flex-wrap gap-1">
+                            <span>
+                              Income Limit: <strong className={isIncomeBusted ? 'text-rose-300 font-bold' : 'text-teal-300 font-bold'}>{formatUSD(ohcsEval.householdIncomeLimitUsd)}</strong> • Price Cap: {formatUSD(ohcsEval.purchasePriceLimitUsd)}
+                            </span>
+                            {ohcsEval.isEligible ? (
+                              <span className="text-teal-300 font-bold font-mono">
+                                +{formatUSD(ohcsEval.grantAmountUsd)} Cash DPA
+                              </span>
+                            ) : (
+                              <span className="text-stone-400 text-[8.5px] italic">
+                                {isCreditBusted
+                                  ? `Borrower FICO (${borrowerCreditScore}) < 620 min`
+                                  : isIncomeBusted
+                                  ? `Exceeds by ${formatUSD(allBorrowersCombinedAnnualIncome - ohcsEval.householdIncomeLimitUsd)}`
+                                  : isPriceBusted
+                                  ? `Price over cap by ${formatUSD(prop.price - ohcsEval.purchasePriceLimitUsd)}`
+                                  : 'Statewide Oregon Only'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Dynamic Real-Time USDA Rural Development 100% ($0 Down) Qualification Card */}
+                    {(() => {
+                      const isUsdaZone = Boolean(
+                        prop.specialPrograms.usdaRural100Financing ||
+                        prop.specialPrograms.usdaRuralEligible
+                      );
+
+                      const usdaEval = evaluateUsdaRdIncomeEligibility(
+                        allBorrowersCombinedAnnualIncome,
+                        usdaHouseholdCount,
+                        prop.county || prop.fipsGeoId || prop.city || prop.formattedAddress,
+                        {
+                          isUsdaZoneEligible: isUsdaZone,
+                          isProgramActive: isUsdaProgramActive,
+                          creditScore: borrowerCreditScore
+                        }
+                      );
+
+                      const isCreditBusted = isUsdaProgramActive && borrowerCreditScore < 680;
+                      const isIncomeBusted = isUsdaProgramActive && !usdaEval.isWithinIncomeLimit;
+                      const isZoneIneligible = isUsdaProgramActive && !usdaEval.isUsdaZoneEligible;
+
+                      if (!isUsdaProgramActive) {
+                        return (
+                          <div className="p-2 rounded-xl border border-stone-800 bg-stone-950/60 text-stone-400 text-[10px] space-y-0.5">
+                            <div className="flex items-center justify-between">
+                              <span className="flex items-center gap-1.5 font-bold text-stone-300">
+                                <span className="w-2 h-2 rounded-full bg-stone-500" />
+                                <span>USDA RD 100%: Filter Toggled OFF</span>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setIsUsdaProgramActive(true);
+                                }}
+                                className="px-1.5 py-0.2 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-[9px] font-bold cursor-pointer transition"
+                              >
+                                Activate Stress Test
+                              </button>
+                            </div>
+                            <p className="text-[8.5px] text-stone-500 italic">
+                              USDA household income limits and rural boundary filters are bypassed.
+                            </p>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className={`p-2 rounded-xl border text-[10px] space-y-1 transition ${
+                          usdaEval.isEligible
+                            ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-100 shadow-xs'
+                            : isCreditBusted
+                            ? 'bg-orange-950/30 border-orange-500/40 text-orange-200'
+                            : isZoneIneligible
+                            ? 'bg-amber-950/30 border-amber-500/40 text-amber-200'
+                            : isIncomeBusted
+                            ? 'bg-rose-950/30 border-rose-500/40 text-rose-200'
+                            : 'bg-stone-900/80 border-stone-800 text-stone-400'
+                        }`}>
+                          <div className="flex items-center justify-between font-bold">
+                            <span className="flex items-center gap-1.5">
+                              {usdaEval.isEligible ? (
+                                <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                              ) : isCreditBusted ? (
+                                <X className="w-3 h-3 text-orange-400 shrink-0" />
+                              ) : isZoneIneligible ? (
+                                <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
+                              ) : isIncomeBusted ? (
+                                <X className="w-3 h-3 text-rose-400 shrink-0" />
+                              ) : (
+                                <Info className="w-3 h-3 text-stone-400 shrink-0" />
+                              )}
+                              <span>
+                                {usdaEval.isEligible
+                                  ? 'USDA RD 100%: Eligible ($0 Down Financing)'
+                                  : isCreditBusted
+                                  ? 'USDA RD: Min 680 FICO Req'
+                                  : isZoneIneligible
+                                  ? 'USDA RD: Ineligible Metro Core Location'
+                                  : isIncomeBusted
+                                  ? 'USDA RD: Household Income Limit Exceeded'
+                                  : 'USDA RD: Ineligible'}
+                              </span>
+                            </span>
+                            <span className="font-mono text-[9px] px-1.5 py-0.2 rounded bg-stone-900 text-emerald-300 border border-emerald-800/60">
+                              {usdaEval.householdTierLabel} • Min 680
+                            </span>
+                          </div>
+                          <div className="text-[9px] flex items-center justify-between text-stone-300 flex-wrap gap-1">
+                            <span>
+                              Household Limit: <strong className={isIncomeBusted ? 'text-rose-300 font-bold' : 'text-emerald-300 font-bold'}>{formatUSD(usdaEval.applicableIncomeLimitUsd)}</strong> (8/1 Update Schedule)
+                            </span>
+                            {usdaEval.isEligible ? (
+                              <span className="text-emerald-300 font-bold font-mono">
+                                $0 Down • 100% LTV
+                              </span>
+                            ) : (
+                              <span className="text-stone-400 text-[8.5px] italic">
+                                {isCreditBusted
+                                  ? `Borrower FICO (${borrowerCreditScore}) < 680 min`
+                                  : isZoneIneligible
+                                  ? 'Outside USDA Rural Boundaries'
+                                  : isIncomeBusted
+                                  ? `Exceeds by ${formatUSD(allBorrowersCombinedAnnualIncome - usdaEval.applicableIncomeLimitUsd)}`
+                                  : 'Ineligible Location'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Dynamic Real-Time National Homebuyers Fund (NHF) DPA (Up to 5%) Qualification Card */}
+                    {(() => {
+                      const nhfEval = evaluateNhfDpaEligibility(
+                        allBorrowersCombinedAnnualIncome,
+                        prop.price,
+                        'FHA',
+                        prop.county || prop.fipsGeoId || prop.city || prop.formattedAddress,
+                        {
+                          creditScore: borrowerCreditScore,
+                          isProgramActive: isNhfProgramActive
+                        }
+                      );
+
+                      const isCreditBusted = isNhfProgramActive && borrowerCreditScore < 620;
+                      const isIncomeBusted = isNhfProgramActive && !nhfEval.isWithinIncomeLimit;
+                      const isPriceBusted = isNhfProgramActive && !nhfEval.isWithinPurchasePriceLimit;
+
+                      if (!isNhfProgramActive) {
+                        return (
+                          <div className="p-2 rounded-xl border border-stone-800 bg-stone-950/60 text-stone-400 text-[10px] space-y-0.5">
+                            <div className="flex items-center justify-between">
+                              <span className="flex items-center gap-1.5 font-bold text-stone-300">
+                                <span className="w-2 h-2 rounded-full bg-stone-500" />
+                                <span>NHF DPA (Up to 5%): Filter Toggled OFF</span>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setIsNhfProgramActive(true);
+                                }}
+                                className="px-1.5 py-0.2 rounded bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/40 text-[9px] font-bold cursor-pointer transition"
+                              >
+                                Activate Stress Test
+                              </button>
+                            </div>
+                            <p className="text-[8.5px] text-stone-500 italic">
+                              NHF 140% AMI income limits and FHA purchase caps are bypassed.
+                            </p>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className={`p-2 rounded-xl border text-[10px] space-y-1 transition ${
+                          nhfEval.isEligible
+                            ? 'bg-indigo-950/40 border-indigo-500/50 text-indigo-100 shadow-xs'
+                            : isCreditBusted
+                            ? 'bg-orange-950/30 border-orange-500/40 text-orange-200'
+                            : isPriceBusted
+                            ? 'bg-amber-950/30 border-amber-500/40 text-amber-200'
+                            : isIncomeBusted
+                            ? 'bg-rose-950/30 border-rose-500/40 text-rose-200'
+                            : 'bg-stone-900/80 border-stone-800 text-stone-400'
+                        }`}>
+                          <div className="flex items-center justify-between font-bold">
+                            <span className="flex items-center gap-1.5">
+                              {nhfEval.isEligible ? (
+                                <CheckCircle2 className="w-3 h-3 text-indigo-400 shrink-0" />
+                              ) : isCreditBusted ? (
+                                <X className="w-3 h-3 text-orange-400 shrink-0" />
+                              ) : isPriceBusted ? (
+                                <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
+                              ) : isIncomeBusted ? (
+                                <X className="w-3 h-3 text-rose-400 shrink-0" />
+                              ) : (
+                                <Info className="w-3 h-3 text-stone-400 shrink-0" />
+                              )}
+                              <span>
+                                {nhfEval.isEligible
+                                  ? `NHF DPA: Eligible ($${nhfEval.maxEstimatedAssistanceUsd.toLocaleString()} Assistance)`
+                                  : isCreditBusted
+                                  ? 'NHF DPA: Min 620 FICO Req'
+                                  : isPriceBusted
+                                  ? 'NHF: Exceeds 2026 FHA Purchase Price Cap'
+                                  : isIncomeBusted
+                                  ? 'NHF: 140% AMI Income Limit Exceeded'
+                                  : 'NHF: Ineligible'}
+                              </span>
+                            </span>
+                            <span className="font-mono text-[9px] px-1.5 py-0.2 rounded bg-stone-900 text-indigo-300 border border-indigo-800/60">
+                              No FTHB Req • Min 620
+                            </span>
+                          </div>
+                          <div className="text-[9px] flex items-center justify-between text-stone-300 flex-wrap gap-1">
+                            <span>
+                              FHA Cap: <strong className={isPriceBusted ? 'text-amber-300 font-bold' : 'text-indigo-300 font-bold'}>{formatUSD(nhfEval.fhaMaxPurchasePriceLimitUsd)}</strong> (1/1 Update)
+                            </span>
+                            {nhfEval.isEligible ? (
+                              <span className="text-indigo-300 font-bold font-mono">
+                                Net Down: ${nhfEval.netOutOfPocketDownPaymentUsd.toLocaleString()}
+                              </span>
+                            ) : (
+                              <span className="text-stone-400 text-[8.5px] italic">
+                                {isCreditBusted
+                                  ? `Borrower FICO (${borrowerCreditScore}) < 620 min`
+                                  : isPriceBusted
+                                  ? `Exceeds FHA cap by ${formatUSD(prop.price - nhfEval.fhaMaxPurchasePriceLimitUsd)}`
+                                  : isIncomeBusted
+                                  ? `Exceeds 140% AMI (${formatUSD(nhfEval.applicableIncomeLimitUsd)})`
+                                  : 'Guideline criteria not met'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     {/* Controls: Heart for Top 3, GeoMap Default & Curate for Lead */}
                     <div className="pt-2 border-t border-stone-800/80 flex items-center justify-between flex-wrap gap-1.5">

@@ -521,10 +521,11 @@ export const GoogleAppsSidebarLauncher: React.FC<GoogleAppsSidebarLauncherProps>
   const allItems = [...sortedFlagship, ...sortedGoogleApps, ...sortedPlatformTools];
 
   const filteredItems = allItems.filter(item => {
+    const itemDesc = (item as any).description || '';
     const matchesSearch = 
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.subtitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      itemDesc.toLowerCase().includes(searchQuery.toLowerCase());
     
     if (activeCategory === 'all') return matchesSearch;
     return item.category === activeCategory && matchesSearch;

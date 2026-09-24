@@ -75,7 +75,12 @@ export const MortgageLoanProductManager: React.FC<MortgageLoanProductManagerProp
     propertyState: 'OR',
     propertyPrice: 425000,
     liquidDownPayment: 15000,
-    isTargetedCensusTract: false
+    isTargetedCensusTract: false,
+    propertyUnitCount: 1,
+    propertyType: 'Single Family',
+    occupancyType: 'Primary',
+    isStickBuilt: true,
+    isPrimaryResidence: true
   });
 
   // Notify parent whenever products change
@@ -202,7 +207,8 @@ export const MortgageLoanProductManager: React.FC<MortgageLoanProductManagerProp
         testBuyer.propertyState,
         testBuyer.propertyPrice,
         testBuyer.liquidDownPayment,
-        testBuyer.isTargetedCensusTract
+        testBuyer.isTargetedCensusTract,
+        testBuyer
       )
     );
   }, [products, testBuyer]);
@@ -548,6 +554,66 @@ export const MortgageLoanProductManager: React.FC<MortgageLoanProductManagerProp
             </div>
           </div>
 
+          {/* 2026 OREGON CONFORMING LOAN LIMITS CARD */}
+          <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white rounded-2xl p-6 border border-blue-700/60 shadow-lg space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-blue-800/80 pb-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full bg-blue-500/30 text-blue-200 border border-blue-400/30 text-[10px] font-mono font-bold uppercase">
+                    FHFA &amp; Fannie Mae Baseline
+                  </span>
+                  <span className="text-xs font-bold text-amber-300">
+                    2026 Guidelines
+                  </span>
+                </div>
+                <h3 className="text-xl font-extrabold text-white flex items-center gap-2">
+                  <span>📊 2026 Oregon Conforming Loan Limits</span>
+                </h3>
+              </div>
+              <div className="flex items-center gap-2 bg-emerald-950/80 text-emerald-300 px-3 py-1.5 rounded-xl border border-emerald-800/60 text-xs font-bold">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span>Statewide Uniform: All 36 OR Counties</span>
+              </div>
+            </div>
+
+            <div className="p-3 bg-white/10 rounded-xl backdrop-blur-xs text-xs text-blue-100 leading-relaxed space-y-1.5">
+              <p>
+                <strong>Official FHFA Notice:</strong> No, there are no designated high-cost loan areas in Oregon for 2026 per Fannie Mae and FHFA guidelines. All 36 counties in Oregon share the exact same baseline conforming loan limits. Every census tract, city, and county across Oregon is 100% eligible for <strong>Lakeview National 100% DPA</strong> (1-Unit stick-built SFR/PUD/Condo primary residence only; Max 140% Fannie Mae County AMI).
+              </p>
+              <div className="flex items-center gap-4 text-[11px] text-amber-200 font-mono pt-1 border-t border-blue-500/30">
+                <span>📅 <strong>AMI Schedule Update Cycle</strong>: Fannie Mae updates Area Median Income annually by <strong>12/1</strong></span>
+                <span>•</span>
+                <span>📅 <strong>Loan Limit Update Cycle</strong>: FHFA updates Conforming Loan Limits annually by <strong>7/1</strong></span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+              <div className="p-3.5 bg-slate-950/60 rounded-xl border border-blue-500/40">
+                <div className="text-[11px] font-bold text-blue-300 uppercase tracking-wider">1-Unit Property</div>
+                <div className="text-lg sm:text-xl font-black text-amber-300 font-mono mt-1">$832,750</div>
+                <div className="text-[10px] text-slate-400 mt-0.5">Single Family / Condo / PUD</div>
+              </div>
+
+              <div className="p-3.5 bg-slate-950/60 rounded-xl border border-blue-500/40">
+                <div className="text-[11px] font-bold text-blue-300 uppercase tracking-wider">2-Unit Property</div>
+                <div className="text-lg sm:text-xl font-black text-amber-300 font-mono mt-1">$1,066,250</div>
+                <div className="text-[10px] text-slate-400 mt-0.5">Duplex / 2-Family Home</div>
+              </div>
+
+              <div className="p-3.5 bg-slate-950/60 rounded-xl border border-blue-500/40">
+                <div className="text-[11px] font-bold text-blue-300 uppercase tracking-wider">3-Unit Property</div>
+                <div className="text-lg sm:text-xl font-black text-amber-300 font-mono mt-1">$1,288,800</div>
+                <div className="text-[10px] text-slate-400 mt-0.5">Triplex / 3-Family Home</div>
+              </div>
+
+              <div className="p-3.5 bg-slate-950/60 rounded-xl border border-blue-500/40">
+                <div className="text-[11px] font-bold text-blue-300 uppercase tracking-wider">4-Unit Property</div>
+                <div className="text-lg sm:text-xl font-black text-amber-300 font-mono mt-1">$1,601,750</div>
+                <div className="text-[10px] text-slate-400 mt-0.5">Fourplex / 4-Family Home</div>
+              </div>
+            </div>
+          </div>
+
           {/* OHCS FLEX LENDING SECTION */}
           <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-teal-200 dark:border-teal-900/50 shadow-sm space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-teal-100 dark:border-teal-900/30 pb-3">
@@ -794,7 +860,7 @@ export const MortgageLoanProductManager: React.FC<MortgageLoanProductManagerProp
 
           {/* INPUT FORM */}
           <div className="space-y-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-500 uppercase">Annual Income</label>
                 <input
@@ -813,6 +879,20 @@ export const MortgageLoanProductManager: React.FC<MortgageLoanProductManagerProp
                   onChange={(e) => setTestBuyer({ ...testBuyer, creditScore: Number(e.target.value) })}
                   className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700"
                 />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Property Units</label>
+                <select
+                  value={testBuyer.propertyUnitCount || 1}
+                  onChange={(e) => setTestBuyer({ ...testBuyer, propertyUnitCount: Number(e.target.value) as any })}
+                  className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700"
+                >
+                  <option value={1}>1-Unit ($832,750 Limit)</option>
+                  <option value={2}>2-Unit ($1,066,250 Limit)</option>
+                  <option value={3}>3-Unit ($1,288,800 Limit)</option>
+                  <option value={4}>4-Unit ($1,601,750 Limit)</option>
+                </select>
               </div>
 
               <div className="space-y-1">
@@ -876,6 +956,70 @@ export const MortgageLoanProductManager: React.FC<MortgageLoanProductManagerProp
                   onChange={(e) => setTestBuyer({ ...testBuyer, dtiPercent: Number(e.target.value) })}
                   className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700"
                 />
+              </div>
+            </div>
+
+            {/* LAKEVIEW & OHCS PROPERTY STRUCTURE & OCCUPANCY CONTROLS */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center justify-between">
+                  <span>Property Structure</span>
+                  <span className="text-[9px] text-amber-600 dark:text-amber-400 font-normal">Lakeview: Stick-Built Only</span>
+                </label>
+                <select
+                  value={testBuyer.propertyType || 'Single Family'}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setTestBuyer({
+                      ...testBuyer,
+                      propertyType: val as any,
+                      isStickBuilt: val !== 'Manufactured'
+                    });
+                  }}
+                  className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700"
+                >
+                  <option value="Single Family">Single Family Residence (Stick-Built SFR)</option>
+                  <option value="Townhouse">PUD / Townhome (Stick-Built)</option>
+                  <option value="Condo">Condominium (Stick-Built)</option>
+                  <option value="Manufactured">Manufactured / Mobile Home (Ineligible Lakeview)</option>
+                  <option value="Multi-Family">Multi-Family / Multi-Unit (Ineligible Lakeview)</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center justify-between">
+                  <span>Occupancy Type</span>
+                  <span className="text-[9px] text-amber-600 dark:text-amber-400 font-normal">Lakeview: Primary Only</span>
+                </label>
+                <select
+                  value={testBuyer.occupancyType || 'Primary'}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setTestBuyer({
+                      ...testBuyer,
+                      occupancyType: val,
+                      isPrimaryResidence: val === 'Primary'
+                    });
+                  }}
+                  className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700"
+                >
+                  <option value="Primary">Primary Residence (Owner-Occupied)</option>
+                  <option value="Secondary">Second Home (Ineligible Lakeview)</option>
+                  <option value="Investment">Investment Property (Ineligible Lakeview)</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center justify-between">
+                  <span>2026 Conforming Limit Cap</span>
+                  <span className="text-[9px] text-blue-600 dark:text-blue-400 font-mono">1-Unit: $832,750</span>
+                </label>
+                <div className="px-2.5 py-1.5 bg-blue-50 dark:bg-blue-950/40 rounded-lg text-xs font-medium border border-blue-200 dark:border-blue-900 text-blue-900 dark:text-blue-200 flex items-center justify-between">
+                  <span>OR Conforming Limit:</span>
+                  <strong className="font-mono text-amber-600 dark:text-amber-300">
+                    {testBuyer.propertyUnitCount === 1 ? '$832,750' : testBuyer.propertyUnitCount === 2 ? '$1,066,250' : testBuyer.propertyUnitCount === 3 ? '$1,288,800' : '$1,601,750'}
+                  </strong>
+                </div>
               </div>
             </div>
 
@@ -988,6 +1132,15 @@ export const MortgageLoanProductManager: React.FC<MortgageLoanProductManagerProp
                           <li key={idx}>{reason}</li>
                         ))}
                       </ul>
+                    </div>
+                  )}
+
+                  {res.product.id.includes('lakeview') && (
+                    <div className="pt-1.5 border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-[10px] text-slate-500">
+                      <span>2026 Conforming Limit ({testBuyer.propertyUnitCount || 1}-Unit):</span>
+                      <strong className="text-amber-600 dark:text-amber-400 font-mono font-bold">
+                        ${(res.conformingLoanLimitUsd || 832750).toLocaleString()} (100% OR Tract Eligible)
+                      </strong>
                     </div>
                   )}
                 </div>

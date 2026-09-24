@@ -33,7 +33,7 @@ import { useMemory } from '../context/MemoryContext';
 export interface DpaProgramOption {
   id: string;
   name: string;
-  category: 'usda' | 'cra_grant' | 'state_hfa' | 'seller_credit' | 'fha_fnma' | 'lakeview_national' | 'ohcs_flex_firsthome';
+  category: 'usda' | 'cra_grant' | 'state_hfa' | 'seller_credit' | 'fha_fnma' | 'lakeview_national' | 'ohcs_flex_firsthome' | 'nhf_national';
   grantAmount: number;
   isGrantNonRepayable: boolean;
   requiredDownPercent: number;
@@ -125,8 +125,8 @@ export const LeadDpaGrantStackerStudio: React.FC = () => {
       isGrantNonRepayable: true,
       requiredDownPercent: 0,
       interestRate: 6.25,
-      description: 'Lakeview Loan Servicing Community Land Trust & 100% National Down Payment Assistance offering 3.5% - 5% forgivable grant assistance.',
-      eligibilityRequirements: 'Minimum 620 FICO score; primary residence purchase; stackable with bank CRA census tract grants.',
+      description: 'Lakeview Loan Servicing 100% National Down Payment Assistance offering 3.5% - 5.0% soft second assistance up to 2026 Fannie Mae Conforming Limits ($832,750 1-Unit limit in OR).',
+      eligibilityRequirements: 'All 36 Oregon counties eligible up to 2026 Fannie Mae Conforming Limit ($832,750 for 1-Unit stick-built SFR/PUD/Condo primary residence only; multi-units and manufactured ineligible); all borrowers combined annual income must be <= 140% Fannie Mae county Area Median Income (AMI); minimum 620 FICO score.',
       enabled: true
     },
     {
@@ -139,6 +139,18 @@ export const LeadDpaGrantStackerStudio: React.FC = () => {
       interestRate: 6.00,
       description: 'Oregon Housing and Community Services (OHCS) Flex Lending FirstHome offering 4.0% standard or 5.0% LMI/Targeted Area cash assistance.',
       eligibilityRequirements: '620 FICO minimum; primary residence in Oregon; First-Time Homebuyer rule WAIVED in Targeted Census Tracts.',
+      enabled: true
+    },
+    {
+      id: 'dpa-8',
+      name: 'National Homebuyers Fund (NHF) DPA (Up to 5% Grant/2nd)',
+      category: 'nhf_national',
+      grantAmount: Math.round(385000 * 0.035),
+      isGrantNonRepayable: true,
+      requiredDownPercent: 0,
+      interestRate: 6.25,
+      description: 'NHF Down Payment Assistance providing up to 5% of mortgage loan amount for FHA, VA, USDA, and Conventional loans with NO first-time homebuyer requirement.',
+      eligibilityRequirements: '620 minimum FICO; borrower income <= 140% AMI; primary residence nationwide; open to first-time AND repeat homebuyers (https://www.nhfloan.org/programs.html).',
       enabled: true
     }
   ]);
