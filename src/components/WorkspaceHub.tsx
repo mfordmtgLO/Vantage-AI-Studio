@@ -26,6 +26,7 @@ import { PushNotificationManager } from './PushNotificationManager';
 import { LiveTwoWayNotesModal } from './LiveTwoWayNotesModal';
 import { GoogleAppHeader } from './GoogleAppHeader';
 import { GoogleAppsCommandDeck } from './GoogleAppsCommandDeck';
+import { GoogleAppsWorkspacePortal } from './GoogleAppsWorkspacePortal';
 import { IndustryAppsAdaptabilityBar } from './IndustryAppsAdaptabilityBar';
 import { IndustrySmartDocsGmailStudio } from './IndustrySmartDocsGmailStudio';
 import { useAccountPathway } from '../context/AccountPathwayContext';
@@ -975,6 +976,15 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
         <PrioritizedCodeImplementationRoadmap
           onNavigateTab={setActiveTab}
           onOpenByokDrawer={onOpenByokDrawer}
+        />
+      )}
+
+      {/* 7 GOOGLE WORKSPACE APPS HUB & DUAL-PATHWAY PORTAL (FULL WEBSITE PARITY) */}
+      {activeTab === 'google_apps' && (
+        <GoogleAppsWorkspacePortal
+          initialActiveApp="gmail"
+          onNavigateTab={setActiveTab}
+          onOpenPitchDeck={onOpenPitchDeck}
         />
       )}
 

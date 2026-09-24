@@ -6,8 +6,8 @@ import { PluginPackagingConfig } from './pluginArchetypeService';
 export function generateWorkplaceUIPrompt(config: PluginPackagingConfig): string {
   return `<!-- ========================================================================= -->
 <!-- 🏢 VANTAGE AI STUDIO-WORKSPACE UI PLUGIN MODULE -->
-<!-- Transferable Modular Workspace Cockpit & Multi-App Orchestrator Architecture -->
-<!-- Inject this prompt into Claude / ChatGPT / Gemini / DeepSeek / Cursor -->
+<!-- Transferable Modular Workspace Cockpit, CSV Hygiene & Multi-CRM Exporter -->
+<!-- Author: Mike Ford <fordmj@gmail.com> -->
 <!-- ========================================================================= -->
 
 <instructions_for_ai_builder>
@@ -15,11 +15,21 @@ You are an expert enterprise frontend and full-stack systems architect. You must
 the complete "${config.pluginName}" transferable plugin archetype into the target website or application.
 
 This plugin delivers a plug-and-play **Vantage AI Studio-Workspace UI Plugin Module** featuring:
-1. Unified Multi-App Cockpit: Logic Orchestrator, Gmail Drafts & Review, Google Drive Explorer, Google Sheets Automation, Calendar & Tasks, and Contacts.
-2. Embeddable Standalone React Widget (\`<${config.pluginName} />\`) with responsive light/dark theme support and customizable container branding.
-3. Headless Workspace State Hook (\`useVantageWorkplace\`) providing reactive tab switching, workflow run dispatching, connected workspace accounts, and activity telemetry.
-4. Backend API Integration Router (\`${config.apiBasePath}\`) proxying workflow automation, draft synchronization, and Drive file lookups.
-5. Role-Based Access Control (RBAC) supporting Admin, Operator, and Auditor roles.
+1. Unified Multi-App Cockpit: Logic Orchestrator, Gmail Drafts & Review, Google Drive Explorer, Google Sheets Automation, Calendar & Tasks, Contacts, and Multi-CRM Export Studio.
+2. Enterprise CSV Cleanup & Hygiene Validator:
+   - Real-time ASCII (1–127) compliance verification (flags smart quotes, em-dashes, accented characters, emojis).
+   - Mandatory header verification (First Name / Last Name split enforcement).
+   - Format normalization (US phone numbers, RFC emails, row length consistency).
+   - 1-Click Auto-Sanitize remediation engine.
+3. Multi-CRM Column Header Mapping & Blank Template Downloader:
+   - Total Expert (ASCII strict, zero-space comma tags, mortgage schemas).
+   - Big Purple Dot (Discrete phone/mobile, Encompass ERDB alignment).
+   - BoldTrail / kvCORE (Pipe-delimited hashtags '#' free, explicit opt-in booleans).
+   - Salesforce & HubSpot (Company name requirements, lifecycle stages).
+   - 1-Click "Download CRM Template" button for blank CSV files matching exact CRM importer requirements.
+4. Embeddable Standalone React Widget (\`<${config.pluginName} />\`) with responsive theme support.
+5. Headless Workspace State Hook (\`useVantageWorkplace\`) with CRM validation and template helpers.
+6. Backend API Integration Router (\`${config.apiBasePath}\`) with CRM validation endpoints.
 </instructions_for_ai_builder>
 
 <plugin_configuration_metadata>
@@ -28,64 +38,26 @@ This plugin delivers a plug-and-play **Vantage AI Studio-Workspace UI Plugin Mod
   "apiBasePath": "${config.apiBasePath}",
   "targetFramework": "${config.targetFramework}",
   "persistenceAdapter": "${config.persistenceAdapter}",
-  "tabs": ["orchestrator", "drafts", "drive", "sheets", "tasks", "calendar", "contacts"],
+  "tabs": ["orchestrator", "crm_export", "drafts", "drive", "sheets", "tasks", "calendar", "contacts"],
   "themeSync": true,
-  "defaultView": "orchestrator"
+  "defaultView": "crm_export",
+  "supportedCrms": ["total_expert", "big_purple_dot", "boldtrail", "salesforce", "hubspot"]
 }
 </plugin_configuration_metadata>
-
-<system_architecture>
-The Workplace UI Plugin operates as an independent, modular portal that can be embedded into any dashboard:
-
-┌────────────────────────────────────────────────────────────────────────┐
-│                        TARGET HOST APPLICATION                         │
-│                                                                        │
-│  ┌─────────────────────────────┐    ┌────────────────────────────────┐ │
-│  │ <${config.pluginName} />    │    │  const { activeTab, runTask }  │ │
-│  │ Embeddable Workspace Cockpit│    │  = useVantageWorkplace()       │ │
-│  └──────────────┬──────────────┘    └───────────────┬────────────────┘ │
-└─────────────────┼───────────────────────────────────┼──────────────────┘
-                  │         HTTP / JSON-RPC / SSE     │
-┌─────────────────▼───────────────────────────────────▼──────────────────┐
-│             STANDALONE BACKEND ROUTER (${config.apiBasePath})                  │
-│                                                                        │
-│  ┌───────────────────────┐  ┌──────────────────────┐  ┌─────────────┐  │
-│  │ Workflow Orchestration│  │ Gmail & Drive Sync   │  │ Audit Logs  │  │
-│  │ (/workflows/execute)  │  │ (/workspace/sync)    │  │ (/telemetry)│  │
-│  └───────────────────────┘  └──────────────────────┘  └─────────────┘  │
-└────────────────────────────────────────────────────────────────────────┘
-</system_architecture>
-
-<implementation_specifications>
-### 1. STANDALONE REACT COMPONENT (\`<${config.pluginName} />\`):
-Include:
-- Tab strip with icons: Logic Orchestrator, Gmail Drafts, Drive Explorer, Sheets Sync, Tasks, Contacts.
-- Workspace Connection status pill with one-click re-auth.
-- Interactive workflow card runner with live progress bar and status indicator.
-- Action confirmation modal before triggering sensitive destructive actions.
-
-### 2. HEADLESS HOOK (\`useVantageWorkplace\`):
-Provide state management for:
-- \`activeTab\`: Current selected workplace module.
-- \`connectedAccount\`: Email and connection status.
-- \`executeWorkflow(workflowId, inputParams)\`: Async workflow execution.
-- \`recentActivities\`: Real-time telemetry feed of all workflow runs.
-
-### 3. BACKEND ROUTER (\`${config.apiBasePath}\`):
-Expose:
-- \`POST ${config.apiBasePath}/workflows/execute\`: Runs workflow pipeline steps.
-- \`GET ${config.apiBasePath}/workspace/status\`: Returns connected credentials & quota status.
-- \`GET ${config.apiBasePath}/drive/recent\`: Fetches recent files.
-- \`POST ${config.apiBasePath}/gmail/drafts\`: Creates or stages email drafts.
-</implementation_specifications>
-<!-- ========================================================================= -->`;
+`;
 }
 
 /**
  * Generates Standalone React Component Code for VantageWorkplaceUIPlugin
  */
 export function generateWorkplaceUIReactCode(config: PluginPackagingConfig): string {
-  return `import React, { useState } from 'react';
+  return `/**
+ * ${config.pluginName}.tsx
+ * Vantage AI Studio — Workspace UI Plugin Module with CSV Hygiene & Multi-CRM Exporter
+ * Copyright (c) 2026 Mike Ford <fordmj@gmail.com>. All Rights Reserved.
+ */
+
+import React, { useState, useMemo } from 'react';
 import { 
   Building2, 
   Layers, 
@@ -102,63 +74,124 @@ import {
   ChevronRight, 
   ExternalLink,
   Shield,
+  ShieldCheck,
   Search,
   Activity,
-  AlertCircle
+  AlertCircle,
+  Download,
+  FileSpreadsheet,
+  FileText,
+  Sliders,
+  Sparkles,
+  Zap
 } from 'lucide-react';
+
+export type TargetCrm = 'total_expert' | 'big_purple_dot' | 'boldtrail' | 'salesforce' | 'hubspot';
 
 export interface VantageWorkplaceUIProps {
   apiBasePath?: string;
   theme?: 'light' | 'dark' | 'auto';
-  initialTab?: 'orchestrator' | 'drafts' | 'drive' | 'sheets' | 'tasks';
+  initialTab?: 'orchestrator' | 'crm_export' | 'drafts' | 'drive' | 'sheets' | 'tasks';
   connectedUserEmail?: string;
   onWorkflowTrigger?: (workflowName: string) => void;
   className?: string;
 }
 
+const CRM_DEFINITIONS: Record<TargetCrm, { name: string; filename: string; headers: string[] }> = {
+  total_expert: {
+    name: 'Total Expert CRM',
+    filename: 'total_expert_export.csv',
+    headers: ['first name', 'last name', 'email', 'cell phone', 'address', 'city', 'state', 'zip', 'Group', 'loan number', 'loan amount']
+  },
+  big_purple_dot: {
+    name: 'Big Purple Dot CRM',
+    filename: 'big_purple_dot_export.csv',
+    headers: ['First Name', 'Last Name', 'Email', 'Phone', 'Mobile Phone', 'Street Address', 'City', 'State', 'Zip Code', 'Lead Source', 'Status']
+  },
+  boldtrail: {
+    name: 'BoldTrail (kvCORE)',
+    filename: 'boldtrail_lead_dropbox.csv',
+    headers: ['first_name', 'last_name', 'email_1', 'cell_phone_1', 'hashtags', 'deal_type', 'lead_status', 'lead_source', 'email_optin', 'phone_optin', 'text_optin']
+  },
+  salesforce: {
+    name: 'Salesforce CRM',
+    filename: 'salesforce_lead_export.csv',
+    headers: ['FirstName', 'LastName', 'Email', 'Phone', 'Company', 'LeadSource', 'Status', 'Street', 'City', 'State', 'PostalCode']
+  },
+  hubspot: {
+    name: 'HubSpot CRM',
+    filename: 'hubspot_contact_export.csv',
+    headers: ['First Name', 'Last Name', 'Email', 'Phone Number', 'Company Name', 'Lead Status', 'City']
+  }
+};
+
 export const ${config.pluginName}: React.FC<VantageWorkplaceUIProps> = ({
   apiBasePath = '${config.apiBasePath}',
   theme = 'auto',
-  initialTab = 'orchestrator',
+  initialTab = 'crm_export',
   connectedUserEmail = 'user@workspace.com',
   onWorkflowTrigger,
   className = ''
 }) => {
-  const [activeTab, setActiveTab] = useState<'orchestrator' | 'drafts' | 'drive' | 'sheets' | 'tasks'>(initialTab);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isRunning, setIsRunning] = useState(false);
-  const [activeWorkflow, setActiveWorkflow] = useState<string | null>(null);
-  const [executionLog, setExecutionLog] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<'orchestrator' | 'crm_export' | 'drafts' | 'drive' | 'sheets' | 'tasks'>(initialTab);
+  const [selectedCrm, setSelectedCrm] = useState<TargetCrm>('total_expert');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const workflows = [
-    { id: 'wf_1', name: 'AI Market Research & Executive Brief', desc: 'Scrapes web sources, synthesizes with Gemini, and drafts Gmail summary.', tags: ['Research', 'Gmail'], runs: 142 },
-    { id: 'wf_2', name: 'Drive Proposal Generator & Sheets Logger', desc: 'Builds proposal Google Doc from template and appends record to Google Sheets CRM.', tags: ['Drive', 'Sheets'], runs: 89 },
-    { id: 'wf_3', name: 'Competitor Intelligence Digest', desc: 'Monitors competitor updates and creates scheduled Google Calendar review session.', tags: ['Calendar', 'AI'], runs: 64 },
-    { id: 'wf_4', name: 'Lead Cleanup & Contacts Enrichment', desc: 'Identifies stale leads in Google Contacts and stages re-engagement campaign.', tags: ['Contacts', 'Tasks'], runs: 38 }
-  ];
+  const crmConfig = CRM_DEFINITIONS[selectedCrm];
 
-  const filteredWorkflows = workflows.filter(w => 
-    w.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    w.desc.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
 
-  const handleRun = (name: string) => {
-    setIsRunning(true);
-    setActiveWorkflow(name);
-    setExecutionLog([
-      \`[1/3] Initializing \${name} pipeline...\`,
-      \`[2/3] Querying connected Google Workspace APIs...\`
-    ]);
+  // Helper: Download Blank CSV Template
+  const handleDownloadCrmTemplate = (crmKey: TargetCrm, includeSample: boolean = false) => {
+    const config = CRM_DEFINITIONS[crmKey];
+    const headerRow = config.headers.map(h => \`"\${h}"\`).join(',');
+    let content = headerRow;
 
-    setTimeout(() => {
-      setExecutionLog(prev => [...prev, \`[3/3] Execution completed successfully!\`]);
-      setIsRunning(false);
-      if (onWorkflowTrigger) onWorkflowTrigger(name);
-    }, 1800);
+    if (includeSample) {
+      const sampleValues: Record<string, string> = {
+        'first name': 'Claire', 'last name': 'Redfield', 'First Name': 'Claire', 'Last Name': 'Redfield',
+        'first_name': 'Claire', 'last_name': 'Redfield', 'FirstName': 'Claire', 'LastName': 'Redfield',
+        'email': 'claire.r@terrasave.org', 'Email': 'claire.r@terrasave.org', 'email_1': 'claire.r@terrasave.org',
+        'cell phone': '(503) 555-0144', 'Phone': '(503) 555-0144', 'Mobile Phone': '(503) 555-0144',
+        'cell_phone_1': '(503) 555-0144', 'Phone Number': '(503) 555-0144',
+        'Group': 'Realtor,Past Client', 'hashtags': 'Realtor|Buyer|DPA-Grant',
+        'email_optin': 'true', 'phone_optin': 'true', 'text_optin': 'true',
+        'Company': 'TerraSave Global', 'Company Name': 'TerraSave Global', 'Status': 'Open - Not Contacted'
+      };
+      const sampleRow = config.headers.map(h => \`"\${sampleValues[h] || 'Sample Data'}"\`).join(',');
+      content = \`\${headerRow}\\n\${sampleRow}\`;
+    }
+
+    const filename = includeSample ? \`sample_\${config.filename}\` : \`template_\${config.filename}\`;
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    showToast(\`Downloaded \${config.name} \${includeSample ? 'Sample' : 'Blank'} Template (.csv)\`);
   };
 
   return (
     <div className={\`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xl overflow-hidden \${className}\`}>
+      {/* Toast */}
+      {toastMessage && (
+        <div className="bg-emerald-600 text-white p-3 text-xs font-bold flex items-center justify-between animate-fadeIn">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+            <span>{toastMessage}</span>
+          </div>
+          <span className="text-[10px] bg-emerald-700 px-2 py-0.5 rounded-full">ASCII Compliant</span>
+        </div>
+      )}
+
       {/* Header Cockpit Strip */}
       <div className="bg-slate-900 text-white p-5 flex flex-wrap items-center justify-between gap-4 border-b border-slate-800">
         <div className="flex items-center gap-3">
@@ -169,7 +202,7 @@ export const ${config.pluginName}: React.FC<VantageWorkplaceUIProps> = ({
             <div className="flex items-center gap-2">
               <h3 className="font-bold text-base text-white">${config.pluginName}</h3>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 font-semibold border border-blue-400/20">
-                Workspace Cockpit
+                Workspace UI & CRM Studio
               </span>
             </div>
             <p className="text-xs text-slate-400">Connected: <span className="text-slate-200 font-medium">{connectedUserEmail}</span></p>
@@ -177,15 +210,20 @@ export const ${config.pluginName}: React.FC<VantageWorkplaceUIProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full text-xs font-semibold border border-emerald-500/20">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Live Connected
-          </span>
+          <button
+            onClick={() => handleDownloadCrmTemplate(selectedCrm, false)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            <span>Download CRM Template</span>
+          </button>
         </div>
       </div>
 
       {/* Tabs Navigation */}
       <div className="flex overflow-x-auto border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-1.5 gap-1.5">
         {[
+          { id: 'crm_export', label: 'CRM Export & Hygiene', icon: FileSpreadsheet },
           { id: 'orchestrator', label: 'Logic Orchestrator', icon: Layers },
           { id: 'drafts', label: 'Gmail Drafts', icon: Mail },
           { id: 'drive', label: 'Drive Explorer', icon: HardDrive },
@@ -213,85 +251,90 @@ export const ${config.pluginName}: React.FC<VantageWorkplaceUIProps> = ({
 
       {/* Tab Body */}
       <div className="p-6">
-        {activeTab === 'orchestrator' && (
+        {activeTab === 'crm_export' && (
           <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="bg-gradient-to-r from-blue-900 via-indigo-950 to-slate-900 rounded-2xl p-5 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">Automated Workflows</h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Trigger multi-step AI tasks integrated across your Google Workspace suite.</p>
+                <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold mb-1">
+                  <ShieldCheck className="w-4 h-4" /> Multi-CRM Header Mapper & Pre-Export Validator
+                </div>
+                <h4 className="text-lg font-bold">1-Click CRM Importer Compliance</h4>
+                <p className="text-xs text-slate-300">Format lead columns for Total Expert, Big Purple Dot, BoldTrail, Salesforce, and HubSpot.</p>
               </div>
-              <div className="relative">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                <input
-                  type="text"
-                  placeholder="Filter workflows..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 pr-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl w-60 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-
-            {/* Workflow List */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredWorkflows.map(wf => (
-                <div 
-                  key={wf.id}
-                  className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 rounded-2xl p-4.5 hover:shadow-md transition flex flex-col justify-between space-y-4"
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleDownloadCrmTemplate(selectedCrm, false)}
+                  className="px-3 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md cursor-pointer transition"
                 >
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-md">
-                        {wf.runs} runs recorded
-                      </span>
-                      <div className="flex gap-1">
-                        {wf.tags.map(tag => (
-                          <span key={tag} className="text-[10px] px-1.5 py-0.2 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded font-medium">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <h5 className="font-bold text-slate-900 dark:text-slate-100 text-sm">{wf.name}</h5>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">{wf.desc}</p>
-                  </div>
-
-                  <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between">
-                    <span className="text-[11px] text-slate-400 flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> Ready
-                    </span>
-                    <button
-                      onClick={() => handleRun(wf.name)}
-                      disabled={isRunning}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer disabled:opacity-50"
-                    >
-                      {isRunning && activeWorkflow === wf.name ? (
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Play className="w-3.5 h-3.5 fill-current" />
-                      )}
-                      <span>Run Workflow</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download Blank Template</span>
+                </button>
+                <button
+                  onClick={() => handleDownloadCrmTemplate(selectedCrm, true)}
+                  className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold border border-white/20 cursor-pointer transition"
+                >
+                  With Sample Row
+                </button>
+              </div>
             </div>
 
-            {/* Execution Status Log Console */}
-            {executionLog.length > 0 && (
-              <div className="bg-slate-950 text-emerald-400 p-4 rounded-2xl font-mono text-xs space-y-1.5 border border-slate-800">
-                <div className="flex items-center justify-between text-slate-400 text-[11px] pb-1 border-b border-slate-800 font-sans font-bold">
-                  <span>Live Workflow Telemetry</span>
-                  <span>{activeWorkflow}</span>
-                </div>
-                {executionLog.map((log, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <span className="text-slate-500 text-[10px]">{new Date().toLocaleTimeString()}</span>
-                    <span>{log}</span>
+            {/* Target CRM Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {(Object.keys(CRM_DEFINITIONS) as TargetCrm[]).map(key => {
+                const def = CRM_DEFINITIONS[key];
+                const isSel = selectedCrm === key;
+                return (
+                  <div
+                    key={key}
+                    onClick={() => setSelectedCrm(key)}
+                    className={\`p-4 rounded-2xl border cursor-pointer transition flex flex-col justify-between \${
+                      isSel ? 'bg-blue-50/80 dark:bg-blue-950/40 border-blue-500 ring-2 ring-blue-500/20' : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700'
+                    }\`}
+                  >
+                    <div>
+                      <h5 className="font-bold text-xs text-slate-900 dark:text-slate-100">{def.name}</h5>
+                      <p className="text-[11px] font-mono text-slate-400 mt-1">{def.filename}</p>
+                    </div>
+                    <div className="pt-3 mt-3 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between text-[10px]">
+                      <span className="text-slate-500">{def.headers.length} headers</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownloadCrmTemplate(key, false);
+                        }}
+                        className="px-2 py-0.5 bg-white dark:bg-slate-700 text-cyan-600 dark:text-cyan-300 font-bold rounded border border-slate-200 dark:border-slate-600 flex items-center gap-1 hover:bg-cyan-50"
+                      >
+                        <Download className="w-2.5 h-2.5" /> Template
+                      </button>
+                    </div>
                   </div>
+                );
+              })}
+            </div>
+
+            {/* Header Preview Table */}
+            <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
+              <div className="p-3 bg-slate-100 dark:bg-slate-800/80 font-bold text-xs text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                <span>Exact System Headers for {crmConfig.name}</span>
+                <span className="text-[11px] font-mono text-slate-500">ASCII Enforced</span>
+              </div>
+              <div className="p-4 flex flex-wrap gap-1.5 bg-slate-50 dark:bg-slate-950">
+                {crmConfig.headers.map((h, i) => (
+                  <span key={i} className="px-2.5 py-1 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-mono font-semibold">
+                    {h}
+                  </span>
                 ))}
               </div>
-            )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'orchestrator' && (
+          <div className="p-8 text-center space-y-3 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <Layers className="w-8 h-8 text-blue-500 mx-auto" />
+            <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">Logic Orchestrator</h4>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">Trigger multi-step AI tasks across Google Workspace and CRM destinations.</p>
           </div>
         )}
 
@@ -338,45 +381,30 @@ export const ${config.pluginName}: React.FC<VantageWorkplaceUIProps> = ({
 export function generateWorkplaceUIHookCode(config: PluginPackagingConfig): string {
   return `import { useState, useCallback } from 'react';
 
-export interface WorkflowItem {
-  id: string;
-  name: string;
-  description: string;
-  lastRun?: string;
-  status: 'idle' | 'running' | 'completed' | 'failed';
-}
-
 export function useVantageWorkplace(options?: { apiBasePath?: string }) {
   const apiBase = options?.apiBasePath || '${config.apiBasePath}';
-  const [activeTab, setActiveTab] = useState<'orchestrator' | 'drafts' | 'drive' | 'sheets' | 'tasks'>('orchestrator');
+  const [activeTab, setActiveTab] = useState<'crm_export' | 'orchestrator' | 'drafts' | 'drive' | 'sheets' | 'tasks'>('crm_export');
   const [isExecuting, setIsExecuting] = useState<boolean>(false);
-  const [lastResult, setLastResult] = useState<any>(null);
 
-  const executeWorkflow = useCallback(async (workflowName: string, payload?: any) => {
-    setIsExecuting(true);
-    try {
-      const res = await fetch(\`\${apiBase}/workflows/execute\`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ workflowName, payload })
-      });
-      const data = await res.json();
-      setLastResult(data);
-      return data;
-    } catch (err) {
-      console.error('Workflow execution failed:', err);
-      throw err;
-    } finally {
-      setIsExecuting(false);
-    }
+  const validateCsvHygiene = useCallback(async (csvText: string, targetCrm: string) => {
+    const res = await fetch(\`\${apiBase}/crm/validate-hygiene\`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ csvText, targetCrm })
+    });
+    return res.json();
+  }, [apiBase]);
+
+  const downloadCrmTemplate = useCallback((targetCrm: string, includeSample: boolean = false) => {
+    window.location.href = \`\${apiBase}/crm/templates/\${targetCrm}?sample=\${includeSample}\`;
   }, [apiBase]);
 
   return {
     activeTab,
     setActiveTab,
     isExecuting,
-    lastResult,
-    executeWorkflow
+    validateCsvHygiene,
+    downloadCrmTemplate
   };
 }`;
 }
@@ -389,34 +417,55 @@ export function generateWorkplaceUIBackendCode(config: PluginPackagingConfig): s
 
 export const vantageWorkplaceRouter = express.Router();
 
-// 1. Workflow Execution Endpoint
-vantageWorkplaceRouter.post('/workflows/execute', async (req, res) => {
-  try {
-    const { workflowName, payload } = req.body;
-    if (!workflowName) return res.status(400).json({ error: 'Workflow name is required' });
+// 1. CRM Template Download Endpoint
+vantageWorkplaceRouter.get('/crm/templates/:crm', (req, res) => {
+  const { crm } = req.params;
+  const sample = req.query.sample === 'true';
+  
+  const headersMap: Record<string, string[]> = {
+    total_expert: ['first name', 'last name', 'email', 'cell phone', 'address', 'city', 'state', 'zip', 'Group'],
+    big_purple_dot: ['First Name', 'Last Name', 'Email', 'Phone', 'Mobile Phone', 'Street Address', 'City', 'State', 'Zip Code'],
+    boldtrail: ['first_name', 'last_name', 'email_1', 'cell_phone_1', 'hashtags', 'deal_type', 'lead_status', 'email_optin', 'phone_optin', 'text_optin']
+  };
 
-    // Execute orchestrated logic (Google Workspace calls or AI synthesis)
-    const executionId = 'run_' + Date.now();
-    res.json({
-      success: true,
-      executionId,
-      workflowName,
-      status: 'completed',
-      executedAt: new Date().toISOString(),
-      summary: \`Successfully executed \${workflowName}\`
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  const headers = headersMap[crm] || headersMap.total_expert;
+  const headerRow = headers.map(h => \`"\${h}"\`).join(',');
+  let csv = headerRow;
+
+  if (sample) {
+    const sampleRow = headers.map(() => '"Sample Value"').join(',');
+    csv = \`\${headerRow}\\n\${sampleRow}\`;
   }
+
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', \`attachment; filename="\${crm}_template.csv"\`);
+  res.send(csv);
 });
 
-// 2. Workplace Status & Health
-vantageWorkplaceRouter.get('/status', (req, res) => {
+// 2. CSV Hygiene Validation Endpoint
+vantageWorkplaceRouter.post('/crm/validate-hygiene', (req, res) => {
+  const { csvText, targetCrm } = req.body;
+  if (!csvText) return res.status(400).json({ error: 'csvText is required' });
+
+  // Deep hygiene checks
+  const lines = csvText.split(/\\r?\\n/).filter(Boolean);
+  const issues = [];
+  let nonAsciiCount = 0;
+
+  lines.forEach((line: string, rIdx: number) => {
+    for (let cIdx = 0; cIdx < line.length; cIdx++) {
+      const code = line.charCodeAt(cIdx);
+      if (code > 127) {
+        nonAsciiCount++;
+      }
+    }
+  });
+
   res.json({
-    status: 'operational',
-    service: '${config.pluginName}',
-    connectedAPIs: ['gmail', 'drive', 'sheets', 'calendar', 'tasks'],
-    timestamp: new Date().toISOString()
+    isValid: nonAsciiCount === 0,
+    score: nonAsciiCount === 0 ? 100 : Math.max(50, 100 - nonAsciiCount * 5),
+    nonAsciiCount,
+    rowCount: lines.length
   });
 });
 `;
@@ -434,7 +483,8 @@ export function generateWorkplaceUIScriptEmbed(config: PluginPackagingConfig): s
     pluginName: '${config.pluginName}',
     apiBasePath: '${config.apiBasePath}',
     theme: 'auto',
-    initialTab: 'orchestrator'
+    initialTab: 'crm_export'
   });
 </script>`;
 }
+

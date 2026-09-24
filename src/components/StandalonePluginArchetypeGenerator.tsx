@@ -76,8 +76,10 @@ import {
   MapPin,
   Smartphone,
   DollarSign,
-  Package
+  Package,
+  Database
 } from 'lucide-react';
+import { CrmExportConfigurationView } from './CrmExportConfigurationView';
 
 interface StandalonePluginArchetypeGeneratorProps {
   currentUserEmail?: string | null;
@@ -93,7 +95,7 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
   const currentMeta = useMemo(() => getArchetypeMeta(selectedArchetype), [selectedArchetype]);
 
   const [config, setConfig] = useState<PluginPackagingConfig>(DEFAULT_PACKAGING_CONFIG);
-  const [activeView, setActiveView] = useState<'prompt' | 'react_widget' | 'headless_hook' | 'backend_router' | 'dsh_cli' | 'html_embed' | 'live_sandbox' | 'distribution_vault'>('prompt');
+  const [activeView, setActiveView] = useState<'prompt' | 'react_widget' | 'headless_hook' | 'backend_router' | 'dsh_cli' | 'html_embed' | 'crm_export' | 'live_sandbox' | 'distribution_vault'>('prompt');
   const [llmPreset, setLlmPreset] = useState<'universal' | 'claude' | 'chatgpt' | 'gemini' | 'deepseek' | 'cursor'>('universal');
   const [copied, setCopied] = useState<boolean>(false);
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
@@ -1086,6 +1088,17 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
             </button>
 
             <button
+              onClick={() => setActiveView('crm_export')}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                activeView === 'crm_export'
+                  ? 'bg-emerald-600 text-white shadow-md'
+                  : 'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+              }`}
+            >
+              <Database className="w-3.5 h-3.5" /> CRM Export Configuration
+            </button>
+
+            <button
               onClick={() => setActiveView('distribution_vault')}
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
                 activeView === 'distribution_vault'
@@ -1950,8 +1963,13 @@ export const StandalonePluginArchetypeGenerator: React.FC<StandalonePluginArchet
             </div>
           )}
 
+          {/* CRM Export Configuration Sub-Tab View */}
+          {activeView === 'crm_export' && (
+            <CrmExportConfigurationView />
+          )}
+
           {/* Code & Prompt Content Display Box */}
-          {activeView !== 'live_sandbox' && activeView !== 'distribution_vault' && (
+          {activeView !== 'live_sandbox' && activeView !== 'distribution_vault' && activeView !== 'crm_export' && (
             <div className="relative rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-slate-950 shadow-md">
               <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900 border-b border-slate-800 text-xs">
                 <div className="flex items-center gap-2">

@@ -36,6 +36,7 @@ import { ByokChecklistGuideModal } from './components/ByokChecklistGuideModal';
 import { MobileAddToHomeScreenBanner } from './components/MobileAddToHomeScreenBanner';
 import { LeadMobileShareLinksModal } from './components/LeadMobileShareLinksModal';
 import { PublicFacingWebsiteView } from './components/PublicFacingWebsiteView';
+import { GoogleAppsSidebarLauncher } from './components/GoogleAppsSidebarLauncher';
 import { safeAtob } from './utils/base64';
 
 export default function App() {
@@ -104,6 +105,23 @@ export default function App() {
     return new URLSearchParams(window.location.search).get('mobile_admin') === 'true';
   });
 
+  // Google Apps 9-Dot Launcher and Persistent Sidebar State
+  const [isLauncherOpen, setIsLauncherOpen] = useState<boolean>(false);
+  const [isSidebarPinned, setIsSidebarPinned] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('vantage_sidebar_pinned') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [sidebarDockSide, setSidebarDockSide] = useState<'left' | 'right'>(() => {
+    try {
+      const saved = localStorage.getItem('vantage_sidebar_dock');
+      if (saved === 'left' || saved === 'right') return saved;
+    } catch {}
+    return 'left';
+  });
+
   // Quick Undo and Voice Execution State
   const [activeVoiceWorkflow, setActiveVoiceWorkflow] = useState<string | null>(null);
   const [snackbarWorkflow, setSnackbarWorkflow] = useState<string | null>(null);
@@ -133,13 +151,18 @@ export default function App() {
     providerId: 'guest',
   } as unknown as User);
 
-  // Global Keyboard Shortcut: Cmd/Ctrl + K to trigger GlobalVoiceRecorderModal
+  // Global Keyboard Shortcuts: Cmd/Ctrl + K (Voice Studio) & Cmd/Ctrl + B (Apps Launcher)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Check for Cmd + K (Mac) or Ctrl + K (Windows/Linux)
       if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
         e.preventDefault();
         setIsVoiceModalOpen((prev) => !prev);
+      }
+      // Check for Cmd + B (Mac) or Ctrl + B (Windows/Linux) to toggle Google Apps launcher
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'b' || e.key === 'B')) {
+        e.preventDefault();
+        setIsLauncherOpen((prev) => !prev);
       }
     };
 
@@ -485,8 +508,59 @@ export default function App() {
                   window.history.replaceState({}, document.title, window.location.pathname + '?view=public');
                 } catch {}
               }}
+              onToggleLauncher={() => setIsLauncherOpen((prev) => !prev)}
+              isLauncherOpen={isLauncherOpen}
+              isSidebarPinned={isSidebarPinned}
+              onTogglePinSidebar={() => {
+                setIsSidebarPinned((prev) => {
+                  const next = !prev;
+                  try { localStorage.setItem('vantage_sidebar_pinned', String(next)); } catch {}
+                  return next;
+                });
+              }}
             />
-            <main>
+
+            {/* Google Apps 9-Dot Grid Overlay & Persistent Docked Sidebar */}
+            <GoogleAppsSidebarLauncher
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              isOpen={isLauncherOpen}
+              onClose={() => setIsLauncherOpen(false)}
+              isPinned={isSidebarPinned}
+              onTogglePin={() => {
+                setIsSidebarPinned((prev) => {
+                  const next = !prev;
+                  try { localStorage.setItem('vantage_sidebar_pinned', String(next)); } catch {}
+                  return next;
+                });
+              }}
+              dockSide={sidebarDockSide}
+              onToggleDockSide={() => {
+                setSidebarDockSide((prev) => {
+                  const next = prev === 'left' ? 'right' : 'left';
+                  try { localStorage.setItem('vantage_sidebar_dock', next); } catch {}
+                  return next;
+                });
+              }}
+              onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
+              onOpenPitchDeck={() => setIsPitchDeckOpen(true)}
+              onOpenByokDrawer={() => setIsByokDrawerOpen(true)}
+              onOpenLicenseStudio={() => setIsLicenseStudioOpen(true)}
+              onOpenScaffolding={() => setIsScaffoldingOpen(true)}
+              onOpenPublicWebsite={() => {
+                setViewMode('public');
+                try {
+                  localStorage.setItem('vantage_view_mode', 'public');
+                  window.history.replaceState({}, document.title, window.location.pathname + '?view=public');
+                } catch {}
+              }}
+            />
+
+            <main className={`transition-all duration-300 ${
+              isSidebarPinned 
+                ? (sidebarDockSide === 'left' ? 'lg:pl-80 xl:pl-88' : 'lg:pr-80 xl:pr-88') 
+                : ''
+            }`}>
               <WorkspaceHub
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}

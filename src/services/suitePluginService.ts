@@ -17,7 +17,9 @@ You are generating the full commercial enterprise suite bundle combining:
 2. Real Estate GeoMap & MLS Intelligence
 3. Voice Orchestrator with Speech Macros
 4. Multi-App Google Workspace UI Cockpit
-5. White-labeling, RBAC, domain-locking, and client distribution vault.
+5. Multi-CRM Export Studio & CSV Hygiene Validator (Total Expert, Big Purple Dot, BoldTrail, Salesforce, HubSpot)
+6. 1-Click Blank & Sample CRM Template Generation (.csv)
+7. White-labeling, RBAC, domain-locking, and client distribution vault.
 `;
 }
 

@@ -1,16 +1,17 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { WorkspaceTab } from '../types';
 import { 
   Sparkles, Mail, Calendar, FileText, Table, CheckSquare, Users, LogOut, 
   Bot, Brain, Send, Cpu, Clock, Mic, Moon, Sun, Monitor, Building2, RefreshCw, CheckCircle2,
   Database, Shield, Lock, Home, Code, FileCode, Layers, TrendingUp, Megaphone, Key,
-  Smartphone, Share2, Globe
+  Smartphone, Share2, Globe, LayoutGrid
 } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { useTheme } from '../context/ThemeContext';
 import { useAccountPathway } from '../context/AccountPathwayContext';
 import { useMemory } from '../context/MemoryContext';
 import { isMikeFordAdmin } from '../utils/adminAuth';
+import { getWorkspaceNotificationCounts, ModuleNotificationCounts } from '../utils/workspaceNotifications';
 import { BatterySaverNavbarToggle } from './BatterySaverNavbarToggle';
 
 interface NavbarProps {
@@ -28,6 +29,10 @@ interface NavbarProps {
   onOpenByokChecklist?: () => void;
   onOpenShareLinksModal?: () => void;
   onOpenPublicWebsite?: () => void;
+  onToggleLauncher?: () => void;
+  isLauncherOpen?: boolean;
+  isSidebarPinned?: boolean;
+  onTogglePinSidebar?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ 
@@ -44,7 +49,11 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenByokDrawer,
   onOpenByokChecklist,
   onOpenShareLinksModal,
-  onOpenPublicWebsite
+  onOpenPublicWebsite,
+  onToggleLauncher,
+  isLauncherOpen = false,
+  isSidebarPinned = false,
+  onTogglePinSidebar
 }) => {
   const { theme, setTheme, toggleTheme, resolvedTheme } = useTheme();
   const {
@@ -66,22 +75,99 @@ export const Navbar: React.FC<NavbarProps> = ({
     memories 
   } = useMemory();
 
+  const [notificationCounts, setNotificationCounts] = useState<ModuleNotificationCounts>(getWorkspaceNotificationCounts);
+
+  useEffect(() => {
+    const refresh = () => setNotificationCounts(getWorkspaceNotificationCounts());
+    refresh();
+    const interval = setInterval(refresh, 3000);
+    window.addEventListener('storage', refresh);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('storage', refresh);
+    };
+  }, []);
+
   const isAdmin = isMikeFordAdmin(user) || isMikeFordAdmin({ email: connectedWorkspaceEmail });
 
-  // Prominently featured 7 Google Workspace Apps
+  // Prominently featured 7 Google Workspace Apps with Live Counters
   const googleApps = [
-    { id: 'gmail' as WorkspaceTab, label: 'Gmail', icon: Mail, color: 'text-red-600 dark:text-red-400', activeClass: 'bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 border-red-200 dark:border-red-900', badge: 'Inbox' },
-    { id: 'calendar' as WorkspaceTab, label: 'Calendar', icon: Calendar, color: 'text-blue-600 dark:text-blue-400', activeClass: 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-900', badge: 'Schedule' },
-    { id: 'drive' as WorkspaceTab, label: 'Drive & Docs', icon: FileText, color: 'text-amber-600 dark:text-amber-400', activeClass: 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900', badge: 'Cloud' },
-    { id: 'sheets' as WorkspaceTab, label: 'Sheets', icon: Table, color: 'text-emerald-600 dark:text-emerald-400', activeClass: 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900', badge: 'SQL' },
-    { id: 'tasks' as WorkspaceTab, label: 'Tasks', icon: CheckSquare, color: 'text-sky-600 dark:text-sky-400', activeClass: 'bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-900', badge: 'To-Do' },
-    { id: 'contacts' as WorkspaceTab, label: 'Contacts', icon: Users, color: 'text-purple-600 dark:text-purple-400', activeClass: 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-900', badge: 'CRM' },
-    { id: 'drafts' as WorkspaceTab, label: 'Drafts', icon: Send, color: 'text-rose-600 dark:text-rose-400', activeClass: 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-900', badge: '18' },
+    { 
+      id: 'gmail' as WorkspaceTab, 
+      label: 'Gmail', 
+      icon: Mail, 
+      color: 'text-red-600 dark:text-red-400', 
+      activeClass: 'bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 border-red-200 dark:border-red-900', 
+      badge: `${notificationCounts.gmail.count} Unread`,
+      notificationCount: notificationCounts.gmail.count,
+      isUrgent: true
+    },
+    { 
+      id: 'calendar' as WorkspaceTab, 
+      label: 'Calendar', 
+      icon: Calendar, 
+      color: 'text-blue-600 dark:text-blue-400', 
+      activeClass: 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-900', 
+      badge: `${notificationCounts.calendar.count} Today`,
+      notificationCount: notificationCounts.calendar.count,
+      isUrgent: false
+    },
+    { 
+      id: 'drive' as WorkspaceTab, 
+      label: 'Drive & Docs', 
+      icon: FileText, 
+      color: 'text-amber-600 dark:text-amber-400', 
+      activeClass: 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900', 
+      badge: `${notificationCounts.drive.count} Files`,
+      notificationCount: notificationCounts.drive.count,
+      isUrgent: false
+    },
+    { 
+      id: 'sheets' as WorkspaceTab, 
+      label: 'Sheets', 
+      icon: Table, 
+      color: 'text-emerald-600 dark:text-emerald-400', 
+      activeClass: 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900', 
+      badge: `${notificationCounts.sheets.count} Dups`,
+      notificationCount: notificationCounts.sheets.count,
+      isUrgent: true
+    },
+    { 
+      id: 'tasks' as WorkspaceTab, 
+      label: 'Tasks', 
+      icon: CheckSquare, 
+      color: 'text-sky-600 dark:text-sky-400', 
+      activeClass: 'bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-900', 
+      badge: `${notificationCounts.tasks.count} Pending`,
+      notificationCount: notificationCounts.tasks.count,
+      isUrgent: notificationCounts.tasks.count > 0
+    },
+    { 
+      id: 'contacts' as WorkspaceTab, 
+      label: 'Contacts', 
+      icon: Users, 
+      color: 'text-purple-600 dark:text-purple-400', 
+      activeClass: 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-900', 
+      badge: `${notificationCounts.contacts.count} Leads`,
+      notificationCount: 0,
+      isUrgent: false
+    },
+    { 
+      id: 'drafts' as WorkspaceTab, 
+      label: 'Drafts', 
+      icon: Send, 
+      color: 'text-rose-600 dark:text-rose-400', 
+      activeClass: 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-900', 
+      badge: `${notificationCounts.drafts.count} Drafts`,
+      notificationCount: notificationCounts.drafts.count,
+      isUrgent: false
+    },
   ];
 
   // Autonomous AI Engines & Platform Studios
   const studioTabs = [
     { id: 'suite' as WorkspaceTab, label: '💎 Vantage Suite', icon: Sparkles, badge: '4-in-1' },
+    { id: 'google_apps' as WorkspaceTab, label: '🌐 7 Google Apps Hub', icon: Layers, badge: 'Portal' },
     { id: 'studio' as WorkspaceTab, label: 'Prompt Studio & Copilot', icon: Bot },
     { id: 'brain' as WorkspaceTab, label: '2nd Brain Memory', icon: Brain },
     { id: 'real_estate' as WorkspaceTab, label: 'Real Estate GeoMap', icon: Home },
@@ -96,7 +182,29 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 transition-colors duration-200 max-w-[100vw] overflow-x-hidden w-full">
       <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 max-w-[100vw] overflow-x-hidden">
         <div className="flex items-center justify-between h-16 gap-2 max-w-[100vw] min-w-0">
-          <div className="flex items-center gap-2 shrink-0 min-w-0">
+          <div className="flex items-center gap-2.5 shrink-0 min-w-0">
+            {/* Google Apps 9-Dot "Waffle" Launcher Button */}
+            {onToggleLauncher && (
+              <button
+                type="button"
+                onClick={onToggleLauncher}
+                className={`relative p-2 rounded-xl border transition-all cursor-pointer shadow-xs flex items-center justify-center shrink-0 ${
+                  isLauncherOpen || isSidebarPinned
+                    ? 'bg-blue-600 text-white border-blue-500 shadow-blue-500/30 ring-2 ring-blue-400/40'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
+                }`}
+                title="Google Apps & Modules 9-Dot Launcher (Cmd+B)"
+                aria-label="Toggle Google Apps Launcher"
+              >
+                <LayoutGrid className="w-4 h-4" />
+                {notificationCounts.totalPending > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 px-1 items-center justify-center rounded-full text-[9px] font-black text-white bg-rose-500 ring-2 ring-white dark:ring-slate-900 animate-pulse shadow-sm">
+                    {notificationCounts.totalPending}
+                  </span>
+                )}
+              </button>
+            )}
+
             <div className="w-9 h-9 sm:w-10 sm:h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-blue-500/20 shrink-0">
               <Sparkles className="w-5 h-5" />
             </div>
@@ -389,10 +497,21 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Prominent Google Workspace 7-Apps Launcher Bar */}
         <div className="pt-2 pb-1.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 max-w-full min-w-0">
           <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none touch-pan-x whitespace-nowrap py-0.5 max-w-full min-w-0">
-            <span className="hidden xl:inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mr-1 shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-              7 Google Apps:
-            </span>
+            <button
+              onClick={() => setActiveTab('google_apps')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition-all cursor-pointer shadow-2xs border shrink-0 ${
+                activeTab === 'google_apps'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-500 shadow-md scale-[1.02]'
+                  : 'bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/40 dark:to-indigo-950/40 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100'
+              }`}
+              title="Open Unified 7 Google Workspace Apps Hub & Dual-Pathway Portal"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>7 Apps Hub</span>
+              <span className="text-[9px] px-1.5 py-0.2 rounded-md font-black uppercase bg-emerald-500 text-white">
+                Live
+              </span>
+            </button>
 
             {googleApps.map((app) => {
               const Icon = app.icon;
@@ -401,17 +520,26 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   key={app.id}
                   onClick={() => setActiveTab(app.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer shadow-2xs border shrink-0 ${
+                  className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer shadow-2xs border shrink-0 ${
                     isActive
                       ? `${app.activeClass} shadow-xs scale-[1.02]`
                       : 'bg-white dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200/90 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                   }`}
                   title={`Open Google ${app.label} Workspace`}
                 >
-                  <Icon className={`w-3.5 h-3.5 ${app.color}`} />
+                  <div className="relative">
+                    <Icon className={`w-3.5 h-3.5 ${app.color}`} />
+                    {app.notificationCount > 0 && (
+                      <span className={`absolute -top-1.5 -right-1.5 w-2 h-2 rounded-full ${app.isUrgent ? 'bg-rose-500 animate-pulse' : 'bg-blue-600'}`} />
+                    )}
+                  </div>
                   <span>{app.label}</span>
                   <span className={`text-[9px] px-1.5 py-0.2 rounded-md font-bold ${
-                    isActive ? 'bg-white/80 dark:bg-slate-900 text-slate-900 dark:text-slate-100' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+                    isActive 
+                      ? 'bg-white/80 dark:bg-slate-900 text-slate-900 dark:text-slate-100' 
+                      : app.isUrgent
+                        ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900 font-black'
+                        : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
                   }`}>
                     {app.badge}
                   </span>
