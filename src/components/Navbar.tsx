@@ -308,7 +308,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             {/* Desktop Horizontal Header Items (md:flex) */}
-            <div className="hidden md:flex items-center gap-2 overflow-x-auto scrollbar-none py-1">
+            <div 
+              className="hidden md:flex items-center gap-2 overflow-x-auto scrollbar-none py-1 touch-pan-x overscroll-x-contain"
+              style={{ overscrollBehaviorX: 'contain', WebkitOverflowScrolling: 'touch' }}
+            >
               {/* Dual Pathway Switcher & Workspace Connection Pill */}
               <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
                 <button
@@ -628,7 +631,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         )}
 
         {/* PRIMARY EXECUTIVE CONTROL STRIP (LO Profiles, Mobile Admin, GeoMap, 2nd Brain, Sign Out) */}
-        <div className="py-1.5 px-2 bg-slate-900 text-white rounded-xl my-1 flex items-center justify-between gap-2 overflow-x-auto scrollbar-none shadow-md border border-slate-800">
+        <div 
+          className="py-1.5 px-2 bg-slate-900 text-white rounded-xl my-1 flex items-center justify-between gap-2 overflow-x-auto scrollbar-none shadow-md border border-slate-800 touch-pan-x overscroll-x-contain"
+          style={{ overscrollBehaviorX: 'contain', WebkitOverflowScrolling: 'touch' }}
+        >
           <div className="flex items-center gap-1.5 shrink-0">
             <button
               type="button"
@@ -707,7 +713,10 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Prominent Google Workspace 7-Apps Launcher Bar */}
         <div className="pt-2 pb-1.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 max-w-full min-w-0">
-          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none touch-pan-x whitespace-nowrap py-0.5 max-w-full min-w-0">
+          <div 
+            className="flex items-center gap-1.5 overflow-x-auto scrollbar-none touch-pan-x overscroll-x-contain whitespace-nowrap py-0.5 max-w-full min-w-0"
+            style={{ overscrollBehaviorX: 'contain', WebkitOverflowScrolling: 'touch' }}
+          >
             <button
               onClick={() => setActiveTab('google_apps')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition-all cursor-pointer shadow-2xs border shrink-0 ${
@@ -761,7 +770,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Secondary Navigation: Autonomous AI Studios & Engines */}
-        <nav className="flex items-center gap-1 overflow-x-auto pb-2 scrollbar-none touch-pan-x whitespace-nowrap border-t border-slate-100/80 dark:border-slate-800/60 pt-1.5 max-w-full min-w-0">
+        <nav 
+          className="flex items-center gap-1 overflow-x-auto pb-2 scrollbar-none touch-pan-x overscroll-x-contain whitespace-nowrap border-t border-slate-100/80 dark:border-slate-800/60 pt-1.5 max-w-full min-w-0"
+          style={{ overscrollBehaviorX: 'contain', WebkitOverflowScrolling: 'touch' }}
+        >
           <span className="hidden xl:inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mr-1 my-auto shrink-0">
             <Sparkles className="w-3 h-3 text-blue-500" />
             AI Studios:

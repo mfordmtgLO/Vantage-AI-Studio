@@ -604,7 +604,10 @@ export default function App() {
             </main>
 
             {/* STICKY FLOATING EXECUTIVE CONTROL DOCK */}
-            <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 backdrop-blur-md border border-slate-700/80 rounded-2xl p-1.5 shadow-2xl flex items-center gap-1.5 max-w-[95vw] overflow-x-auto scrollbar-none">
+            <div 
+              className="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 backdrop-blur-md border border-slate-700/80 rounded-2xl p-1.5 shadow-2xl flex items-center gap-1.5 max-w-[95vw] overflow-x-auto scrollbar-none touch-pan-x overscroll-x-contain"
+              style={{ overscrollBehaviorX: 'contain', WebkitOverflowScrolling: 'touch' }}
+            >
               <button
                 type="button"
                 onClick={() => setActiveTab('lo_agent_profiles')}
