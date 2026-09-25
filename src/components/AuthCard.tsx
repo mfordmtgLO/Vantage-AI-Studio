@@ -232,30 +232,44 @@ export const AuthCard: React.FC<AuthCardProps> = ({
             </span>
           </button>
 
-          {/* If sign-in is taking time, display fallback actions so user is never stuck */}
+          {/* If sign-in is taking time, display instant fallback actions so user is never stuck */}
           {isLoggingIn && (
-            <div className="bg-slate-50 dark:bg-slate-800/80 rounded-xl p-3 border border-slate-200 dark:border-slate-700 text-left space-y-2 text-xs">
-              <p className="text-slate-600 dark:text-slate-300 font-medium">
-                {elapsedSeconds > 4
-                  ? 'If the Google sign-in window did not appear, tap "Direct Sign-In" to authenticate directly:'
-                  : 'Opening Google authentication window...'}
+            <div className="bg-slate-50 dark:bg-slate-800/80 rounded-xl p-3 border border-slate-200 dark:border-slate-700 text-left space-y-2.5 text-xs animate-in fade-in duration-150">
+              <div className="flex items-center justify-between text-slate-700 dark:text-slate-200 font-semibold">
+                <span>Connecting to Google OAuth...</span>
+                <span className="font-mono text-blue-600 dark:text-blue-400">{elapsedSeconds}s</span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                If the Google pop-up was blocked or didn't appear, use direct sign-in or explore immediately in guest mode:
               </p>
-              <div className="flex flex-col sm:flex-row items-stretch gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => onLogin('redirect')}
-                  className="flex-1 py-1.5 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-center transition cursor-pointer flex items-center justify-center gap-1.5"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Direct Sign-In</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={onCancelLogin}
-                  className="py-1.5 px-3 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg font-semibold text-center transition cursor-pointer"
-                >
-                  Cancel
-                </button>
+              <div className="flex flex-col gap-1.5 pt-0.5">
+                {onGuestLogin && (
+                  <button
+                    type="button"
+                    onClick={onGuestLogin}
+                    className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-xs shadow-xs transition cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <UserCircle2 className="w-4 h-4 text-amber-300" />
+                    <span>Enter Workspace as Guest Admin (Instant)</span>
+                  </button>
+                )}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onLogin('redirect')}
+                    className="flex-1 py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-semibold text-[11px] text-center transition cursor-pointer flex items-center justify-center gap-1.5 border border-slate-700"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Direct Sign-In</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onCancelLogin}
+                    className="py-1.5 px-3 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg font-semibold text-[11px] text-center transition cursor-pointer shrink-0"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -276,13 +290,13 @@ export const AuthCard: React.FC<AuthCardProps> = ({
 
           {/* Guest / Demo Mode option */}
           {!isLoggingIn && onGuestLogin && (
-            <div className="pt-1 border-t border-slate-100 dark:border-slate-800 space-y-1">
+            <div className="pt-1.5 border-t border-slate-100 dark:border-slate-800 space-y-2">
               <button
                 type="button"
                 onClick={onGuestLogin}
-                className="w-full text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 py-2 px-3 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/40 transition flex items-center justify-center gap-1.5 cursor-pointer"
+                className="w-full text-xs font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-slate-800/90 hover:bg-blue-100 dark:hover:bg-slate-800 border border-blue-200 dark:border-slate-700 py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
               >
-                <UserCircle2 className="w-3.5 h-3.5 text-blue-500" />
+                <UserCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 <span>Explore in Interactive Demo / Guest Mode</span>
               </button>
 

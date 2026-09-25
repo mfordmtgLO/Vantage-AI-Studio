@@ -737,7 +737,7 @@ export const GoogleAppsSidebarLauncher: React.FC<GoogleAppsSidebarLauncherProps>
         </div>
 
         {/* Scrollable Module Grid & List View */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-4">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-4">
           
           {/* SECTION 1: 4-IN-1 FLAGSHIP MODULES */}
           {(activeCategory === 'all' || activeCategory === 'flagship') && (

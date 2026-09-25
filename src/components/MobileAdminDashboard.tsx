@@ -4,7 +4,7 @@ import {
   Trash2, Bell, Sparkles, Smartphone, Mail, ChevronRight, Search, 
   Filter, CheckSquare, RefreshCw, Eye, Building2, ExternalLink,
   Copy, Check, Briefcase, Package, Layers, Sliders, Brain, Users,
-  Share2, LogOut, Globe
+  Share2, LogOut, Globe, KeyRound, Link2
 } from 'lucide-react';
 import { useAccountPathway } from '../context/AccountPathwayContext';
 import { IndustryCareerTemplateSelector } from './IndustryCareerTemplateSelector';
@@ -35,6 +35,14 @@ export const MobileAdminDashboard: React.FC<{
   const [brainSubView, setBrainSubView] = useState<'morph' | 'train'>('morph');
   const [activeTemplate, setActiveTemplate] = useState<IndustryCareerTemplate | null>(null);
   const [copiedUrlType, setCopiedUrlType] = useState<string | null>(null);
+  const [activeDashboardUrlParam, setActiveDashboardUrlParam] = useState<'auth' | 'dashboard' | 'mobile_admin'>('auth');
+
+  const getDashboardUrl = (param: 'auth' | 'dashboard' | 'mobile_admin') => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    if (param === 'auth') return `${origin}/?auth=1`;
+    if (param === 'dashboard') return `${origin}/?view=dashboard`;
+    return `${origin}/?mobile_admin=true`;
+  };
   const {
     pathway,
     setPathway,
@@ -143,36 +151,63 @@ export const MobileAdminDashboard: React.FC<{
           </div>
         </div>
 
-        {/* Row 2: Quick Launch Action Buttons in a non-overflowing 3-column grid */}
-        <div className="grid grid-cols-3 gap-1.5 mt-2 w-full max-w-full">
+        {/* Row 2: Quick Launch Action Buttons in a non-overflowing grid */}
+        <div className="grid grid-cols-2 xs:grid-cols-4 gap-1.5 mt-2 w-full max-w-full">
+          <button
+            type="button"
+            onClick={() => {
+              const url = typeof window !== 'undefined' ? `${window.location.origin}/?auth=1` : '/?auth=1';
+              navigator.clipboard.writeText(url);
+              setCopiedUrlType('header_dashboard_link');
+              setTimeout(() => setCopiedUrlType(null), 2500);
+            }}
+            className={`text-[10px] sm:text-[11px] font-bold py-1.5 px-1.5 sm:px-2 rounded-lg transition flex items-center justify-center gap-1 cursor-pointer truncate shadow-xs ${
+              copiedUrlType === 'header_dashboard_link'
+                ? 'bg-emerald-600 text-white border border-emerald-400'
+                : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white border border-blue-400/40'
+            }`}
+            title="Copy Parameter-Prefixed Admin Workspace Login Link (?auth=1)"
+          >
+            {copiedUrlType === 'header_dashboard_link' ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-200 shrink-0" />
+                <span className="truncate">Link Copied!</span>
+              </>
+            ) : (
+              <>
+                <KeyRound className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                <span className="truncate">Copy Dashboard Link</span>
+              </>
+            )}
+          </button>
           {onOpenPublicWebsite && (
             <button
               onClick={onOpenPublicWebsite}
-              className="text-[10px] sm:text-[11px] font-semibold text-blue-300 hover:text-white bg-blue-950/70 hover:bg-blue-900/80 py-1.5 px-1.5 sm:px-2.5 rounded-lg border border-blue-800/80 transition flex items-center justify-center gap-1 cursor-pointer truncate"
+              className="text-[10px] sm:text-[11px] font-semibold text-blue-300 hover:text-white bg-blue-950/70 hover:bg-blue-900/80 py-1.5 px-1.5 sm:px-2 rounded-lg border border-blue-800/80 transition flex items-center justify-center gap-1 cursor-pointer truncate"
               title="View Live Public Customer Facing Website"
             >
               <Globe className="w-3.5 h-3.5 text-blue-400 shrink-0" />
               <span className="truncate">Public Site</span>
             </button>
           )}
+          {onOpenShareLinksModal && (
+            <button
+              onClick={onOpenShareLinksModal}
+              className="text-[10px] sm:text-[11px] font-semibold text-slate-200 hover:text-white bg-slate-800/80 hover:bg-slate-700 py-1.5 px-1.5 sm:px-2 rounded-lg border border-slate-700 transition flex items-center justify-center gap-1 cursor-pointer truncate"
+              title="Open Live Lead Mobile URLs & PWA Launchers"
+            >
+              <Share2 className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+              <span className="truncate">Lead URLs</span>
+            </button>
+          )}
           {onOpenPluginVault && (
             <button
               onClick={onOpenPluginVault}
-              className="text-[10px] sm:text-[11px] font-semibold text-purple-300 hover:text-white bg-purple-950/70 hover:bg-purple-900/80 py-1.5 px-1.5 sm:px-2.5 rounded-lg border border-purple-800/80 transition flex items-center justify-center gap-1 cursor-pointer truncate"
+              className="text-[10px] sm:text-[11px] font-semibold text-purple-300 hover:text-white bg-purple-950/70 hover:bg-purple-900/80 py-1.5 px-1.5 sm:px-2 rounded-lg border border-purple-800/80 transition flex items-center justify-center gap-1 cursor-pointer truncate"
               title="Open Plugin Archetypes Generator"
             >
               <Sparkles className="w-3.5 h-3.5 text-purple-400 shrink-0" />
               <span className="truncate">Plugins</span>
-            </button>
-          )}
-          {onOpenShareLinksModal && (
-            <button
-              onClick={onOpenShareLinksModal}
-              className="text-[10px] sm:text-[11px] font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 py-1.5 px-1.5 sm:px-2.5 rounded-lg shadow-xs transition flex items-center justify-center gap-1 cursor-pointer truncate"
-              title="Open Live Lead Mobile URLs & PWA Launchers"
-            >
-              <Share2 className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-              <span className="truncate">Lead URLs</span>
             </button>
           )}
         </div>
@@ -296,6 +331,95 @@ export const MobileAdminDashboard: React.FC<{
         {activeTab !== 'cicd-status' && (
           <GitHubCloudRunSyncStatusCard compact={true} />
         )}
+
+        {/* Prominent Admin Workspace Dashboard Link Card */}
+        <div className="bg-gradient-to-r from-blue-950/90 via-slate-900 to-indigo-950/90 p-3.5 rounded-2xl border border-blue-700/60 shadow-lg space-y-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-blue-600/30 text-blue-400 border border-blue-500/30 flex items-center justify-center shrink-0">
+                <KeyRound className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-white tracking-tight flex items-center gap-1.5">
+                  Admin Workspace Access Link
+                  <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                    {activeDashboardUrlParam === 'auth' ? '?auth=1' : activeDashboardUrlParam === 'dashboard' ? '?view=dashboard' : '?mobile_admin=true'}
+                  </span>
+                </h4>
+                <p className="text-[10px] text-slate-400">Parameter-prefixed URL for direct admin workspace login</p>
+              </div>
+            </div>
+
+            {/* Selector Pills */}
+            <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-[10px] font-semibold">
+              <button
+                type="button"
+                onClick={() => setActiveDashboardUrlParam('auth')}
+                className={`px-2 py-0.5 rounded-lg transition cursor-pointer ${
+                  activeDashboardUrlParam === 'auth' ? 'bg-blue-600 text-white font-bold' : 'text-slate-400 hover:text-slate-200'
+                }`}
+                title="Direct Auth Sign-In (?auth=1)"
+              >
+                Login (?auth=1)
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveDashboardUrlParam('dashboard')}
+                className={`px-2 py-0.5 rounded-lg transition cursor-pointer ${
+                  activeDashboardUrlParam === 'dashboard' ? 'bg-blue-600 text-white font-bold' : 'text-slate-400 hover:text-slate-200'
+                }`}
+                title="Admin Workspace Dashboard (?view=dashboard)"
+              >
+                Dashboard (?view=dashboard)
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveDashboardUrlParam('mobile_admin')}
+                className={`px-2 py-0.5 rounded-lg transition cursor-pointer ${
+                  activeDashboardUrlParam === 'mobile_admin' ? 'bg-blue-600 text-white font-bold' : 'text-slate-400 hover:text-slate-200'
+                }`}
+                title="Mobile Command Center (?mobile_admin=true)"
+              >
+                Mobile (?mobile_admin=true)
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              readOnly
+              value={getDashboardUrl(activeDashboardUrlParam)}
+              className="flex-1 text-[11px] font-mono px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-blue-300 select-all outline-none font-semibold"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                const url = getDashboardUrl(activeDashboardUrlParam);
+                navigator.clipboard.writeText(url);
+                setCopiedUrlType(`dash_banner_${activeDashboardUrlParam}`);
+                setTimeout(() => setCopiedUrlType(null), 2500);
+              }}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shrink-0 shadow-md ${
+                copiedUrlType === `dash_banner_${activeDashboardUrlParam}`
+                  ? 'bg-emerald-600 text-white border border-emerald-400'
+                  : 'bg-blue-600 hover:bg-blue-500 text-white border border-blue-400/50'
+              }`}
+            >
+              {copiedUrlType === `dash_banner_${activeDashboardUrlParam}` ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-200" />
+                  <span>Dashboard Link Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Copy Dashboard Link</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
 
         {activeTab === 'cicd-status' && (
           <GitHubCloudRunSyncStatusCard compact={false} />
@@ -580,6 +704,18 @@ export const MobileAdminDashboard: React.FC<{
 
               <div className="space-y-2.5 pt-1">
                 {[
+                  {
+                    id: 'admin_login_auth',
+                    title: 'Back-End Dashboard Login (Google Auth)',
+                    desc: 'Direct sign-in page to log in to the Vantage Admin Workspace.',
+                    param: '?auth=1'
+                  },
+                  {
+                    id: 'admin_workspace_view',
+                    title: 'Admin Workspace Dashboard',
+                    desc: 'Direct parameter-prefixed workspace dashboard view.',
+                    param: '?view=dashboard'
+                  },
                   {
                     id: 'mobile_admin',
                     title: 'Dedicated iPhone Mobile Admin View',

@@ -37,6 +37,7 @@ import { MobileAddToHomeScreenBanner } from './components/MobileAddToHomeScreenB
 import { LeadMobileShareLinksModal } from './components/LeadMobileShareLinksModal';
 import { PublicFacingWebsiteView } from './components/PublicFacingWebsiteView';
 import { GoogleAppsSidebarLauncher } from './components/GoogleAppsSidebarLauncher';
+import { FloatingExecutiveControlDock } from './components/FloatingExecutiveControlDock';
 import { FirstTimeHomebuyerGeoPlugin } from './components/FirstTimeHomebuyerGeoPlugin';
 import { Users, Smartphone, Home, Brain, LogOut, Monitor } from 'lucide-react';
 import { safeAtob } from './utils/base64';
@@ -796,76 +797,22 @@ export default function App() {
               />
             </main>
 
-            {/* STICKY FLOATING EXECUTIVE CONTROL DOCK */}
-            <div 
-              className="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 backdrop-blur-md border border-slate-700/80 rounded-2xl p-1.5 shadow-2xl flex items-center gap-1.5 max-w-[95vw] overflow-x-auto scrollbar-none touch-pan-x overscroll-x-contain"
-              style={{ overscrollBehaviorX: 'contain', WebkitOverflowScrolling: 'touch' }}
-            >
-              <button
-                type="button"
-                onClick={() => setActiveTab('lo_agent_profiles')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer shrink-0 ${
-                  activeTab === 'lo_agent_profiles'
-                    ? 'bg-emerald-500 text-slate-950 shadow-md font-black'
-                    : 'bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40'
-                }`}
-                title="Edit Kanndice McLean & LO Contact Info"
-              >
-                <Users className="w-3.5 h-3.5 text-emerald-400" />
-                <span>👥 LO &amp; Agent Profiles</span>
-                <span className="text-[9px] px-1.5 py-0.2 bg-emerald-400 text-slate-950 font-extrabold rounded-full">
-                  Edit Kanndice
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setIsMobileAdminMode(true)}
-                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 transition flex items-center gap-1.5 cursor-pointer shrink-0"
-                title="Launch Mobile Admin Dashboard"
-              >
-                <Smartphone className="w-3.5 h-3.5 text-amber-400" />
-                <span>📱 Mobile Admin</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab('real_estate')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shrink-0 ${
-                  activeTab === 'real_estate'
-                    ? 'bg-blue-600 text-white shadow-md'
-                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
-                }`}
-              >
-                <Home className="w-3.5 h-3.5 text-blue-400" />
-                <span>🏠 GeoMap</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab('brain')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shrink-0 ${
-                  activeTab === 'brain'
-                    ? 'bg-purple-600 text-white shadow-md'
-                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
-                }`}
-              >
-                <Brain className="w-3.5 h-3.5 text-purple-400" />
-                <span>🧠 2nd Brain</span>
-              </button>
-
-              <div className="h-4 w-px bg-slate-700 mx-0.5 shrink-0" />
-
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="px-3 py-1.5 rounded-xl bg-rose-900/80 hover:bg-rose-800 text-rose-200 border border-rose-500/50 text-xs font-black transition cursor-pointer flex items-center gap-1.5 shrink-0 shadow-sm"
-                title="Sign Out of Vantage AI Studio"
-              >
-                <LogOut className="w-3.5 h-3.5 text-rose-300" />
-                <span>🚪 Sign Out</span>
-              </button>
-            </div>
+            {/* DRAGGABLE & DOCKABLE EXECUTIVE CONTROL DOCK */}
+            <FloatingExecutiveControlDock
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              user={user}
+              onLogout={handleLogout}
+              onOpenMobileAdmin={() => setIsMobileAdminMode(true)}
+              onOpenPublicWebsite={() => {
+                setViewMode('public');
+                try {
+                  localStorage.setItem('vantage_view_mode', 'public');
+                  window.history.replaceState({}, document.title, window.location.pathname + '?view=public');
+                } catch {}
+              }}
+              onOpenByokDrawer={() => setIsByokDrawerOpen(true)}
+            />
 
             {/* Lead Mobile Share URLs & Add-to-Home-Screen Modal */}
             <LeadMobileShareLinksModal

@@ -15,7 +15,7 @@ import { getWorkspaceNotificationCounts, ModuleNotificationCounts } from '../uti
 import { BatterySaverNavbarToggle } from './BatterySaverNavbarToggle';
 import { usePwaInstallPrompt } from '../hooks/usePwaInstallPrompt';
 import { IosInstallGuideModal } from './IosInstallGuideModal';
-import { ChevronDown, ChevronUp, Sliders } from 'lucide-react';
+import { ChevronDown, ChevronUp, Sliders, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface NavbarProps {
   activeTab: WorkspaceTab;
@@ -215,14 +215,14 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 transition-colors duration-200 max-w-[100vw] overflow-x-hidden w-full">
       <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 max-w-[100vw] overflow-x-hidden">
         <div className="flex items-center justify-between h-16 gap-2 max-w-[100vw] min-w-0">
-          <div className="flex items-center gap-2.5 shrink-0 min-w-0">
+          <div className="flex items-center gap-2 shrink-0 min-w-0">
             {/* Google Apps 9-Dot "Waffle" Launcher Button */}
             {onToggleLauncher && (
               <button
                 type="button"
                 onClick={onToggleLauncher}
                 className={`relative p-2 rounded-xl border transition-all cursor-pointer shadow-xs flex items-center justify-center shrink-0 ${
-                  isLauncherOpen || isSidebarPinned
+                  isLauncherOpen
                     ? 'bg-blue-600 text-white border-blue-500 shadow-blue-500/30 ring-2 ring-blue-400/40'
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
                 }`}
@@ -235,6 +235,23 @@ export const Navbar: React.FC<NavbarProps> = ({
                     {notificationCounts.totalPending}
                   </span>
                 )}
+              </button>
+            )}
+
+            {/* Dedicated Left Dashboard Sidebar Pin & Collapse/Expand Toggle Button */}
+            {onTogglePinSidebar && (
+              <button
+                type="button"
+                onClick={onTogglePinSidebar}
+                className={`p-2 rounded-xl border transition-all cursor-pointer shadow-xs flex items-center justify-center shrink-0 ${
+                  isSidebarPinned
+                    ? 'bg-indigo-600 text-white border-indigo-500 shadow-indigo-500/30 ring-2 ring-indigo-400/40'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
+                }`}
+                title={isSidebarPinned ? "Collapse Left Dashboard Sidebar to Maximize Window View" : "Expand Left Dashboard Sidebar"}
+                aria-label="Toggle Left Dashboard Sidebar"
+              >
+                {isSidebarPinned ? <ChevronLeft className="w-4 h-4 text-white" /> : <ChevronRight className="w-4 h-4" />}
               </button>
             )}
 
@@ -309,7 +326,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Desktop Horizontal Header Items (md:flex) */}
             <div 
-              className="hidden md:flex items-center gap-2 overflow-x-auto scrollbar-none py-1 touch-pan-x overscroll-x-contain"
+              className="hidden md:flex items-center gap-2 overflow-x-auto custom-scrollbar py-1 touch-pan-x overscroll-x-contain min-w-0 flex-1"
               style={{ overscrollBehaviorX: 'contain', WebkitOverflowScrolling: 'touch' }}
             >
               {/* Dual Pathway Switcher & Workspace Connection Pill */}
@@ -632,7 +649,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* PRIMARY EXECUTIVE CONTROL STRIP (LO Profiles, Mobile Admin, GeoMap, 2nd Brain, Sign Out) */}
         <div 
-          className="py-1.5 px-2 bg-slate-900 text-white rounded-xl my-1 flex items-center justify-between gap-2 overflow-x-auto scrollbar-none shadow-md border border-slate-800 touch-pan-x overscroll-x-contain"
+          className="py-1.5 px-2 bg-slate-900 text-white rounded-xl my-1 flex items-center justify-between gap-2 overflow-x-auto custom-scrollbar shadow-md border border-slate-800 touch-pan-x overscroll-x-contain"
           style={{ overscrollBehaviorX: 'contain', WebkitOverflowScrolling: 'touch' }}
         >
           <div className="flex items-center gap-1.5 shrink-0">
@@ -714,7 +731,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Prominent Google Workspace 7-Apps Launcher Bar */}
         <div className="pt-2 pb-1.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 max-w-full min-w-0">
           <div 
-            className="flex items-center gap-1.5 overflow-x-auto scrollbar-none touch-pan-x overscroll-x-contain whitespace-nowrap py-0.5 max-w-full min-w-0"
+            className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar touch-pan-x overscroll-x-contain whitespace-nowrap py-0.5 max-w-full min-w-0"
             style={{ overscrollBehaviorX: 'contain', WebkitOverflowScrolling: 'touch' }}
           >
             <button
@@ -771,7 +788,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Secondary Navigation: Autonomous AI Studios & Engines */}
         <nav 
-          className="flex items-center gap-1 overflow-x-auto pb-2 scrollbar-none touch-pan-x overscroll-x-contain whitespace-nowrap border-t border-slate-100/80 dark:border-slate-800/60 pt-1.5 max-w-full min-w-0"
+          className="flex items-center gap-1 overflow-x-auto pb-2 custom-scrollbar touch-pan-x overscroll-x-contain whitespace-nowrap border-t border-slate-100/80 dark:border-slate-800/60 pt-1.5 max-w-full min-w-0"
           style={{ overscrollBehaviorX: 'contain', WebkitOverflowScrolling: 'touch' }}
         >
           <span className="hidden xl:inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mr-1 my-auto shrink-0">

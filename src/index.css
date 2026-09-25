@@ -14,7 +14,7 @@ html, body {
   min-height: 100%;
 }
 
-/* Custom scrollbar utilities for smooth touch scrolling on mobile */
+/* Custom scrollbar utilities for smooth touch & desktop scrolling */
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
@@ -22,4 +22,41 @@ html, body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Styled Custom Horizontal & Vertical Scrollbars */
+.custom-scrollbar::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.5);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.85);
+}
+
+.custom-scrollbar-light::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+.custom-scrollbar-light::-webkit-scrollbar-track {
+  background: rgba(226, 232, 240, 0.8);
+  border-radius: 9999px;
+}
+.custom-scrollbar-light::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.8);
+  border-radius: 9999px;
+}
+
+/* Firefox scrollbar support */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(59, 130, 246, 0.5) rgba(15, 23, 42, 0.6);
+}
+
 

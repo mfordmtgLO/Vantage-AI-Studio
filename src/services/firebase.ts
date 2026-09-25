@@ -126,21 +126,25 @@ export const googleSignIn = async (
   if (shouldUseRedirect) {
     // Redirects current page directly to Google accounts authentication
     // No pop-ups required, immune to Safari popup blocker and cross-window postMessage drops!
-    await signInWithRedirect(auth, provider);
+    try {
+      await signInWithRedirect(auth, provider);
+    } finally {
+      isSigningIn = false;
+    }
     return null;
   }
 
-  // Pop-up sign-in with safety timeout guard
+  // Pop-up sign-in with safety 6-second timeout guard
   try {
     const popupPromise = signInWithPopup(auth, provider);
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => {
         const err: any = new Error(
-          'Sign-in took too long. Safari or your browser may be blocking pop-ups. Please tap "Sign in with Direct Redirect".'
+          'Sign-in pop-up timed out. Your browser may be blocking pop-ups. Please tap "Direct Sign-In" or "Continue as Guest".'
         );
         err.code = 'auth/popup-timeout';
         reject(err);
-      }, 15000);
+      }, 6000);
     });
 
     const result = await Promise.race([popupPromise, timeoutPromise]);
@@ -152,6 +156,19 @@ export const googleSignIn = async (
     return { user: result.user, accessToken: cachedAccessToken || undefined };
   } catch (error: any) {
     console.error('Sign in error:', error);
+    // If popup was blocked or timed out and auto mode was requested, trigger direct redirect automatically
+    if (
+      options.method === 'auto' &&
+      (error?.code === 'auth/popup-blocked' || error?.code === 'auth/popup-timeout')
+    ) {
+      console.log('Popup failed or blocked. Automatically falling back to signInWithRedirect...');
+      try {
+        await signInWithRedirect(auth, provider);
+        return null;
+      } catch (redirectErr) {
+        console.error('Redirect fallback error:', redirectErr);
+      }
+    }
     throw error;
   } finally {
     isSigningIn = false;
