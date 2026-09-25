@@ -246,6 +246,63 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Dynamic <link rel="canonical" /> tag generator logic for search engine optimization
+  // Commercial Attribution: Copyright © Mike Ford <fordmj@gmail.com> (All rights reserved)
+  useEffect(() => {
+    try {
+      // 1. Remove any pre-existing canonical link elements
+      const existingLinks = document.querySelectorAll("link[rel='canonical']");
+      existingLinks.forEach(link => link.parentNode?.removeChild(link));
+
+      // 2. Build the correct canonical URL based on current app state/view modes
+      const origin = window.location.origin;
+      const pathname = window.location.pathname;
+      const urlParams = new URLSearchParams(window.location.search);
+      const canonicalParams = new URLSearchParams();
+
+      if (isCarouselOnlyMode) {
+        // Carousel state: lock view mode parameter
+        canonicalParams.set('view', 'carousel_only');
+        
+        // Preserve crucial partner branding config keys to assist targeted search indexing
+        const lo = urlParams.get('lo');
+        const agent = urlParams.get('agent');
+        const pack = urlParams.get('pack');
+        const prop = urlParams.get('prop');
+
+        if (lo) canonicalParams.set('lo', lo);
+        if (agent) canonicalParams.set('agent', agent);
+        if (pack) canonicalParams.set('pack', pack);
+        if (prop) canonicalParams.set('prop', prop);
+      } else if (viewMode === 'dashboard') {
+        // Dashboard state: lock view and plugin parameters
+        canonicalParams.set('view', 'dashboard');
+        
+        const tab = urlParams.get('tab');
+        const plugin = urlParams.get('plugin');
+        if (tab) canonicalParams.set('tab', tab);
+        if (plugin) canonicalParams.set('plugin', plugin);
+      } else {
+        // Public consumer facing website is the default base root index state
+        const publicMode = urlParams.get('view') || urlParams.get('mode');
+        if (publicMode === 'public') {
+          canonicalParams.set('view', 'public');
+        }
+      }
+
+      const queryString = canonicalParams.toString();
+      const canonicalUrl = queryString ? `${origin}${pathname}?${queryString}` : `${origin}${pathname}`;
+
+      // 3. Create and append the new dynamic canonical link element to the document head
+      const link = document.createElement('link');
+      link.setAttribute('rel', 'canonical');
+      link.setAttribute('href', canonicalUrl);
+      document.head.appendChild(link);
+    } catch (err) {
+      console.warn('Failed to dynamically update canonical URL:', err);
+    }
+  }, [viewMode, isCarouselOnlyMode]);
+
   // Ensure website always starts snapped to the very top on initial load and tab navigation
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
