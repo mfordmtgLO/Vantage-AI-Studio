@@ -243,6 +243,34 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
   isStandalone = false,
   onOpenByokDrawer
 }) => {
+  // Check if we are in carousel only mode (specifically requested for clean social media iframe / posts embed)
+  const isCarouselOnlyView = useMemo(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('view') === 'carousel_only' || urlParams.get('mode') === 'carousel_only';
+      }
+    } catch {}
+    return false;
+  }, []);
+
+  // Check if we are in standalone consumer/lead mode (either passed as a prop, or detected via URL search params)
+  const isStandaloneView = useMemo(() => {
+    if (isStandalone) return true;
+    try {
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        return (
+          urlParams.get('lead') === '1' ||
+          urlParams.get('lead_mode') === '1' ||
+          urlParams.get('guest') === '1' ||
+          urlParams.get('client') === '1'
+        );
+      }
+    } catch {}
+    return false;
+  }, [isStandalone]);
+
   // Buyer DTI State
   const [buyerProfile, setBuyerProfile] = useState<BuyerDtiProfile>({
     grossMonthlyIncome: initialBuyerProfile?.grossMonthlyIncome || 8500,
@@ -802,7 +830,7 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
   };
 
   const todayDateStr = useMemo(() => new Date().toISOString().split('T')[0], []);
-  const [activeFilter, setActiveFilter] = useState<'all' | 'zillow_sweep' | 'lakeview_national' | 'ohcs_flex_firsthome' | 'usda' | 'homeready' | 'nhf_fallback' | 'lmi_cra' | 'price_drops' | 'prequalified'>('zillow_sweep');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'zillow_sweep' | 'lakeview_national' | 'ohcs_flex_firsthome' | 'usda' | 'homeready' | 'nhf_fallback' | 'lmi_cra' | 'price_drops' | 'prequalified'>('all');
   const [zillowSweepSelectedDates, setZillowSweepSelectedDates] = useState<string[]>([todayDateStr]);
   const [zillowSweepSelectedPropertyIds, setZillowSweepSelectedPropertyIds] = useState<string[]>([]);
   const [showZillowMatchModal, setShowZillowMatchModal] = useState<boolean>(false);
@@ -1333,9 +1361,11 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-base font-bold text-white tracking-wide">First-Time Homebuyer GeoMap & DPA Engine</h2>
+              <h2 className="text-base font-bold text-white tracking-wide">
+                {isCarouselOnlyView ? "Vantage AI • Co-Branded Property Listings Carousel" : "First-Time Homebuyer GeoMap & DPA Engine"}
+              </h2>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-950 text-emerald-300 border border-emerald-800">
-                Managed Master Feed Sync
+                {isCarouselOnlyView ? "Active Social Media Post View" : "Managed Master Feed Sync"}
               </span>
               {hasPairedAgent ? (
                 <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold inline-flex items-center gap-1 shadow-sm">
@@ -1450,7 +1480,8 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
       {/* Main Grid: DTI Sliders + Interactive Map Pin Explorer */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Interactive DTI Sliders (5 Cols) */}
-        <div className="lg:col-span-5 bg-stone-950 border border-stone-800 rounded-2xl p-5 space-y-5">
+        {!isCarouselOnlyView && (
+          <div className="lg:col-span-5 bg-stone-950 border border-stone-800 rounded-2xl p-5 space-y-5">
           <div className="flex items-center justify-between border-b border-stone-800 pb-3">
             <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
               <Sliders className="w-4 h-4 text-emerald-400" /> Buyer DTI & Affordability Envelope
@@ -1590,9 +1621,10 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
             </div>
           </form>
         </div>
+        )}
 
-        {/* Right Column: Spatial Map Pins & Selected Listing Deep-Dive (7 Cols) */}
-        <div className="lg:col-span-7 space-y-4">
+        {/* Right Column: Spatial Map Pins & Selected Listing Deep-Dive (7 Cols or 12 Cols if Carousel Only) */}
+        <div className={`${isCarouselOnlyView ? "lg:col-span-12" : "lg:col-span-7"} space-y-4`}>
           {/* Program Filters */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
             {[
@@ -1626,8 +1658,10 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
             ))}
           </div>
 
-          {/* MAP LAYERS MASTER TOGGLE TOOLBAR (OHCS LMI & USDA RD) */}
-          <div className="p-3 bg-gradient-to-r from-emerald-950/60 via-stone-900 to-amber-950/40 rounded-2xl border border-emerald-500/30 shadow-md space-y-2.5">
+          {/* MAP LAYERS MASTER TOGGLE TOOLBAR (OHCS LMI & USDA RD) - Hidden in Carousel-Only mode */}
+          {!isCarouselOnlyView && (
+            <>
+              <div className="p-3 bg-gradient-to-r from-emerald-950/60 via-stone-900 to-amber-950/40 rounded-2xl border border-emerald-500/30 shadow-md space-y-2.5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2 flex-wrap">
                 {/* OHCS LMI Layer Toggle */}
@@ -1874,11 +1908,14 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
               <span>USDA RD Boundary Layer: {showUsdaRdLayer ? 'ACTIVE (Shaded Metro Core)' : 'Off'}</span>
             </div>
           </div>
+        </>
+      )}
 
-          {/* PROPERTY LISTING CARDS DECK & CURATED SHORTLIST EXPORT SELECTOR */}
+      {/* PROPERTY LISTING CARDS DECK & CURATED SHORTLIST EXPORT SELECTOR */}
           <div className="space-y-2.5">
-            {/* Curated Lead Shortlist & Loan Officer Strategy Toolbar with Dynamic Income Slider */}
-            <div className="p-3.5 bg-gradient-to-r from-stone-900 via-stone-900/95 to-emerald-950/40 rounded-2xl border border-stone-800 shadow-md space-y-3">
+            {/* Curated Lead Shortlist & Loan Officer Strategy Toolbar with Dynamic Income Slider - Hidden in Carousel-Only and Standalone modes */}
+            {!isCarouselOnlyView && !isStandaloneView && (
+              <div className="p-3.5 bg-gradient-to-r from-stone-900 via-stone-900/95 to-emerald-950/40 rounded-2xl border border-stone-800 shadow-md space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -2367,9 +2404,12 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                 </div>
               </div>
             </div>
+            )}
 
-            {/* CLIENT AWARENESS & ONBOARDING BANNER FOR FRONT & CENTER CUSTOMIZATION */}
-            {showFavoriteAwarenessTip ? (
+            {/* CLIENT AWARENESS & ONBOARDING BANNER FOR FRONT & CENTER CUSTOMIZATION - Hidden in Carousel-Only mode */}
+            {!isCarouselOnlyView && (
+              <>
+                {showFavoriteAwarenessTip ? (
               <div className="p-3.5 bg-gradient-to-r from-rose-950/40 via-stone-900 to-amber-950/30 rounded-2xl border border-rose-500/40 shadow-md relative animate-in fade-in">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div className="flex items-start gap-2.5">
@@ -2460,6 +2500,8 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                   <span>Personalize Top 3 Front & Center rotation ({favoritePropertyIds.length}/3 locked)</span>
                 </button>
               </div>
+            )}
+              </>
             )}
 
             {/* Favorite Toast notification */}
@@ -3643,7 +3685,7 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
           {selectedProperty && (
             <div ref={defaultListingCardRef} className="bg-stone-950 border border-stone-800 rounded-2xl p-4 space-y-3">
               {/* GEOMAP PLUGIN DEFAULT PROMOTION HERO BANNER */}
-              {(() => {
+              {!isStandaloneView && !isCarouselOnlyView && (() => {
                 const isCurrentDefault = selectedProperty.id === activeDefaultPropertyId;
                 return (
                   <div

@@ -431,11 +431,12 @@ export default function App() {
         <BatterySaverProvider>
           <AccountPathwayProvider>
             <MemoryProvider>
-              <div className="h-screen w-full bg-slate-950 text-slate-100 font-sans antialiased overflow-y-auto overflow-x-hidden" style={{ WebkitOverflowScrolling: 'touch' }}>
+              <div className="min-h-screen w-full bg-slate-950 text-slate-100 font-sans antialiased">
                 <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
                   <FirstTimeHomebuyerGeoPlugin 
                     onOpenByokDrawer={() => {}} 
                     onOpenShareLinksModal={() => {}}
+                    isStandalone={true}
                   />
                 </div>
               </div>
@@ -453,7 +454,7 @@ export default function App() {
         <BatterySaverProvider>
           <AccountPathwayProvider>
             <MemoryProvider>
-              <div className="h-screen w-full overflow-y-auto overflow-x-hidden bg-slate-950 text-slate-100 font-sans antialiased" style={{ WebkitOverflowScrolling: 'touch' }}>
+              <div className="min-h-screen w-full bg-slate-950 text-slate-100 font-sans antialiased">
                 <MobileAdminDashboard 
                   onOpenDesktopView={handleSwitchToDesktop}
                   onOpenPluginVault={() => {
