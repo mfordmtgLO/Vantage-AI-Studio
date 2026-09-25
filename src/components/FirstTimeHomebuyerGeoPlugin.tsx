@@ -2940,12 +2940,82 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
 
             {/* Render Property Cards: Carousel 3-Card Rotation or Grid */}
             {(() => {
-              const renderPropertyCard = (prop: SyncedPropertyListing, rotationPosition: number) => {
+              const renderPropertyCard = (prop: SyncedPropertyListing, rotationPosition: number, isSimplified = false) => {
                 const isSelected = prop.id === selectedPropertyId;
                 const isDefault = prop.id === activeDefaultPropertyId;
                 const isCurated = curatedPropertyIds.includes(prop.id);
                 const favoriteIndex = favoritePropertyIds.indexOf(prop.id);
                 const isFavorite = favoriteIndex !== -1;
+
+                if (isSimplified) {
+                  return (
+                    <div
+                      key={prop.id}
+                      className={`relative p-3 rounded-2xl border transition flex flex-col justify-between gap-2.5 h-[460px] text-left ${
+                        isFavorite
+                          ? 'bg-gradient-to-b from-rose-950/25 via-stone-900 to-stone-950 border-rose-500/80 shadow-lg ring-1 ring-rose-500/40'
+                          : isDefault
+                          ? 'bg-gradient-to-b from-amber-950/25 via-stone-900 to-stone-950 border-amber-500/80 shadow-lg ring-1 ring-amber-500/40'
+                          : isSelected
+                          ? 'bg-stone-900 border-emerald-500/80 shadow-md'
+                          : isCurated
+                          ? 'bg-stone-950/90 border-emerald-500/40 hover:border-emerald-500 hover:bg-stone-900/60'
+                          : 'bg-stone-950/90 border-stone-800 hover:border-stone-700 hover:bg-stone-900/60'
+                      }`}
+                    >
+                      <div className="space-y-2">
+                        {/* Header */}
+                        <div className="flex items-center justify-between gap-1.5 border-b border-stone-800/60 pb-1.5">
+                          <span className="text-xs font-extrabold text-white font-mono">
+                            {formatUSD(prop.price)}
+                          </span>
+                          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-stone-900 text-stone-400 border border-stone-800">
+                            #{rotationPosition + 1} in Rotation
+                          </span>
+                        </div>
+
+                        {/* Basic Specs */}
+                        <div className="pt-0.5">
+                          <h5 className="text-xs font-bold text-stone-200 truncate">
+                            {prop.addressLine1}
+                          </h5>
+                          <p className="text-[10px] text-stone-400">
+                            {prop.city}, {prop.state} {prop.zipCode}
+                          </p>
+                          <div className="flex items-center gap-1.5 text-[9px] text-stone-400 font-mono mt-1">
+                            <span>{prop.bedrooms}b/{prop.bathrooms}ba</span>
+                            <span>•</span>
+                            <span>{prop.squareFootage?.toLocaleString()} sqft</span>
+                            <span>•</span>
+                            <span className="px-1 rounded bg-stone-900 text-emerald-400 font-semibold">{prop.propertyType}</span>
+                          </div>
+                        </div>
+
+                        {/* Visual DPA Highlights preview */}
+                        <div className="space-y-1.5 pt-1.5">
+                          <div className="text-[9px] font-bold text-stone-500 uppercase tracking-wider font-mono">Simulated Programs:</div>
+                          <div className="flex flex-wrap gap-1">
+                            <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-sky-950/60 text-sky-300 border border-sky-500/20">Lakeview DPA</span>
+                            <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-amber-950/60 text-amber-300 border border-amber-500/20 font-mono">OHCS FirstHome</span>
+                            <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-emerald-950/60 text-emerald-300 border border-emerald-500/20">CRA $5k Grant</span>
+                            <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-purple-950/60 text-purple-300 border border-purple-500/20">USDA RD Program</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Visual 2nd Brain Advisory Preview */}
+                      <div className="mt-auto border-t border-stone-800/60 pt-2 bg-stone-950/40 p-2 rounded-xl text-center space-y-1">
+                        <div className="text-[10px] text-stone-300 font-sans italic leading-tight truncate">
+                          "{prop.proactiveLoNote || 'Direct co-branded advisory ready.'}"
+                        </div>
+                        <div className="text-[9px] text-amber-400 font-bold flex items-center justify-center gap-1">
+                          <Sparkles className="w-2.5 h-2.5 text-amber-400 animate-pulse" />
+                          <span>Tap card to spin front and center</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
 
                 return (
                   <div
