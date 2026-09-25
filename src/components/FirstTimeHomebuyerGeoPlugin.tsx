@@ -568,6 +568,17 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
     }
   }, [properties, isCarouselOnlyView]);
 
+  // Window resize event handler to dynamically determine mobile viewport state
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileViewport(window.innerWidth < 768);
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, []);
+
   const handleToggleDefaultProperty = (propId: string) => {
     setActiveDefaultPropertyId((prev) => {
       const next = prev === propId ? '' : propId;
@@ -633,6 +644,13 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
   const [carouselViewMode, setCarouselViewMode] = useState<'carousel' | 'grid'>('carousel');
   const [carouselIndex, setCarouselIndex] = useState<number>(0);
   const [autoRotate, setAutoRotate] = useState<boolean>(false);
+  const [isMobileViewport, setIsMobileViewport] = useState<boolean>(() => {
+    try {
+      return typeof window !== 'undefined' ? window.innerWidth < 768 : false;
+    } catch {
+      return false;
+    }
+  });
 
   // Real-time gesture and swipe-spin displacement state
   // Commercial Attribution: Copyright © Mike Ford <fordmj@gmail.com> (All rights reserved)
@@ -657,27 +675,27 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
   };
 
   const handleTouchEnd = () => {
-    if (touchStartX.current === null || touchEndX.current === null) {
+    try {
+      if (touchStartX.current !== null && touchEndX.current !== null) {
+        const diffX = touchStartX.current - touchEndX.current;
+        const swipeThreshold = 50;
+
+        if (Math.abs(diffX) > swipeThreshold) {
+          if (diffX > 0) {
+            // Swipe Left -> Next Property in Rotation list
+            setCarouselIndex((prev) => (prev < filteredProperties.length - 1 ? prev + 1 : 0));
+          } else {
+            // Swipe Right -> Previous Property in Rotation list
+            setCarouselIndex((prev) => (prev > 0 ? prev - 1 : filteredProperties.length - 1));
+          }
+        }
+      }
+    } finally {
+      touchStartX.current = null;
+      touchEndX.current = null;
       setIsDragging(false);
       setSwipeOffset(0);
-      return;
     }
-    const diffX = touchStartX.current - touchEndX.current;
-    const swipeThreshold = 50;
-
-    if (Math.abs(diffX) > swipeThreshold) {
-      if (diffX > 0) {
-        // Swipe Left -> Next Property in Rotation list
-        setCarouselIndex((prev) => (prev < filteredProperties.length - 1 ? prev + 1 : 0));
-      } else {
-        // Swipe Right -> Previous Property in Rotation list
-        setCarouselIndex((prev) => (prev > 0 ? prev - 1 : filteredProperties.length - 1));
-      }
-    }
-    touchStartX.current = null;
-    touchEndX.current = null;
-    setIsDragging(false);
-    setSwipeOffset(0);
   };
 
   // Mouse dragging state (desktop view drag-and-swipe control)
@@ -700,29 +718,29 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
   };
 
   const handleMouseUp = (e: React.MouseEvent) => {
-    if (!isDraggingState.current || dragStartX.current === null || dragCurrentX.current === null) {
+    try {
+      if (isDraggingState.current && dragStartX.current !== null && dragCurrentX.current !== null) {
+        const diffX = dragStartX.current - dragCurrentX.current;
+        const dragThreshold = 50;
+
+        if (Math.abs(diffX) > dragThreshold) {
+          e.stopPropagation();
+          if (diffX > 0) {
+            // Drag Left -> Next Property in Rotation list
+            setCarouselIndex((prev) => (prev < filteredProperties.length - 1 ? prev + 1 : 0));
+          } else {
+            // Drag Right -> Previous Property in Rotation list
+            setCarouselIndex((prev) => (prev > 0 ? prev - 1 : filteredProperties.length - 1));
+          }
+        }
+      }
+    } finally {
+      isDraggingState.current = false;
+      dragStartX.current = null;
+      dragCurrentX.current = null;
       setIsDragging(false);
       setSwipeOffset(0);
-      return;
     }
-    const diffX = dragStartX.current - dragCurrentX.current;
-    const dragThreshold = 50;
-
-    if (Math.abs(diffX) > dragThreshold) {
-      e.stopPropagation();
-      if (diffX > 0) {
-        // Drag Left -> Next Property in Rotation list
-        setCarouselIndex((prev) => (prev < filteredProperties.length - 1 ? prev + 1 : 0));
-      } else {
-        // Drag Right -> Previous Property in Rotation list
-        setCarouselIndex((prev) => (prev > 0 ? prev - 1 : filteredProperties.length - 1));
-      }
-    }
-    isDraggingState.current = false;
-    dragStartX.current = null;
-    dragCurrentX.current = null;
-    setIsDragging(false);
-    setSwipeOffset(0);
   };
 
   const handleMouseLeave = () => {
@@ -3700,7 +3718,7 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
 
               if (carouselViewMode === 'carousel') {
                 // Carousel Rotation View: 3 cards side-by-side on desktop, 1 on mobile, starting at carouselIndex
-                const count = Math.min(3, filteredProperties.length);
+                const count = isMobileViewport ? 1 : Math.min(3, filteredProperties.length);
                 const visibleCards = [];
                 for (let i = 0; i < count; i++) {
                   const idx = (carouselIndex + i) % filteredProperties.length;
@@ -3708,20 +3726,24 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                 }
 
                 return (
-                  <div className="space-y-3 overflow-hidden" style={{ perspective: '1200px' }}>
+                  <div className="space-y-3 overflow-visible" style={{ perspective: '1200px', WebkitPerspective: '1200px' }}>
                     <div 
-                      className="grid grid-cols-1 md:grid-cols-3 gap-3 select-none touch-pan-y active:cursor-grabbing cursor-grab"
+                      className="grid grid-cols-1 md:grid-cols-3 gap-3 select-none touch-pan-y active:cursor-grabbing cursor-grab w-full max-w-md mx-auto md:max-w-none"
                       onTouchStart={handleTouchStart}
                       onTouchMove={handleTouchMove}
                       onTouchEnd={handleTouchEnd}
+                      onTouchCancel={handleTouchEnd}
                       onMouseDown={handleMouseDown}
                       onMouseMove={handleMouseMove}
                       onMouseUp={handleMouseUp}
                       onMouseLeave={handleMouseLeave}
                       style={{
+                        WebkitTransform: `rotateY(${(swipeOffset / 400) * 35}deg) translateX(${swipeOffset * 0.55}px) translateZ(${-Math.abs(swipeOffset) * 0.25}px)`,
                         transform: `rotateY(${(swipeOffset / 400) * 35}deg) translateX(${swipeOffset * 0.55}px) translateZ(${-Math.abs(swipeOffset) * 0.25}px)`,
+                        WebkitTransformStyle: 'preserve-3d',
                         transformStyle: 'preserve-3d',
                         transition: isDragging ? 'none' : 'transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.255)',
+                        WebkitTransition: isDragging ? 'none' : '-webkit-transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.255)',
                       }}
                       title="Swipe or Drag left/right to rotate listings"
                     >
