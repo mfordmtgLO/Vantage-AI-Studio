@@ -21,6 +21,8 @@ import {
   Layers,
   ChevronRight,
   ChevronLeft,
+  ChevronDown,
+  ChevronUp,
   Play,
   Pause,
   LayoutGrid,
@@ -657,6 +659,12 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
   const [swipeOffset, setSwipeOffset] = useState<number>(0);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [spinTransitionDuration, setSpinTransitionDuration] = useState<number>(0.38);
+  const [isCarouselCardExpanded, setIsCarouselCardExpanded] = useState<boolean>(false);
+
+  // Automatically reset card to compact short vertical view whenever carousel index changes
+  useEffect(() => {
+    setIsCarouselCardExpanded(false);
+  }, [carouselIndex]);
 
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
@@ -679,6 +687,7 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
   // Multi-step momentum free-spin with natural physical rotary friction deceleration
   const spinCarousel = (totalSteps: number, direction: 1 | -1) => {
     clearSpinTimeouts();
+    setIsCarouselCardExpanded(false);
     if (totalSteps <= 0 || filteredProperties.length <= 1) return;
 
     let cumulativeDelay = 0;
@@ -711,15 +720,18 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
   };
 
   const handleNextCard = () => {
+    setIsCarouselCardExpanded(false);
     spinCarousel(1, 1);
   };
 
   const handlePrevCard = () => {
+    setIsCarouselCardExpanded(false);
     spinCarousel(1, -1);
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
     clearSpinTimeouts();
+    setIsCarouselCardExpanded(false);
     const clientX = e.touches[0].clientX;
     touchStartX.current = clientX;
     touchEndX.current = clientX;
@@ -797,6 +809,7 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return;
     clearSpinTimeouts();
+    setIsCarouselCardExpanded(false);
     const clientX = e.clientX;
     dragStartX.current = clientX;
     dragCurrentX.current = clientX;
@@ -2911,6 +2924,8 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                 const isCurated = curatedPropertyIds.includes(prop.id);
                 const favoriteIndex = favoritePropertyIds.indexOf(prop.id);
                 const isFavorite = favoriteIndex !== -1;
+                const isCarousel = carouselViewMode === 'carousel';
+                const isExpanded = !isCarousel || isCarouselCardExpanded;
 
                 return (
                   <div
@@ -2918,6 +2933,9 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                     onClick={() => {
                       setSelectedPropertyId(prop.id);
                       if (onPropertySelect) onPropertySelect(prop);
+                      if (isCarousel && !isExpanded) {
+                        setIsCarouselCardExpanded(true);
+                      }
                     }}
                     className={`relative p-3 rounded-2xl border transition cursor-pointer flex flex-col justify-between gap-2.5 ${
                       isFavorite
@@ -3067,6 +3085,9 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                           onClick={(e) => {
                             e.stopPropagation();
                             setActiveCardNotesId(prev => (prev === prop.id ? null : prop.id));
+                            if (isCarousel) {
+                              setIsCarouselCardExpanded(true);
+                            }
                           }}
                           className={`px-2 py-1 rounded-lg border text-[10px] font-bold transition flex items-center gap-1 cursor-pointer ${
                             activeCardNotesId === prop.id
@@ -3156,7 +3177,39 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                       )}
                     </div>
 
-                    {/* Dynamic Real-Time Lakeview 140% County AMI & Fannie Mae Maximum Loan Limit Qualification Card */}
+                    {/* Compact Card vs Full Size Card Toggle for Carousel View */}
+                    {isCarousel && !isExpanded ? (
+                      /* Touch or Click to Expand Full Size Card Banner */
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsCarouselCardExpanded(true);
+                        }}
+                        className="w-full mt-2 py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500/10 via-amber-500/20 to-amber-500/10 hover:from-amber-500/20 hover:to-amber-500/30 border border-amber-500/35 hover:border-amber-500/60 text-amber-300 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition shadow-sm group active:scale-[0.99]"
+                        title="Touch or click to expand full size vertical card with in-depth calculators and DPA programs"
+                      >
+                        <ChevronDown className="w-4 h-4 text-amber-400 group-hover:translate-y-0.5 transition-transform" />
+                        <span>Touch or Click to Expand Full Details &amp; Calculators</span>
+                        <ChevronDown className="w-4 h-4 text-amber-400 group-hover:translate-y-0.5 transition-transform" />
+                      </div>
+                    ) : (
+                      <>
+                        {isCarousel && (
+                          <div
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIsCarouselCardExpanded(false);
+                            }}
+                            className="w-full py-1.5 px-3 rounded-xl bg-stone-900 hover:bg-stone-800 border border-stone-700/80 text-stone-300 hover:text-white font-bold text-[11px] flex items-center justify-center gap-1.5 cursor-pointer transition shadow-sm mt-2"
+                            title="Click to collapse back to compact card view"
+                          >
+                            <ChevronUp className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Collapse to Compact Card View</span>
+                            <ChevronUp className="w-3.5 h-3.5 text-amber-400" />
+                          </div>
+                        )}
+
+                        {/* Dynamic Real-Time Lakeview 140% County AMI & Fannie Mae Maximum Loan Limit Qualification Card */}
                     {(() => {
                       const countyData = resolveOregonCountyFannieMaeAmi(prop.county || prop.fipsGeoId || prop.city || prop.formattedAddress);
                       const lakeviewEval = evaluateOregonLakeviewNationalEligibility({
@@ -3825,9 +3878,25 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                         }}
                       />
                     </div>
-                  </div>
-                );
-              };
+
+                    {isCarousel && (
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsCarouselCardExpanded(false);
+                        }}
+                        className="w-full py-2 px-3 rounded-xl bg-stone-900/90 hover:bg-stone-800 border border-stone-800 text-stone-300 hover:text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition mt-2 shadow-sm"
+                        title="Click to collapse back to short card view"
+                      >
+                        <ChevronUp className="w-4 h-4 text-amber-400" />
+                        <span>Collapse Back to Short Card View</span>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          };
 
               if (filteredProperties.length === 0) {
                 return (
