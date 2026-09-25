@@ -1402,128 +1402,145 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
 
   return (
     <div className={`bg-stone-900 text-stone-100 rounded-3xl border border-stone-800 shadow-2xl p-4 sm:p-6 space-y-6 ${className}`}>
-      {/* Plugin Top Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-800 pb-5">
-        <div className="flex items-center gap-3">
-          <div className="p-3 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-            <Layers className="w-6 h-6" />
+      {/* Dynamic Mini Co-Branded Advisory Header for Carousel Only Mode */}
+      {isCarouselOnlyView ? (
+        <div className="flex items-center justify-between border-b border-stone-800 pb-3">
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+            <h1 className="text-xs font-bold text-white uppercase tracking-wider">
+              {mergedConfig.assignedLoanOfficerName} &amp; {mergedConfig.assignedAgentName || 'Partner'} • Direct Advisory Mini Portal
+            </h1>
           </div>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-base font-bold text-white tracking-wide">
-                {isCarouselOnlyView ? "Vantage AI • Co-Branded Property Listings Carousel" : "First-Time Homebuyer GeoMap & DPA Engine"}
-              </h2>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-950 text-emerald-300 border border-emerald-800">
-                {isCarouselOnlyView ? "Active Social Media Post View" : "Managed Master Feed Sync"}
-              </span>
-              {hasPairedAgent ? (
-                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold inline-flex items-center gap-1 shadow-sm">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Verified Pair ({mergedConfig.assignedLoanOfficerName} &amp; {mergedConfig.assignedAgentName})
-                </span>
-              ) : (
-                <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/40 text-[10px] font-bold inline-flex items-center gap-1 shadow-sm">
-                  <UserCheck className="w-3.5 h-3.5 text-blue-400" /> Direct Originator Mode (Solo LO)
-                </span>
+          <span className="px-2 py-0.5 rounded text-[9px] bg-emerald-950 text-emerald-300 font-mono border border-emerald-800">
+            Social Media Embed
+          </span>
+        </div>
+      ) : (
+        <>
+          {/* Plugin Top Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-800 pb-5">
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                <Layers className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-base font-bold text-white tracking-wide">
+                    First-Time Homebuyer GeoMap &amp; DPA Engine
+                  </h2>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-950 text-emerald-300 border border-emerald-800">
+                    Managed Master Feed Sync
+                  </span>
+                  {hasPairedAgent ? (
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold inline-flex items-center gap-1 shadow-sm">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Verified Pair ({mergedConfig.assignedLoanOfficerName} &amp; {mergedConfig.assignedAgentName})
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/40 text-[10px] font-bold inline-flex items-center gap-1 shadow-sm">
+                      <UserCheck className="w-3.5 h-3.5 text-blue-400" /> Direct Originator Mode (Solo LO)
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-stone-400 mt-0.5">
+                  {hasPairedAgent
+                    ? `Curated by Mike Ford (${mergedConfig.assignedLoanOfficerName} & ${mergedConfig.assignedAgentName}) • USDA 100% RD Rural • LMI Census Grants`
+                    : `Curated by ${mergedConfig.assignedLoanOfficerName || 'Mike Ford'} (Managing Loan Officer, NMLS #288455) • Direct Homebuyer Advisory • USDA &amp; CRA Grants`}
+                </p>
+              </div>
+            </div>
+
+            {/* Action Buttons: 1-Click Sync & Request Area Listings & Add to Mobile */}
+            <div className="flex flex-wrap items-center gap-2">
+              {!isInstalled && (
+                <button
+                  type="button"
+                  onClick={handleMobileInstallClick}
+                  className="px-3.5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-md cursor-pointer"
+                  title="Add this interactive tool directly to your iPhone or Android Home Screen"
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>Add to Phone (App)</span>
+                </button>
+              )}
+
+              {onOpenShareLinksModal && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onOpenShareLinksModal) {
+                      onOpenShareLinksModal(selectedPropertyId);
+                    }
+                  }}
+                  className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-md cursor-pointer border border-blue-500/30"
+                  title="Share the currently selected home listing and custom prequal view"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span>Share Current View</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setShowCoBorrowerModal(true)}
+                className="px-3.5 py-2 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+                title="Open Collaborative Co-Borrower Canvas"
+              >
+                <Sliders className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Co-Borrower Canvas</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSyncMasterFeed}
+                disabled={isSyncing}
+                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                <span>{isSyncing ? 'Syncing...' : 'Sync GeoMap Saved Listings'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowAreaModal(true)}
+                className="px-3.5 py-2 bg-stone-800 hover:bg-stone-700 text-emerald-400 rounded-xl text-xs font-bold border border-stone-700 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>Request Area Listings</span>
+              </button>
+
+              {onOpenByokDrawer && (
+                <button
+                  type="button"
+                  onClick={onOpenByokDrawer}
+                  className="p-2 bg-stone-800 hover:bg-stone-700 text-stone-400 hover:text-white rounded-xl text-xs font-bold border border-stone-700 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+                  title="API &amp; Account Settings"
+                >
+                  <Key className="w-4 h-4" />
+                </button>
               )}
             </div>
-            <p className="text-xs text-stone-400 mt-0.5">
-              {hasPairedAgent
-                ? `Curated by Mike Ford (${mergedConfig.assignedLoanOfficerName} & ${mergedConfig.assignedAgentName}) • USDA 100% RD Rural • LMI Census Grants`
-                : `Curated by ${mergedConfig.assignedLoanOfficerName || 'Mike Ford'} (Managing Loan Officer, NMLS #288455) • Direct Homebuyer Advisory • USDA & CRA Grants`}
-            </p>
           </div>
-        </div>
 
-        {/* Action Buttons: 1-Click Sync & Request Area Listings & Add to Mobile */}
-        <div className="flex flex-wrap items-center gap-2">
-          {!isInstalled && (
-            <button
-              type="button"
-              onClick={handleMobileInstallClick}
-              className="px-3.5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-md cursor-pointer"
-              title="Add this interactive tool directly to your iPhone or Android Home Screen"
-            >
-              <Smartphone className="w-3.5 h-3.5" />
-              <span>Add to Phone (App)</span>
-            </button>
+          {/* Proactive Geofence Interest Radius Notification Radar */}
+          <ProactiveGeofenceAlertBanner 
+            onSelectAlertArea={(area) => {
+              if (area.toLowerCase().includes('scappoose') || area.toLowerCase().includes('columbia')) {
+                const match = properties.find(p => p.id === 'geo-102');
+                if (match) setSelectedPropertyId(match.id);
+              } else if (area.toLowerCase().includes('hawthorne') || area.toLowerCase().includes('portland')) {
+                const match = properties.find(p => p.id === 'geo-101');
+                if (match) setSelectedPropertyId(match.id);
+              }
+            }}
+          />
+
+          {syncStatus && (
+            <div className="bg-emerald-950/60 border border-emerald-800/80 rounded-xl p-3 text-xs text-emerald-300 flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{syncStatus}</span>
+            </div>
           )}
-
-          {onOpenShareLinksModal && (
-            <button
-              type="button"
-              onClick={() => {
-                if (onOpenShareLinksModal) {
-                  onOpenShareLinksModal(selectedPropertyId);
-                }
-              }}
-              className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-md cursor-pointer border border-blue-500/30"
-              title="Share the currently selected home listing and custom prequal view"
-            >
-              <Share2 className="w-3.5 h-3.5" />
-              <span>Share Current View</span>
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() => setShowCoBorrowerModal(true)}
-            className="px-3.5 py-2 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
-            title="Open Collaborative Co-Borrower Canvas"
-          >
-            <Sliders className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Co-Borrower Canvas</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleSyncMasterFeed}
-            disabled={isSyncing}
-            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-            <span>{isSyncing ? 'Syncing...' : 'Sync GeoMap Saved Listings'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowAreaModal(true)}
-            className="px-3.5 py-2 bg-stone-800 hover:bg-stone-700 text-emerald-400 rounded-xl text-xs font-bold border border-stone-700 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
-          >
-            <PlusCircle className="w-3.5 h-3.5" />
-            <span>Request Area Listings</span>
-          </button>
-
-          {onOpenByokDrawer && (
-            <button
-              type="button"
-              onClick={onOpenByokDrawer}
-              className="p-2 bg-stone-800 hover:bg-stone-700 text-stone-400 hover:text-white rounded-xl text-xs font-bold border border-stone-700 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
-              title="API & Account Settings"
-            >
-              <Key className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Proactive Geofence Interest Radius Notification Radar */}
-      <ProactiveGeofenceAlertBanner 
-        onSelectAlertArea={(area) => {
-          if (area.toLowerCase().includes('scappoose') || area.toLowerCase().includes('columbia')) {
-            const match = properties.find(p => p.id === 'geo-102');
-            if (match) setSelectedPropertyId(match.id);
-          } else if (area.toLowerCase().includes('hawthorne') || area.toLowerCase().includes('portland')) {
-            const match = properties.find(p => p.id === 'geo-101');
-            if (match) setSelectedPropertyId(match.id);
-          }
-        }}
-      />
-
-      {syncStatus && (
-        <div className="bg-emerald-950/60 border border-emerald-800/80 rounded-xl p-3 text-xs text-emerald-300 flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{syncStatus}</span>
-        </div>
+        </>
       )}
 
       {/* Main Grid: DTI Sliders + Interactive Map Pin Explorer */}
@@ -1675,37 +1692,39 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
         {/* Right Column: Spatial Map Pins & Selected Listing Deep-Dive (7 Cols or 12 Cols if Carousel Only) */}
         <div className={`${isCarouselOnlyView ? "lg:col-span-12" : "lg:col-span-7"} space-y-4`}>
           {/* Program Filters */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
-            {[
-              { id: 'zillow_sweep', label: `⚡ Zillow Sweep — New Today (${todaySweepCount})`, isSpecial: true },
-              { id: 'all', label: `All (${properties.length})` },
-              { id: 'lakeview_national', label: '🏞️ Lakeview 100% DPA' },
-              { id: 'ohcs_flex_firsthome', label: '🌲 OHCS Flex FirstHome' },
-              { id: 'usda', label: '🌾 USDA 100% RD Rural' },
-              { id: 'homeready', label: '🔑 HomeReady 3% Down' },
-              { id: 'nhf_fallback', label: '🇺🇸 NHF FHA 0% Fallback' },
-              { id: 'lmi_cra', label: '🏛️ LMI $5k CRA Grant' },
-              { id: 'price_drops', label: '🔥 Price Drops' },
-              { id: 'prequalified', label: '✅ Prequalified Only' }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveFilter(tab.id as any)}
-                className={`px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition cursor-pointer flex items-center gap-1 ${
-                  activeFilter === tab.id
-                    ? tab.isSpecial
-                      ? 'bg-amber-500 text-stone-950 shadow-md font-black ring-1 ring-amber-400'
-                      : 'bg-emerald-600 text-white shadow-md'
-                    : tab.isSpecial
-                    ? 'bg-amber-950/40 text-amber-300 border border-amber-500/40 hover:bg-amber-900/60'
-                    : 'bg-stone-950 text-stone-400 hover:text-white border border-stone-800'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+          {!isCarouselOnlyView && (
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+              {[
+                { id: 'zillow_sweep', label: `⚡ Zillow Sweep — New Today (${todaySweepCount})`, isSpecial: true },
+                { id: 'all', label: `All (${properties.length})` },
+                { id: 'lakeview_national', label: '🏞️ Lakeview 100% DPA' },
+                { id: 'ohcs_flex_firsthome', label: '🌲 OHCS Flex FirstHome' },
+                { id: 'usda', label: '🌾 USDA 100% RD Rural' },
+                { id: 'homeready', label: '🔑 HomeReady 3% Down' },
+                { id: 'nhf_fallback', label: '🇺🇸 NHF FHA 0% Fallback' },
+                { id: 'lmi_cra', label: '🏛️ LMI $5k CRA Grant' },
+                { id: 'price_drops', label: '🔥 Price Drops' },
+                { id: 'prequalified', label: '✅ Prequalified Only' }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveFilter(tab.id as any)}
+                  className={`px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition cursor-pointer flex items-center gap-1 ${
+                    activeFilter === tab.id
+                      ? tab.isSpecial
+                        ? 'bg-amber-500 text-stone-950 shadow-md font-black ring-1 ring-amber-400'
+                        : 'bg-emerald-600 text-white shadow-md'
+                      : tab.isSpecial
+                      ? 'bg-amber-950/40 text-amber-300 border border-amber-500/40 hover:bg-amber-900/60'
+                      : 'bg-stone-950 text-stone-400 hover:text-white border border-stone-800'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* MAP LAYERS MASTER TOGGLE TOOLBAR (OHCS LMI & USDA RD) - Hidden in Carousel-Only mode */}
           {!isCarouselOnlyView && (
@@ -2585,41 +2604,43 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
             )}
 
             {/* CURATED PROPERTY LISTINGS PLAIN EXPLANATION BANNER (Desktop & Home Screen App) */}
-            <div className="p-3.5 bg-gradient-to-r from-stone-900 via-stone-950 to-stone-900 rounded-2xl border border-amber-500/40 shadow-lg space-y-2">
-              <div className="flex items-start gap-2.5">
-                <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40 shrink-0 mt-0.5">
-                  <Sparkles className="w-4 h-4" />
-                </div>
-                <div className="space-y-1.5 flex-1">
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <h4 className="text-xs font-black text-white flex items-center gap-1.5">
-                      <span>Curated For Sale Property Listings & Direct Advisory</span>
-                    </h4>
-                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono">
-                      Desktop URL & Mobile Home Screen View
-                    </span>
+            {!isCarouselOnlyView && (
+              <div className="p-3.5 bg-gradient-to-r from-stone-900 via-stone-950 to-stone-900 rounded-2xl border border-amber-500/40 shadow-lg space-y-2">
+                <div className="flex items-start gap-2.5">
+                  <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40 shrink-0 mt-0.5">
+                    <Sparkles className="w-4 h-4" />
                   </div>
-                  <p className="text-[11px] text-stone-200 leading-relaxed font-sans">
-                    These recently for sale property listings are curated to try and match your desired home purchase area+low or now downpayment home loan programs. You can always click the Zillow link inside the cards to verify current sales status or current price or any other details our GeoMap might be missing or is a little outdated even though we strive to keep data as fresh as possible for you and feel free to type in the NOTES of any card to reqeust a tour/showing or request a a new curated for sale property list in a different desired purchase city or have prequalifcation questions, etc and we will respond right back in the notes for you ASAP!
-                  </p>
-                  
-                  <div className="flex items-center gap-2 pt-1 flex-wrap text-[10px]">
-                    <span className="px-2 py-0.5 rounded-lg bg-sky-950/80 text-sky-300 border border-sky-500/40 font-semibold flex items-center gap-1">
-                      <ExternalLink className="w-3 h-3 text-sky-400" />
-                      <span>Verify on Zillow Link inside Cards</span>
-                    </span>
-                    <span className="px-2 py-0.5 rounded-lg bg-amber-950/80 text-amber-300 border border-amber-500/40 font-semibold flex items-center gap-1">
-                      <MessageSquare className="w-3 h-3 text-amber-400" />
-                      <span>Type in Card Notes (Tour, City, Prequal)</span>
-                    </span>
-                    <span className="px-2 py-0.5 rounded-lg bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 font-semibold flex items-center gap-1">
-                      <ShieldCheck className="w-3 h-3 text-emerald-400" />
-                      <span>{hasPairedAgent ? 'LO + Agent Profile at Bottom of Notes' : 'Solo LO Profile at Bottom of Notes'}</span>
-                    </span>
+                  <div className="space-y-1.5 flex-1">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <h4 className="text-xs font-black text-white flex items-center gap-1.5">
+                        <span>Curated For Sale Property Listings & Direct Advisory</span>
+                      </h4>
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono">
+                        Desktop URL & Mobile Home Screen View
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-stone-200 leading-relaxed font-sans">
+                      These recently for sale property listings are curated to try and match your desired home purchase area+low or now downpayment home loan programs. You can always click the Zillow link inside the cards to verify current sales status or current price or any other details our GeoMap might be missing or is a little outdated even though we strive to keep data as fresh as possible for you and feel free to type in the NOTES of any card to reqeust a tour/showing or request a a new curated for sale property list in a different desired purchase city or have prequalifcation questions, etc and we will respond right back in the notes for you ASAP!
+                    </p>
+                    
+                    <div className="flex items-center gap-2 pt-1 flex-wrap text-[10px]">
+                      <span className="px-2 py-0.5 rounded-lg bg-sky-950/80 text-sky-300 border border-sky-500/40 font-semibold flex items-center gap-1">
+                        <ExternalLink className="w-3 h-3 text-sky-400" />
+                        <span>Verify on Zillow Link inside Cards</span>
+                      </span>
+                      <span className="px-2 py-0.5 rounded-lg bg-amber-950/80 text-amber-300 border border-amber-500/40 font-semibold flex items-center gap-1">
+                        <MessageSquare className="w-3 h-3 text-amber-400" />
+                        <span>Type in Card Notes (Tour, City, Prequal)</span>
+                      </span>
+                      <span className="px-2 py-0.5 rounded-lg bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 font-semibold flex items-center gap-1">
+                        <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                        <span>{hasPairedAgent ? 'LO + Agent Profile at Bottom of Notes' : 'Solo LO Profile at Bottom of Notes'}</span>
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* DeepSeek Swarm Zillow Sweep Control Deck */}
             {activeFilter === 'zillow_sweep' && (
