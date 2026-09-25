@@ -72,6 +72,7 @@ interface ListingChatBotNotesPanelProps {
   assignedAgentName?: string;
   hasPairedAgent?: boolean;
   onOpenLeadCapture?: (note: string) => void;
+  isCarouselOnlyView?: boolean;
 }
 
 export const ListingChatBotNotesPanel: React.FC<ListingChatBotNotesPanelProps> = ({
@@ -85,7 +86,8 @@ export const ListingChatBotNotesPanel: React.FC<ListingChatBotNotesPanelProps> =
   assignedLoanOfficerName = 'Mike Ford',
   assignedAgentName,
   hasPairedAgent = false,
-  onOpenLeadCapture
+  onOpenLeadCapture,
+  isCarouselOnlyView = false
 }) => {
   const [showIncomeSidebar, setShowIncomeSidebar] = useState(false);
   const [showInquiryModal, setShowInquiryModal] = useState(false);
@@ -94,6 +96,7 @@ export const ListingChatBotNotesPanel: React.FC<ListingChatBotNotesPanelProps> =
   const [inputText, setInputText] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [isChatExpanded, setIsChatExpanded] = useState(false);
 
   // Consume AccountPathwayContext safely
   let pathway = 'google_apps';
@@ -527,6 +530,34 @@ Thank you!`;
     return false;
   })();
 
+  if (isCarouselOnlyView && !isChatExpanded) {
+    return (
+      <div className={`bg-stone-900 border border-stone-800 rounded-2xl overflow-hidden shadow-lg p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 ${className}`}>
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shrink-0">
+            <Bot className="w-4 h-4 animate-pulse" />
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-white">
+              Vantage AI Co-Branded Mortgage Chat Desk Active
+            </h4>
+            <p className="text-[10px] text-stone-400">
+              Inquire about USDA zero-down, local grants, or request a tour showing instantly.
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsChatExpanded(true)}
+          className="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md active:scale-95"
+        >
+          <Bot className="w-3.5 h-3.5" />
+          <span>Open Interactive AI Advisor ({assignedLoanOfficerName})</span>
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className={`bg-stone-900 border border-stone-800 rounded-2xl overflow-hidden shadow-xl flex flex-col ${className}`}>
       {/* Top Header Bar */}
@@ -601,6 +632,18 @@ Thank you!`;
             <Sliders className="w-3 h-3 text-emerald-400" />
             <span>{showIncomeSidebar ? 'Hide Income Sidebar' : 'Income & DTI'}</span>
           </button>
+
+          {isCarouselOnlyView && (
+            <button
+              type="button"
+              onClick={() => setIsChatExpanded(false)}
+              className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-stone-900 text-stone-400 hover:text-white border border-stone-700 transition flex items-center gap-1.5 cursor-pointer"
+              title="Collapse Interactive Advisor"
+            >
+              <X className="w-3 h-3" />
+              <span>Close Chat</span>
+            </button>
+          )}
         </div>
       </div>
 

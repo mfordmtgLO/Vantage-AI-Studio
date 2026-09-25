@@ -549,12 +549,14 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
       if (urlProp && properties.some(p => p.id === urlProp)) {
         setSelectedPropertyId(urlProp);
         setActiveDefaultPropertyId(urlProp);
-        setTimeout(() => {
-          defaultListingCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }, 350);
+        if (!isCarouselOnlyView) {
+          setTimeout(() => {
+            defaultListingCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }, 350);
+        }
       }
     }
-  }, [properties]);
+  }, [properties, isCarouselOnlyView]);
 
   // Background Preloading and Caching of Property Images for smooth carousel swiping
   useEffect(() => {
@@ -4132,6 +4134,7 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                     prev.map((p) => (p.id === propId ? { ...p, propertyNotes: updatedNotes } : p))
                   );
                 }}
+                isCarouselOnlyView={isCarouselOnlyView}
               />
             </div>
           )}
