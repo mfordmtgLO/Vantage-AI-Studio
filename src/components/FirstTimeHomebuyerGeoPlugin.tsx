@@ -634,6 +634,11 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
   const [carouselIndex, setCarouselIndex] = useState<number>(0);
   const [autoRotate, setAutoRotate] = useState<boolean>(false);
 
+  // Real-time gesture and swipe-spin displacement state
+  // Commercial Attribution: Copyright © Mike Ford <fordmj@gmail.com> (All rights reserved)
+  const [swipeOffset, setSwipeOffset] = useState<number>(0);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+
   // Touch swiping state (mobile view swipe left/right)
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
@@ -641,14 +646,22 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
     touchEndX.current = e.touches[0].clientX;
+    setIsDragging(true);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     touchEndX.current = e.touches[0].clientX;
+    if (touchStartX.current !== null) {
+      setSwipeOffset(e.touches[0].clientX - touchStartX.current);
+    }
   };
 
   const handleTouchEnd = () => {
-    if (touchStartX.current === null || touchEndX.current === null) return;
+    if (touchStartX.current === null || touchEndX.current === null) {
+      setIsDragging(false);
+      setSwipeOffset(0);
+      return;
+    }
     const diffX = touchStartX.current - touchEndX.current;
     const swipeThreshold = 50;
 
@@ -663,6 +676,8 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
     }
     touchStartX.current = null;
     touchEndX.current = null;
+    setIsDragging(false);
+    setSwipeOffset(0);
   };
 
   // Mouse dragging state (desktop view drag-and-swipe control)
@@ -675,15 +690,21 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
     dragStartX.current = e.clientX;
     dragCurrentX.current = e.clientX;
     isDraggingState.current = true;
+    setIsDragging(true);
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDraggingState.current || dragStartX.current === null) return;
     dragCurrentX.current = e.clientX;
+    setSwipeOffset(e.clientX - dragStartX.current);
   };
 
   const handleMouseUp = (e: React.MouseEvent) => {
-    if (!isDraggingState.current || dragStartX.current === null || dragCurrentX.current === null) return;
+    if (!isDraggingState.current || dragStartX.current === null || dragCurrentX.current === null) {
+      setIsDragging(false);
+      setSwipeOffset(0);
+      return;
+    }
     const diffX = dragStartX.current - dragCurrentX.current;
     const dragThreshold = 50;
 
@@ -700,12 +721,16 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
     isDraggingState.current = false;
     dragStartX.current = null;
     dragCurrentX.current = null;
+    setIsDragging(false);
+    setSwipeOffset(0);
   };
 
   const handleMouseLeave = () => {
     isDraggingState.current = false;
     dragStartX.current = null;
     dragCurrentX.current = null;
+    setIsDragging(false);
+    setSwipeOffset(0);
   };
 
   const handleToggleFavorite = (propId: string) => {
@@ -3683,7 +3708,7 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                 }
 
                 return (
-                  <div className="space-y-3">
+                  <div className="space-y-3 overflow-hidden" style={{ perspective: '1200px' }}>
                     <div 
                       className="grid grid-cols-1 md:grid-cols-3 gap-3 select-none touch-pan-y active:cursor-grabbing cursor-grab"
                       onTouchStart={handleTouchStart}
@@ -3693,6 +3718,11 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                       onMouseMove={handleMouseMove}
                       onMouseUp={handleMouseUp}
                       onMouseLeave={handleMouseLeave}
+                      style={{
+                        transform: `rotateY(${(swipeOffset / 400) * 35}deg) translateX(${swipeOffset * 0.55}px) translateZ(${-Math.abs(swipeOffset) * 0.25}px)`,
+                        transformStyle: 'preserve-3d',
+                        transition: isDragging ? 'none' : 'transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.255)',
+                      }}
                       title="Swipe or Drag left/right to rotate listings"
                     >
                       {visibleCards.map(({ prop, index }) => renderPropertyCard(prop, index))}
