@@ -252,7 +252,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               id="navbar-add-to-home-screen-btn"
               onClick={handleAddToHomeScreen}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-gradient-to-r from-amber-400 via-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-md shadow-amber-500/20 transition transform active:scale-95 cursor-pointer shrink-0 border border-amber-300"
+              className="hidden lg:flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-gradient-to-r from-amber-400 via-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-md shadow-amber-500/20 transition transform active:scale-95 cursor-pointer shrink-0 border border-amber-300"
               title="Add Vantage AI Studio to your Mobile Home Screen as a native app"
             >
               <Smartphone className="w-3.5 h-3.5 text-slate-950 animate-bounce" />
@@ -267,7 +267,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 id="byok-settings-btn"
                 onClick={onOpenByokDrawer}
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800/70 text-xs font-bold rounded-xl transition shadow-xs cursor-pointer shrink-0"
+                className="hidden md:flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800/70 text-xs font-bold rounded-xl transition shadow-xs cursor-pointer shrink-0"
                 title="Bring Your Own Keys (BYOK): Gemini, RentCast, DeepSeek"
               >
                 <Key className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
@@ -280,7 +280,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               id="global-voice-studio-btn"
               onClick={onOpenVoiceModal}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900/60 text-xs font-semibold rounded-xl transition shadow-xs cursor-pointer shrink-0"
+              className="hidden md:flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900/60 text-xs font-semibold rounded-xl transition shadow-xs cursor-pointer shrink-0"
               title="Open Global Voice-to-Text Studio (Cmd/Ctrl + K)"
             >
               <Mic className="w-3.5 h-3.5 text-red-600 dark:text-red-400 animate-pulse" />
@@ -541,7 +541,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               {/* Pathway */}
               <button
                 onClick={() => setIsWorkspaceModalOpen(true)}
-                className="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
               >
                 <Building2 className="w-3.5 h-3.5" />
                 <span>{pathway === 'workspace' ? 'Workspace Active' : 'Free Google Apps'}</span>
@@ -551,16 +551,45 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 onClick={() => syncData()}
                 disabled={isSyncing}
-                className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 cursor-pointer"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-blue-600' : ''}`} />
                 <span>Sync</span>
               </button>
 
+              {/* Add to Home Screen PWA */}
+              <button
+                onClick={handleAddToHomeScreen}
+                className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 text-xs font-black flex items-center gap-1.5 cursor-pointer"
+              >
+                <Smartphone className="w-3.5 h-3.5 animate-bounce" />
+                <span>Add to Home Screen</span>
+              </button>
+
+              {/* Voice Studio */}
+              <button
+                onClick={onOpenVoiceModal}
+                className="px-3 py-1.5 bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer"
+              >
+                <Mic className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                <span>Voice Studio</span>
+              </button>
+
+              {/* BYOK Settings */}
+              {onOpenByokDrawer && (
+                <button
+                  onClick={onOpenByokDrawer}
+                  className="px-3 py-1.5 bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-900/50 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Key className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                  <span>API Keys (BYOK)</span>
+                </button>
+              )}
+
               {/* 2nd Brain */}
               <button
                 onClick={() => setIsKnowledgeBaseOpen(true)}
-                className="px-3 py-1.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs font-bold rounded-xl flex items-center gap-1.5"
+                className="px-3 py-1.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer"
               >
                 <Brain className="w-3.5 h-3.5" />
                 <span>2nd Brain ({memories.length})</span>

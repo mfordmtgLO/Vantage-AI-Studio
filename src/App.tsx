@@ -54,6 +54,9 @@ export default function App() {
       if (urlParams.get('mode') === 'public' || urlParams.get('view') === 'public' || urlParams.get('public') === '1') return 'public';
       if (
         urlParams.get('mobile_admin') === 'true' || 
+        urlParams.get('mobile_admin') === '1' ||
+        urlParams.get('mobile') === 'true' ||
+        urlParams.get('mobile') === '1' ||
         urlParams.get('admin') === 'true' || 
         urlParams.get('tab') || 
         urlParams.get('plugin') || 
@@ -106,7 +109,18 @@ export default function App() {
   const [isShareLinksModalOpen, setIsShareLinksModalOpen] = useState<boolean>(false);
   const [shareLinksPropertyId, setShareLinksPropertyId] = useState<string | undefined>(undefined);
   const [isMobileAdminMode, setIsMobileAdminMode] = useState<boolean>(() => {
-    return new URLSearchParams(window.location.search).get('mobile_admin') === 'true';
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      return (
+        urlParams.get('mobile_admin') === 'true' ||
+        urlParams.get('mobile_admin') === '1' ||
+        urlParams.get('mobile') === 'true' ||
+        urlParams.get('mobile') === '1' ||
+        urlParams.get('admin') === 'mobile'
+      );
+    } catch {
+      return false;
+    }
   });
 
   // Google Apps 9-Dot Launcher and Persistent Sidebar State
@@ -371,44 +385,48 @@ export default function App() {
   if (isMobileAdminMode) {
     return (
       <ThemeProvider>
-        <AccountPathwayProvider>
-          <div className="max-w-[100vw] w-full overflow-x-hidden min-h-screen">
-            <MobileAdminDashboard 
-              onOpenDesktopView={() => {
-                const newUrl = window.location.pathname;
-                window.history.replaceState({}, document.title, newUrl);
-                setIsMobileAdminMode(false);
-                setViewMode('dashboard');
-              }}
-              onOpenPluginVault={() => {
-                const newUrl = window.location.pathname + '?tab=admin_plugins';
-                window.history.replaceState({}, document.title, newUrl);
-                setActiveTab('admin_plugins');
-                setIsMobileAdminMode(false);
-                setViewMode('dashboard');
-              }} 
-              onOpenShareLinksModal={() => setIsShareLinksModalOpen(true)}
-              onOpenPublicWebsite={() => {
-                setIsMobileAdminMode(false);
-                setViewMode('public');
-                try {
-                  localStorage.setItem('vantage_view_mode', 'public');
-                  window.history.replaceState({}, document.title, window.location.pathname + '?view=public');
-                } catch {}
-              }}
-              onLogout={handleLogout}
-            />
-            <ConnectWorkspaceModal />
-            <LeadMobileShareLinksModal
-              isOpen={isShareLinksModalOpen}
-              onClose={() => {
-                setIsShareLinksModalOpen(false);
-                setShareLinksPropertyId(undefined);
-              }}
-              initialPropertyId={shareLinksPropertyId}
-            />
-          </div>
-        </AccountPathwayProvider>
+        <BatterySaverProvider>
+          <AccountPathwayProvider>
+            <MemoryProvider>
+              <div className="max-w-[100vw] w-full overflow-x-hidden min-h-screen bg-slate-950 text-slate-100 font-sans antialiased">
+                <MobileAdminDashboard 
+                  onOpenDesktopView={() => {
+                    const newUrl = window.location.pathname;
+                    window.history.replaceState({}, document.title, newUrl);
+                    setIsMobileAdminMode(false);
+                    setViewMode('dashboard');
+                  }}
+                  onOpenPluginVault={() => {
+                    const newUrl = window.location.pathname + '?tab=admin_plugins';
+                    window.history.replaceState({}, document.title, newUrl);
+                    setActiveTab('admin_plugins');
+                    setIsMobileAdminMode(false);
+                    setViewMode('dashboard');
+                  }} 
+                  onOpenShareLinksModal={() => setIsShareLinksModalOpen(true)}
+                  onOpenPublicWebsite={() => {
+                    setIsMobileAdminMode(false);
+                    setViewMode('public');
+                    try {
+                      localStorage.setItem('vantage_view_mode', 'public');
+                      window.history.replaceState({}, document.title, window.location.pathname + '?view=public');
+                    } catch {}
+                  }}
+                  onLogout={handleLogout}
+                />
+                <ConnectWorkspaceModal />
+                <LeadMobileShareLinksModal
+                  isOpen={isShareLinksModalOpen}
+                  onClose={() => {
+                    setIsShareLinksModalOpen(false);
+                    setShareLinksPropertyId(undefined);
+                  }}
+                  initialPropertyId={shareLinksPropertyId}
+                />
+              </div>
+            </MemoryProvider>
+          </AccountPathwayProvider>
+        </BatterySaverProvider>
       </ThemeProvider>
     );
   }
