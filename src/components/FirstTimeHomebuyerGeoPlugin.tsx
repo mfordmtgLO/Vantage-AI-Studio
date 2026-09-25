@@ -3717,8 +3717,90 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
               }
 
               if (carouselViewMode === 'carousel') {
-                // Carousel Rotation View: 3 cards side-by-side on desktop, 1 on mobile, starting at carouselIndex
-                const count = isMobileViewport ? 1 : Math.min(3, filteredProperties.length);
+                if (isMobileViewport) {
+                  // High-fidelity 3D Cylinder Stack Deck for Mobile/iPhone
+                  const hasMultiple = filteredProperties.length > 1;
+                  const prevIdx = (carouselIndex - 1 + filteredProperties.length) % filteredProperties.length;
+                  const currentIdx = carouselIndex;
+                  const nextIdx = (carouselIndex + 1) % filteredProperties.length;
+
+                  // Only include unique cards in the deck
+                  const deck = [
+                    { prop: filteredProperties[currentIdx], index: currentIdx, offset: 0 }
+                  ];
+                  if (hasMultiple) {
+                    deck.unshift({ prop: filteredProperties[prevIdx], index: prevIdx, offset: -1 });
+                    deck.push({ prop: filteredProperties[nextIdx], index: nextIdx, offset: 1 });
+                  }
+
+                  const dragRatio = Math.max(-1, Math.min(1, swipeOffset / 280));
+
+                  return (
+                    <div 
+                      className="space-y-3 overflow-visible pb-4" 
+                      style={{ perspective: '1000px', WebkitPerspective: '1000px' }}
+                    >
+                      <div 
+                        className="relative w-full max-w-sm mx-auto select-none touch-pan-y active:cursor-grabbing cursor-grab min-h-[460px] flex items-center justify-center"
+                        onTouchStart={handleTouchStart}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={handleTouchEnd}
+                        onTouchCancel={handleTouchEnd}
+                        onMouseDown={handleMouseDown}
+                        onMouseMove={handleMouseMove}
+                        onMouseUp={handleMouseUp}
+                        onMouseLeave={handleMouseLeave}
+                        style={{
+                          transformStyle: 'preserve-3d',
+                          WebkitTransformStyle: 'preserve-3d',
+                        }}
+                        title="Swipe left/right to spin 3D cylinder carousel"
+                      >
+                        {deck.map(({ prop, index, offset }) => {
+                          const x = offset + dragRatio;
+                          const tX = x * 105; // translateX percentage
+                          const rY = x * -35; // rotateY degree
+                          const tZ = -Math.abs(x) * 110; // translateZ recession
+                          const scale = 1 - Math.abs(x) * 0.12; // scale down side cards
+                          const opacity = Math.max(0, 1 - Math.abs(x) * 0.7); // fade out side cards
+                          const zIndex = Math.round((1 - Math.abs(x)) * 10) + 10;
+
+                          return (
+                            <div
+                              key={`${prop.id}-${offset}`}
+                              style={{
+                                position: offset === 0 ? 'relative' : 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                zIndex: zIndex,
+                                opacity: opacity,
+                                WebkitTransform: `translateX(${tX}%) rotateY(${rY}deg) translateZ(${tZ}px) scale(${scale})`,
+                                transform: `translateX(${tX}%) rotateY(${rY}deg) translateZ(${tZ}px) scale(${scale})`,
+                                WebkitTransformStyle: 'preserve-3d',
+                                transformStyle: 'preserve-3d',
+                                transition: isDragging ? 'none' : 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                WebkitTransition: isDragging ? 'none' : 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                              }}
+                              className="pointer-events-auto"
+                              onClick={(e) => {
+                                if (offset !== 0) {
+                                  e.stopPropagation();
+                                  setCarouselIndex(index);
+                                }
+                              }}
+                            >
+                              {renderPropertyCard(prop, index)}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Desktop Layout: Original 3 cards side-by-side with subtle 3D dragging rotation context
+                const count = Math.min(3, filteredProperties.length);
                 const visibleCards = [];
                 for (let i = 0; i < count; i++) {
                   const idx = (carouselIndex + i) % filteredProperties.length;
