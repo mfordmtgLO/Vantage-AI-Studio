@@ -37,7 +37,7 @@ import { MobileAddToHomeScreenBanner } from './components/MobileAddToHomeScreenB
 import { LeadMobileShareLinksModal } from './components/LeadMobileShareLinksModal';
 import { PublicFacingWebsiteView } from './components/PublicFacingWebsiteView';
 import { GoogleAppsSidebarLauncher } from './components/GoogleAppsSidebarLauncher';
-import { Users, Smartphone, Home, Brain, LogOut } from 'lucide-react';
+import { Users, Smartphone, Home, Brain, LogOut, Monitor } from 'lucide-react';
 import { safeAtob } from './utils/base64';
 
 export default function App() {
@@ -122,6 +122,34 @@ export default function App() {
       return false;
     }
   });
+
+  // Diagnostic state for desktop device using mobile URL parameters
+  const [showDesktopDiagnostic, setShowDesktopDiagnostic] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (isMobileAdminMode) {
+      const isDesktopScreen = window.innerWidth >= 1024;
+      const isDesktopUA = !/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+      if (isDesktopScreen || isDesktopUA) {
+        setShowDesktopDiagnostic(true);
+      }
+    }
+  }, [isMobileAdminMode]);
+
+  const handleSwitchToDesktop = () => {
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('mobile_admin');
+      url.searchParams.delete('mobile');
+      url.searchParams.delete('admin');
+      window.history.replaceState({}, document.title, url.pathname + url.search);
+      setIsMobileAdminMode(false);
+      setViewMode('dashboard');
+      setShowDesktopDiagnostic(false);
+    } catch {
+      window.location.href = window.location.pathname;
+    }
+  };
 
   // Google Apps 9-Dot Launcher and Persistent Sidebar State
   const [isLauncherOpen, setIsLauncherOpen] = useState<boolean>(false);
@@ -390,12 +418,7 @@ export default function App() {
             <MemoryProvider>
               <div className="max-w-[100vw] w-full overflow-x-hidden min-h-screen bg-slate-950 text-slate-100 font-sans antialiased">
                 <MobileAdminDashboard 
-                  onOpenDesktopView={() => {
-                    const newUrl = window.location.pathname;
-                    window.history.replaceState({}, document.title, newUrl);
-                    setIsMobileAdminMode(false);
-                    setViewMode('dashboard');
-                  }}
+                  onOpenDesktopView={handleSwitchToDesktop}
                   onOpenPluginVault={() => {
                     const newUrl = window.location.pathname + '?tab=admin_plugins';
                     window.history.replaceState({}, document.title, newUrl);
@@ -414,6 +437,43 @@ export default function App() {
                   }}
                   onLogout={handleLogout}
                 />
+                
+                {/* Desktop Device with Mobile Parameters Diagnostic Banner */}
+                {showDesktopDiagnostic && (
+                  <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 border border-amber-500/30 rounded-2xl p-4 shadow-2xl max-w-md w-[92vw] backdrop-blur-md flex flex-col gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-amber-500/10 text-amber-400 rounded-xl shrink-0 border border-amber-500/20">
+                        <Monitor className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-sm font-bold text-amber-200 flex items-center gap-1.5">
+                          <span>Desktop Screen Detected</span>
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-medium bg-amber-400/10 text-amber-400 border border-amber-400/20">
+                            Diagnostic
+                          </span>
+                        </h4>
+                        <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                          You are viewing the <strong className="text-amber-400">Mobile Layout</strong> on a desktop device. Would you like to automatically transition to our full Desktop Interface?
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2 border-t border-slate-800/80 pt-2.5">
+                      <button
+                        onClick={() => setShowDesktopDiagnostic(false)}
+                        className="px-3 py-1.5 text-xs font-semibold text-slate-400 hover:text-slate-300 hover:bg-slate-800/60 rounded-xl transition cursor-pointer"
+                      >
+                        Keep Mobile View
+                      </button>
+                      <button
+                        onClick={handleSwitchToDesktop}
+                        className="px-3.5 py-1.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 text-xs font-black rounded-xl shadow-lg shadow-amber-500/10 transition cursor-pointer flex items-center gap-1.5 border border-amber-300"
+                      >
+                        <Monitor className="w-3.5 h-3.5" />
+                        <span>Switch to Desktop Layout</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <ConnectWorkspaceModal />
                 <LeadMobileShareLinksModal
                   isOpen={isShareLinksModalOpen}
