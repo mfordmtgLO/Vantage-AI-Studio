@@ -1369,6 +1369,22 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
             </button>
           )}
 
+          {onOpenShareLinksModal && (
+            <button
+              type="button"
+              onClick={() => {
+                if (onOpenShareLinksModal) {
+                  onOpenShareLinksModal(selectedPropertyId);
+                }
+              }}
+              className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-md cursor-pointer border border-blue-500/30"
+              title="Share the currently selected home listing and custom prequal view"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span>Share Current View</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => setShowCoBorrowerModal(true)}
