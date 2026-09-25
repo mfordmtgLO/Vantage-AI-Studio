@@ -657,37 +657,150 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
   const [swipeOffset, setSwipeOffset] = useState<number>(0);
   const [isDragging, setIsDragging] = useState<boolean>(false);
 
-  // Touch swiping state (mobile view swipe left/right)
+  // High-fidelity inertial physics tracking and floating-point index state
+  const [continuousIndex, setContinuousIndex] = useState<number>(0);
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
+  const lastTouchX = useRef<number>(0);
+  const lastTouchTime = useRef<number>(0);
+  const swipeVelocity = useRef<number>(0); // in px/ms
+  const dragStartContinuousIndex = useRef<number>(0);
+  const animationFrameId = useRef<number | null>(null);
+
+  // Sync continuousIndex when carouselIndex is updated by auto-rotation or external triggers
+  useEffect(() => {
+    if (!isDragging && !animationFrameId.current) {
+      setContinuousIndex(carouselIndex);
+    }
+  }, [carouselIndex, isDragging]);
+
+  // Clean up animation on unmount
+  useEffect(() => {
+    return () => {
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+      }
+    };
+  }, []);
+
+  const animateToTarget = (target: number, initialVelocity: number) => {
+    if (animationFrameId.current) {
+      cancelAnimationFrame(animationFrameId.current);
+    }
+
+    const len = filteredProperties.length;
+    if (len === 0) return;
+
+    let current = continuousIndex;
+    let vel = initialVelocity;
+    const friction = 0.94; // friction decay coefficient per frame
+    const springK = 0.08; // spring return hook strength
+
+    const step = () => {
+      const dist = target - current;
+      
+      // Shortest circular distance calculation
+      let shortestDist = dist;
+      const wrappedDist1 = dist - len;
+      const wrappedDist2 = dist + len;
+      if (Math.abs(wrappedDist1) < Math.abs(shortestDist)) shortestDist = wrappedDist1;
+      if (Math.abs(wrappedDist2) < Math.abs(shortestDist)) shortestDist = wrappedDist2;
+
+      vel = vel * friction + shortestDist * springK;
+      current += vel;
+
+      // Circular wrap around [0, len]
+      current = ((current % len) + len) % len;
+
+      setContinuousIndex(current);
+      setCarouselIndex(Math.round(current) % len);
+
+      if (Math.abs(vel) < 0.001 && Math.abs(shortestDist) < 0.01) {
+        const finalIdx = ((Math.round(target) % len) + len) % len;
+        setContinuousIndex(finalIdx);
+        setCarouselIndex(finalIdx);
+        animationFrameId.current = null;
+      } else {
+        animationFrameId.current = requestAnimationFrame(step);
+      }
+    };
+
+    animationFrameId.current = requestAnimationFrame(step);
+  };
+
+  const handleNextCard = () => {
+    const nextTarget = Math.round(continuousIndex + 1);
+    animateToTarget(nextTarget, 0);
+  };
+
+  const handlePrevCard = () => {
+    const prevTarget = Math.round(continuousIndex - 1);
+    animateToTarget(prevTarget, 0);
+  };
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
-    touchEndX.current = e.touches[0].clientX;
+    if (animationFrameId.current) {
+      cancelAnimationFrame(animationFrameId.current);
+      animationFrameId.current = null;
+    }
+    const clientX = e.touches[0].clientX;
+    touchStartX.current = clientX;
+    touchEndX.current = clientX;
+    lastTouchX.current = clientX;
+    lastTouchTime.current = performance.now();
+    swipeVelocity.current = 0;
+    dragStartContinuousIndex.current = continuousIndex;
     setIsDragging(true);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    touchEndX.current = e.touches[0].clientX;
+    const clientX = e.touches[0].clientX;
+    touchEndX.current = clientX;
+    
     if (touchStartX.current !== null) {
-      setSwipeOffset(e.touches[0].clientX - touchStartX.current);
+      const deltaX = clientX - touchStartX.current;
+      setSwipeOffset(deltaX);
+
+      // Track continuous drag mapping (each 280px of drag corresponds to 1 full card slide)
+      const indexDelta = deltaX / 280;
+      const len = filteredProperties.length;
+      if (len > 0) {
+        let targetIndex = dragStartContinuousIndex.current - indexDelta;
+        targetIndex = ((targetIndex % len) + len) % len;
+        setContinuousIndex(targetIndex);
+        setCarouselIndex(Math.round(targetIndex) % len);
+      }
+    }
+
+    const now = performance.now();
+    const dt = now - lastTouchTime.current;
+    if (dt > 10) {
+      const dx = clientX - lastTouchX.current;
+      swipeVelocity.current = dx / dt; // px/ms
+      lastTouchX.current = clientX;
+      lastTouchTime.current = now;
     }
   };
 
   const handleTouchEnd = () => {
     try {
-      if (touchStartX.current !== null && touchEndX.current !== null) {
-        const diffX = touchStartX.current - touchEndX.current;
-        const swipeThreshold = 50;
+      const len = filteredProperties.length;
+      if (len > 0) {
+        const velocity = swipeVelocity.current;
+        const absVelocity = Math.abs(velocity);
 
-        if (Math.abs(diffX) > swipeThreshold) {
-          if (diffX > 0) {
-            // Swipe Left -> Next Property in Rotation list
-            setCarouselIndex((prev) => (prev < filteredProperties.length - 1 ? prev + 1 : 0));
-          } else {
-            // Swipe Right -> Previous Property in Rotation list
-            setCarouselIndex((prev) => (prev > 0 ? prev - 1 : filteredProperties.length - 1));
-          }
+        if (absVelocity > 0.4) {
+          // Fast swipe -> Multiply velocity to slide deeper into the carousel
+          const momentumMultiplier = Math.min(800, 250 + absVelocity * 200);
+          const stoppingDistancePixels = velocity * momentumMultiplier;
+          const indexOffset = stoppingDistancePixels / 280;
+          const targetRestingIndex = Math.round(continuousIndex - indexOffset);
+          const indexVelocity = -(velocity / 280) * 16.6; // px/ms converted to indices/frame
+          animateToTarget(targetRestingIndex, indexVelocity);
+        } else {
+          // Slow drag -> Settle on the closest rounded card index
+          const targetRestingIndex = Math.round(continuousIndex);
+          animateToTarget(targetRestingIndex, 0);
         }
       }
     } finally {
@@ -695,6 +808,7 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
       touchEndX.current = null;
       setIsDragging(false);
       setSwipeOffset(0);
+      swipeVelocity.current = 0;
     }
   };
 
@@ -705,32 +819,67 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return; // Only left click drag
-    dragStartX.current = e.clientX;
-    dragCurrentX.current = e.clientX;
+    if (animationFrameId.current) {
+      cancelAnimationFrame(animationFrameId.current);
+      animationFrameId.current = null;
+    }
+    const clientX = e.clientX;
+    dragStartX.current = clientX;
+    dragCurrentX.current = clientX;
+    lastTouchX.current = clientX;
+    lastTouchTime.current = performance.now();
+    swipeVelocity.current = 0;
+    dragStartContinuousIndex.current = continuousIndex;
     isDraggingState.current = true;
     setIsDragging(true);
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDraggingState.current || dragStartX.current === null) return;
-    dragCurrentX.current = e.clientX;
-    setSwipeOffset(e.clientX - dragStartX.current);
+    const clientX = e.clientX;
+    dragCurrentX.current = clientX;
+    const deltaX = clientX - dragStartX.current;
+    setSwipeOffset(deltaX);
+
+    // Track continuous drag mapping
+    const indexDelta = deltaX / 280;
+    const len = filteredProperties.length;
+    if (len > 0) {
+      let targetIndex = dragStartContinuousIndex.current - indexDelta;
+      targetIndex = ((targetIndex % len) + len) % len;
+      setContinuousIndex(targetIndex);
+      setCarouselIndex(Math.round(targetIndex) % len);
+    }
+
+    const now = performance.now();
+    const dt = now - lastTouchTime.current;
+    if (dt > 10) {
+      const dx = clientX - lastTouchX.current;
+      swipeVelocity.current = dx / dt; // px/ms
+      lastTouchX.current = clientX;
+      lastTouchTime.current = now;
+    }
   };
 
   const handleMouseUp = (e: React.MouseEvent) => {
     try {
       if (isDraggingState.current && dragStartX.current !== null && dragCurrentX.current !== null) {
-        const diffX = dragStartX.current - dragCurrentX.current;
-        const dragThreshold = 50;
+        e.stopPropagation();
+        const len = filteredProperties.length;
+        if (len > 0) {
+          const velocity = swipeVelocity.current;
+          const absVelocity = Math.abs(velocity);
 
-        if (Math.abs(diffX) > dragThreshold) {
-          e.stopPropagation();
-          if (diffX > 0) {
-            // Drag Left -> Next Property in Rotation list
-            setCarouselIndex((prev) => (prev < filteredProperties.length - 1 ? prev + 1 : 0));
+          if (absVelocity > 0.4) {
+            const momentumMultiplier = Math.min(800, 250 + absVelocity * 200);
+            const stoppingDistancePixels = velocity * momentumMultiplier;
+            const indexOffset = stoppingDistancePixels / 280;
+            const targetRestingIndex = Math.round(continuousIndex - indexOffset);
+            const indexVelocity = -(velocity / 280) * 16.6;
+            animateToTarget(targetRestingIndex, indexVelocity);
           } else {
-            // Drag Right -> Previous Property in Rotation list
-            setCarouselIndex((prev) => (prev > 0 ? prev - 1 : filteredProperties.length - 1));
+            const targetRestingIndex = Math.round(continuousIndex);
+            animateToTarget(targetRestingIndex, 0);
           }
         }
       }
@@ -740,15 +889,22 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
       dragCurrentX.current = null;
       setIsDragging(false);
       setSwipeOffset(0);
+      swipeVelocity.current = 0;
     }
   };
 
   const handleMouseLeave = () => {
-    isDraggingState.current = false;
-    dragStartX.current = null;
-    dragCurrentX.current = null;
-    setIsDragging(false);
-    setSwipeOffset(0);
+    if (isDraggingState.current) {
+      isDraggingState.current = false;
+      dragStartX.current = null;
+      dragCurrentX.current = null;
+      setIsDragging(false);
+      setSwipeOffset(0);
+      swipeVelocity.current = 0;
+      // Settle on current nearest card
+      const targetRestingIndex = Math.round(continuousIndex);
+      animateToTarget(targetRestingIndex, 0);
+    }
   };
 
   const handleToggleFavorite = (propId: string) => {
@@ -2755,7 +2911,7 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setCarouselIndex(prev => (prev > 0 ? prev - 1 : filteredProperties.length - 1))}
+                    onClick={() => handlePrevCard()}
                     className="px-2.5 py-1 rounded-lg bg-stone-950 hover:bg-stone-800 text-stone-300 hover:text-white border border-stone-800 transition cursor-pointer flex items-center gap-1 font-bold text-[11px]"
                   >
                     <ChevronLeft className="w-3.5 h-3.5" />
@@ -2768,7 +2924,7 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
 
                   <button
                     type="button"
-                    onClick={() => setCarouselIndex(prev => (prev < filteredProperties.length - 1 ? prev + 1 : 0))}
+                    onClick={() => handleNextCard()}
                     className="px-2.5 py-1 rounded-lg bg-stone-950 hover:bg-stone-800 text-stone-300 hover:text-white border border-stone-800 transition cursor-pointer flex items-center gap-1 font-bold text-[11px]"
                   >
                     <span>Next</span>
@@ -3718,22 +3874,8 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
 
               if (carouselViewMode === 'carousel') {
                 if (isMobileViewport) {
-                  // High-fidelity 3D Cylinder Stack Deck for Mobile/iPhone
-                  const hasMultiple = filteredProperties.length > 1;
-                  const prevIdx = (carouselIndex - 1 + filteredProperties.length) % filteredProperties.length;
-                  const currentIdx = carouselIndex;
-                  const nextIdx = (carouselIndex + 1) % filteredProperties.length;
-
-                  // Only include unique cards in the deck
-                  const deck = [
-                    { prop: filteredProperties[currentIdx], index: currentIdx, offset: 0 }
-                  ];
-                  if (hasMultiple) {
-                    deck.unshift({ prop: filteredProperties[prevIdx], index: prevIdx, offset: -1 });
-                    deck.push({ prop: filteredProperties[nextIdx], index: nextIdx, offset: 1 });
-                  }
-
-                  const dragRatio = Math.max(-1, Math.min(1, swipeOffset / 280));
+                  // High-fidelity 3D Cylinder Stack Deck for Mobile/iPhone supporting continuous momentum free-spin
+                  const len = filteredProperties.length;
 
                   return (
                     <div 
@@ -3756,8 +3898,20 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                         }}
                         title="Swipe left/right to spin 3D cylinder carousel"
                       >
-                        {deck.map(({ prop, index, offset }) => {
-                          const x = offset + dragRatio;
+                        {filteredProperties.map((prop, idx) => {
+                          // Shortest path circular distance
+                          let x = idx - continuousIndex;
+                          if (len > 1) {
+                            const wrap1 = x - len;
+                            const wrap2 = x + len;
+                            if (Math.abs(wrap1) < Math.abs(x)) x = wrap1;
+                            else if (Math.abs(wrap2) < Math.abs(x)) x = wrap2;
+                          }
+
+                          // Render and transition only elements that are physically near the focus window (up to ~2 positions away)
+                          const isVisible = Math.abs(x) < 1.8;
+                          if (!isVisible) return null;
+
                           const tX = x * 105; // translateX percentage
                           const rY = x * -35; // rotateY degree
                           const tZ = -Math.abs(x) * 110; // translateZ recession
@@ -3765,11 +3919,14 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                           const opacity = Math.max(0, 1 - Math.abs(x) * 0.7); // fade out side cards
                           const zIndex = Math.round((1 - Math.abs(x)) * 10) + 10;
 
+                          // The single closest card is rendered as 'relative' to establish container height cleanly
+                          const isClosest = Math.abs(x) < 0.5;
+
                           return (
                             <div
-                              key={`${prop.id}-${offset}`}
+                              key={prop.id}
                               style={{
-                                position: offset === 0 ? 'relative' : 'absolute',
+                                position: isClosest ? 'relative' : 'absolute',
                                 top: 0,
                                 left: 0,
                                 width: '100%',
@@ -3784,13 +3941,13 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                               }}
                               className="pointer-events-auto"
                               onClick={(e) => {
-                                if (offset !== 0) {
+                                if (Math.abs(x) >= 0.5) {
                                   e.stopPropagation();
-                                  setCarouselIndex(index);
+                                  animateToTarget(idx, 0);
                                 }
                               }}
                             >
-                              {renderPropertyCard(prop, index)}
+                              {renderPropertyCard(prop, idx)}
                             </div>
                           );
                         })}
@@ -3847,7 +4004,7 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                                 key={p.id}
                                 type="button"
                                 onClick={() => {
-                                  setCarouselIndex(idx);
+                                  animateToTarget(idx, 0);
                                   setSelectedPropertyId(p.id);
                                 }}
                                 className={`px-2 py-0.5 rounded-md font-bold transition cursor-pointer flex items-center gap-1 shrink-0 ${
