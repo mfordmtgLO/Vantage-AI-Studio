@@ -54,6 +54,8 @@ export interface GoogleAppsSidebarLauncherProps {
   onTogglePin: () => void;
   dockSide?: 'left' | 'right';
   onToggleDockSide?: () => void;
+  sidebarWidth?: number;
+  onSidebarWidthChange?: (width: number) => void;
   onOpenVoiceModal?: () => void;
   onOpenPitchDeck?: () => void;
   onOpenByokDrawer?: () => void;
@@ -71,6 +73,8 @@ export const GoogleAppsSidebarLauncher: React.FC<GoogleAppsSidebarLauncherProps>
   onTogglePin,
   dockSide = 'left',
   onToggleDockSide,
+  sidebarWidth = 336,
+  onSidebarWidthChange,
   onOpenVoiceModal,
   onOpenPitchDeck,
   onOpenByokDrawer,
@@ -84,6 +88,59 @@ export const GoogleAppsSidebarLauncher: React.FC<GoogleAppsSidebarLauncherProps>
   const [activeCategory, setActiveCategory] = useState<'all' | 'flagship' | 'google_apps' | 'tools'>('all');
   const [notificationCounts, setNotificationCounts] = useState<ModuleNotificationCounts>(getWorkspaceNotificationCounts);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Resize Handle Dragging State
+  const [isResizing, setIsResizing] = useState<boolean>(false);
+  const startXRef = useRef<number>(0);
+  const startWidthRef = useRef<number>(sidebarWidth);
+
+  const handleResizeStart = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    startXRef.current = clientX;
+    startWidthRef.current = sidebarWidth;
+    setIsResizing(true);
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent | TouchEvent) => {
+      if (!isResizing) return;
+      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+      const deltaX = clientX - startXRef.current;
+      let newWidth = dockSide === 'left' 
+        ? startWidthRef.current + deltaX 
+        : startWidthRef.current - deltaX;
+
+      const minWidth = 240;
+      const maxWidth = Math.min(650, window.innerWidth - 200);
+      newWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
+
+      if (onSidebarWidthChange) {
+        onSidebarWidthChange(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (isResizing) {
+        setIsResizing(false);
+      }
+    };
+
+    if (isResizing) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('touchmove', handleMouseMove);
+      window.addEventListener('touchend', handleMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleMouseMove);
+      window.removeEventListener('touchend', handleMouseUp);
+    };
+  }, [isResizing, dockSide, onSidebarWidthChange]);
 
   // Drag-and-Drop Ordered State with localStorage Persistence
   const [flagshipOrder, setFlagshipOrder] = useState<string[]>(() => 
@@ -546,6 +603,16 @@ export const GoogleAppsSidebarLauncher: React.FC<GoogleAppsSidebarLauncherProps>
 
   return (
     <>
+      {/* Resize Overlay Backdrop to prevent dropping drag when moving fast */}
+      {isResizing && (
+        <div className="fixed inset-0 z-[100] cursor-col-resize select-none bg-blue-500/5 backdrop-blur-[1px]">
+          <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white text-xs font-mono px-3 py-1.5 rounded-full border border-blue-500/50 shadow-2xl flex items-center gap-2 font-bold z-[101]">
+            <GripVertical className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
+            <span>Sidebar Width: {sidebarWidth}px</span>
+          </div>
+        </div>
+      )}
+
       {/* Background Dim Backdrop (Only when NOT pinned) */}
       {isOpen && !isPinned && (
         <div 
@@ -557,17 +624,60 @@ export const GoogleAppsSidebarLauncher: React.FC<GoogleAppsSidebarLauncherProps>
 
       {/* Main Container: Handles both Floating Grid Overlay and Persistent Docked Sidebar */}
       <aside
-        className={`fixed top-0 ${dockSide === 'left' ? 'left-0' : 'right-0'} h-full z-50 flex flex-col bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-slate-200 dark:border-slate-800 shadow-2xl transition-all duration-300 ease-out ${
-          isPinned 
-            ? `${dockSide === 'left' ? 'border-r' : 'border-l'} w-80 lg:w-88` 
-            : `w-96 sm:w-[440px] max-w-[95vw] ${dockSide === 'left' ? 'border-r' : 'border-l'}`
-        }`}
+        className={`fixed top-0 ${dockSide === 'left' ? 'left-0' : 'right-0'} h-full z-50 flex flex-col bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-slate-200 dark:border-slate-800 shadow-2xl max-w-[95vw] ${
+          isResizing ? 'transition-none select-none' : 'transition-all duration-300 ease-out'
+        } ${dockSide === 'left' ? 'border-r' : 'border-l'}`}
         style={{
+          width: `${sidebarWidth}px`,
           boxShadow: isPinned 
             ? '0 0 25px -5px rgba(0,0,0,0.1)' 
             : '0 25px 50px -12px rgba(0, 0, 0, 0.35)'
         }}
       >
+        {/* Draggable Resize Handle on the outer edge of persistent/floating sidebar */}
+        <div
+          onMouseDown={handleResizeStart}
+          onTouchStart={handleResizeStart}
+          className={`absolute top-0 bottom-0 ${
+            dockSide === 'left' ? 'right-0 translate-x-1/2' : 'left-0 -translate-x-1/2'
+          } w-5 hover:w-6 cursor-col-resize z-[60] flex items-center justify-center group transition-all select-none`}
+          title={`Drag to adjust sidebar width (${sidebarWidth}px)`}
+        >
+          {/* Edge Glow Highlight Line */}
+          <div
+            className={`h-full transition-all duration-200 rounded-full ${
+              isResizing
+                ? 'w-1.5 bg-blue-500 shadow-[0_0_16px_rgba(59,130,246,1)]'
+                : 'w-1 group-hover:w-1.5 bg-slate-300/80 dark:bg-slate-700/80 group-hover:bg-blue-500 group-hover:shadow-[0_0_12px_rgba(59,130,246,0.8)]'
+            }`}
+          />
+
+          {/* Center Tactile Grip Knob with Dots & Glowing Hover Effect */}
+          <div
+            className={`absolute top-1/2 -translate-y-1/2 p-1.5 rounded-xl transition-all duration-200 shadow-xl border flex items-center justify-center ${
+              isResizing
+                ? 'bg-blue-600 text-white scale-125 border-blue-300 ring-4 ring-blue-500/30 shadow-blue-500/50'
+                : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-600 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-400 group-hover:scale-115 group-hover:shadow-blue-500/40'
+            }`}
+          >
+            {/* Visual Dot Array & Grip Icon */}
+            <div className="flex items-center gap-0.5">
+              <div className="w-0.5 h-3 bg-current opacity-40 rounded-full hidden group-hover:block transition-all"></div>
+              <GripVertical className="w-3.5 h-3.5 shrink-0" />
+              <div className="w-0.5 h-3 bg-current opacity-40 rounded-full hidden group-hover:block transition-all"></div>
+            </div>
+
+            {/* Hover Tooltip Badge showing live width */}
+            <div
+              className={`absolute top-1/2 -translate-y-1/2 ${
+                dockSide === 'left' ? 'left-full ml-2.5' : 'right-full mr-2.5'
+              } opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none text-[10px] bg-slate-900/95 text-white px-2.5 py-1 rounded-lg border border-blue-500/60 shadow-xl flex items-center gap-1.5 font-mono whitespace-nowrap font-bold z-[70]`}
+            >
+              <GripVertical className="w-3 h-3 text-blue-400 animate-pulse" />
+              <span>Resize ({sidebarWidth}px)</span>
+            </div>
+          </div>
+        </div>
         {/* Header Bar */}
         <div className="p-4 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-2 shrink-0 bg-slate-50/50 dark:bg-slate-950/50">
           

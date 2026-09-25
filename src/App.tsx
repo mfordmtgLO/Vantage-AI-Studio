@@ -198,6 +198,22 @@ export default function App() {
     } catch {}
     return 'left';
   });
+  const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('vantage_sidebar_width');
+      if (saved) {
+        const parsed = parseInt(saved, 10);
+        if (!isNaN(parsed) && parsed >= 240 && parsed <= 600) return parsed;
+      }
+    } catch {}
+    return 336;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('vantage_sidebar_width', String(sidebarWidth));
+    } catch {}
+  }, [sidebarWidth]);
 
   // Quick Undo and Voice Execution State
   const [activeVoiceWorkflow, setActiveVoiceWorkflow] = useState<string | null>(null);
@@ -759,6 +775,8 @@ export default function App() {
                   return next;
                 });
               }}
+              sidebarWidth={sidebarWidth}
+              onSidebarWidthChange={setSidebarWidth}
               onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
               onOpenPitchDeck={() => setIsPitchDeckOpen(true)}
               onOpenByokDrawer={() => setIsByokDrawerOpen(true)}
@@ -773,11 +791,13 @@ export default function App() {
               }}
             />
 
-            <main className={`transition-all duration-300 ${
-              isSidebarPinned 
-                ? (sidebarDockSide === 'left' ? 'lg:pl-80 xl:pl-88' : 'lg:pr-80 xl:pr-88') 
-                : ''
-            }`}>
+            <main 
+              className="transition-all duration-150"
+              style={{
+                paddingLeft: isSidebarPinned && sidebarDockSide === 'left' ? `${sidebarWidth}px` : undefined,
+                paddingRight: isSidebarPinned && sidebarDockSide === 'right' ? `${sidebarWidth}px` : undefined
+              }}
+            >
               <WorkspaceHub
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
