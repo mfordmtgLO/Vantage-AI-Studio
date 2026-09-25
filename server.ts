@@ -2019,6 +2019,77 @@ app.get("/api/github/sync-status", async (req, res) => {
   }
 });
 
+function injectOpenGraphTags(html: string, query: any): string {
+  const propId = query.prop || query.propId || query.propertyId || '';
+  
+  let title = "Vantage AI — Interactive USDA $0-Down Real Estate GeoMap & Affordability Portal";
+  let desc = "Find USDA 100% Zero-Down homes, local state DPA grants up to $19,495, and Census Tract opportunity areas. Co-branded by Principal Loan Officer Mike Ford (NMLS #288455) & Realtor Kanndice McLean.";
+  let ogTitle = "Vantage AI — Interactive USDA $0-Down Real Estate GeoMap";
+  let ogDesc = "Search qualifying zero-down and low-down grant properties instantly. Calculate back-end DTI affordability, favorite homes, and lock in direct co-branded loan pre-approval routes with Mike Ford and Kanndice McLean.";
+  let image = "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=80";
+
+  if (propId === 'geo-101') {
+    title = "742 SE Hawthorne Blvd, Portland, OR | $5k CRA Grant & $15k Price Drop";
+    desc = "Active Listing: 3 Beds, 2 Baths, 1,580 SqFt. Fully pre-qualified for local CRA Grants and HomeReady financing co-branded by Mike Ford & Kanndice McLean.";
+    ogTitle = "742 SE Hawthorne Blvd, Portland, OR";
+    ogDesc = "3 Beds, 2 Baths • $435,000 • $15,000 Price Drop! Zero-down & DPA eligible. Estimate your customized monthly payments and grant stacks instantly.";
+    image = "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=1200&auto=format&fit=crop&q=80";
+  } else if (propId === 'geo-102') {
+    title = "14800 NW St Helens Rd, Scappoose, OR | USDA 100% Zero-Down Eligible";
+    desc = "Active Listing: 3 Beds, 2 Baths, 1,720 SqFt. Qualifying rural area eligible for USDA 100% Financing with zero down payment co-branded by Mike Ford & Kanndice McLean.";
+    ogTitle = "14800 NW St Helens Rd, Scappoose, OR";
+    ogDesc = "3 Beds, 2 Baths • $389,000 • USDA 100% Financing (0% Down)! See real-time grant eligibility and calculate back-end DTI monthly payment details instantly.";
+    image = "https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=1200&auto=format&fit=crop&q=80";
+  } else if (propId === 'geo-103') {
+    title = "2105 NE Alberta St, Portland, OR | Alberta Arts District • 20% DPA Bonus";
+    desc = "Active Townhouse: 2 Beds, 1.5 Baths, 1,240 SqFt. Targeted Census Area qualifying for up to $19,400 in state DPA and CRA grant stacks.";
+    ogTitle = "2105 NE Alberta St, Portland, OR";
+    ogDesc = "2 Beds, 1.5 Baths Townhouse • $485,000 • Alberta Arts District. Tap into $19,400 in state DPA grant programs & calculate exact buyer profile pre-approvals.";
+    image = "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200&auto=format&fit=crop&q=80";
+  }
+
+  // Support clean title & previews in 'carousel_only' mode explicitly if view=carousel_only is present
+  const isCarousel = query.view === 'carousel_only' || query.mode === 'carousel_only' || query.carousel_only === '1' || query.carousel_only === 'true';
+  if (isCarousel) {
+    title = `🏠 ${ogTitle} — Co-Branded Mini Applet`;
+    ogTitle = `🏠 Real Estate Post: ${ogTitle}`;
+  }
+
+  return html
+    .replace(
+      `<title>Vantage AI — Interactive USDA $0-Down Real Estate GeoMap & Affordability Portal</title>`,
+      `<title>${title}</title>`
+    )
+    .replace(
+      `<meta name="description" content="Find USDA 100% Zero-Down homes, local state DPA grants up to $19,495, and Census Tract opportunity areas. Co-branded by Principal Loan Officer Mike Ford (NMLS #288455) & Realtor Kanndice McLean." />`,
+      `<meta name="description" content="${desc}" />`
+    )
+    .replace(
+      `<meta property="og:title" content="Vantage AI — Interactive USDA $0-Down Real Estate GeoMap" />`,
+      `<meta property="og:title" content="${ogTitle}" />`
+    )
+    .replace(
+      `<meta property="og:description" content="Search qualifying zero-down and low-down grant properties instantly. Calculate back-end DTI affordability, favorite homes, and lock in direct co-branded loan pre-approval routes with Mike Ford and Kanndice McLean." />`,
+      `<meta property="og:description" content="${ogDesc}" />`
+    )
+    .replace(
+      `<meta property="og:image" content="https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=80" />`,
+      `<meta property="og:image" content="${image}" />`
+    )
+    .replace(
+      `<meta name="twitter:title" content="Vantage AI — Interactive USDA $0-Down Real Estate GeoMap" />`,
+      `<meta name="twitter:title" content="${ogTitle}" />`
+    )
+    .replace(
+      `<meta name="twitter:description" content="Find qualifying zero-down properties, estimate exact monthly payments, and simulate state DPA grant stacks instantly with Mike Ford and Realtor Kanndice McLean." />`,
+      `<meta name="twitter:description" content="${ogDesc}" />`
+    )
+    .replace(
+      `<meta name="twitter:image" content="https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=80" />`,
+      `<meta name="twitter:image" content="${image}" />`
+    );
+}
+
 async function startServer() {
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
@@ -2036,6 +2107,7 @@ async function startServer() {
         const url = req.originalUrl;
         let template = fs.readFileSync(path.resolve(process.cwd(), 'index.html'), 'utf-8');
         template = await vite.transformIndexHtml(url, template);
+        template = injectOpenGraphTags(template, req.query);
         res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
       } catch (e) {
         vite.ssrFixStacktrace(e as Error);
@@ -2050,11 +2122,14 @@ async function startServer() {
         return next();
       }
       const indexPath = path.join(distPath, 'index.html');
+      let template = '';
       if (fs.existsSync(indexPath)) {
-        res.sendFile(indexPath);
+        template = fs.readFileSync(indexPath, 'utf-8');
       } else {
-        res.sendFile(path.resolve(process.cwd(), 'index.html'));
+        template = fs.readFileSync(path.resolve(process.cwd(), 'index.html'), 'utf-8');
       }
+      template = injectOpenGraphTags(template, req.query);
+      res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
     });
   }
 

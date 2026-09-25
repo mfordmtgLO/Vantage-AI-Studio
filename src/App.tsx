@@ -138,6 +138,21 @@ export default function App() {
     }
   });
 
+  // Standalone Carousel-Only view mode (specifically requested for clean social media embedding)
+  const [isCarouselOnlyMode] = useState<boolean>(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      return (
+        urlParams.get('view') === 'carousel_only' ||
+        urlParams.get('mode') === 'carousel_only' ||
+        urlParams.get('carousel_only') === '1' ||
+        urlParams.get('carousel_only') === 'true'
+      );
+    } catch {
+      return false;
+    }
+  });
+
   // Diagnostic state for desktop device using mobile URL parameters
   const [showDesktopDiagnostic, setShowDesktopDiagnostic] = useState<boolean>(false);
 
@@ -423,6 +438,29 @@ export default function App() {
       setExecutedVoiceIntent(null);
     }
   };
+
+  // 0. Standalone Carousel-Only Embed View
+  if (isCarouselOnlyMode) {
+    return (
+      <ThemeProvider>
+        <BatterySaverProvider>
+          <AccountPathwayProvider>
+            <MemoryProvider>
+              <div className="min-h-screen w-full bg-slate-950 text-slate-100 font-sans antialiased p-0 m-0">
+                <div className="w-full max-w-5xl mx-auto px-2 py-3 sm:py-6">
+                  <FirstTimeHomebuyerGeoPlugin 
+                    onOpenByokDrawer={() => {}} 
+                    onOpenShareLinksModal={() => {}}
+                    isStandalone={true}
+                  />
+                </div>
+              </div>
+            </MemoryProvider>
+          </AccountPathwayProvider>
+        </BatterySaverProvider>
+      </ThemeProvider>
+    );
+  }
 
   // 1. Standalone Consumer/Client Lead Portal View
   if (isConsumerLeadMode) {

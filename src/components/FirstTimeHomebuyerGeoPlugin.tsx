@@ -223,6 +223,39 @@ const DEFAULT_MASTER_SEED_LISTINGS: SyncedPropertyListing[] = [
   }
 ];
 
+// Client-side image preloader and cache map for flawless smooth swiping
+const imageCache = new Map<string, string>();
+
+export const getPropertyImageUrl = (id: string): string => {
+  switch (id) {
+    case 'geo-101':
+      return 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=600&auto=format&fit=crop&q=80';
+    case 'geo-102':
+      return 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=600&auto=format&fit=crop&q=80';
+    case 'geo-103':
+      return 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600&auto=format&fit=crop&q=80';
+    default:
+      return 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=600&auto=format&fit=crop&q=80';
+  }
+};
+
+const preloadAndCacheImage = (url: string): Promise<string> => {
+  if (imageCache.has(url)) {
+    return Promise.resolve(imageCache.get(url)!);
+  }
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.src = url;
+    img.onload = () => {
+      imageCache.set(url, url);
+      resolve(url);
+    };
+    img.onerror = () => {
+      resolve(url);
+    };
+  });
+};
+
 export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginProps> = ({
   initialProperties = DEFAULT_MASTER_SEED_LISTINGS,
   initialBuyerProfile,
@@ -243,17 +276,6 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
   isStandalone = false,
   onOpenByokDrawer
 }) => {
-  // Check if we are in carousel only mode (specifically requested for clean social media iframe / posts embed)
-  const isCarouselOnlyView = useMemo(() => {
-    try {
-      if (typeof window !== 'undefined') {
-        const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.get('view') === 'carousel_only' || urlParams.get('mode') === 'carousel_only';
-      }
-    } catch {}
-    return false;
-  }, []);
-
   // Check if we are in standalone consumer/lead mode (either passed as a prop, or detected via URL search params)
   const isStandaloneView = useMemo(() => {
     if (isStandalone) return true;
@@ -270,6 +292,21 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
     } catch {}
     return false;
   }, [isStandalone]);
+
+  // Check if we are in carousel only mode (specifically requested for clean social media iframe / posts embed)
+  const isCarouselOnlyView = useMemo(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        return (
+          urlParams.get('view') === 'carousel_only' ||
+          urlParams.get('mode') === 'carousel_only' ||
+          isStandaloneView
+        );
+      }
+    } catch {}
+    return isStandaloneView;
+  }, [isStandaloneView]);
 
   // Buyer DTI State
   const [buyerProfile, setBuyerProfile] = useState<BuyerDtiProfile>({
@@ -518,6 +555,16 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
       }
     }
   }, [properties]);
+
+  // Background Preloading and Caching of Property Images for smooth carousel swiping
+  useEffect(() => {
+    if (isCarouselOnlyView) {
+      properties.forEach((p) => {
+        const url = getPropertyImageUrl(p.id);
+        preloadAndCacheImage(url);
+      });
+    }
+  }, [properties, isCarouselOnlyView]);
 
   const handleToggleDefaultProperty = (propId: string) => {
     setActiveDefaultPropertyId((prev) => {
@@ -3800,6 +3847,25 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                         <Share2 className="w-3.5 h-3.5 text-amber-200" />
                         <span>Promote & Share</span>
                       </button>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Preloaded and Cached Property Image with Live Cache Badge Indicator */}
+              {(() => {
+                const imgUrl = getPropertyImageUrl(selectedProperty.id);
+                return (
+                  <div className="relative w-full h-48 sm:h-64 rounded-xl overflow-hidden border border-stone-800 bg-stone-900 group shadow-lg">
+                    <img
+                      src={imgUrl}
+                      alt={selectedProperty.formattedAddress}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-102"
+                      loading="lazy"
+                    />
+                    <div className="absolute top-3 left-3 px-2 py-0.5 rounded bg-stone-950/90 text-emerald-400 text-[9px] font-mono font-black border border-emerald-500/30 backdrop-blur-xs flex items-center gap-1 shadow-sm">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+                      <span>IMAGE PRELOAD CACHE ACTIVE</span>
                     </div>
                   </div>
                 );
