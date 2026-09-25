@@ -37,6 +37,7 @@ import { MobileAddToHomeScreenBanner } from './components/MobileAddToHomeScreenB
 import { LeadMobileShareLinksModal } from './components/LeadMobileShareLinksModal';
 import { PublicFacingWebsiteView } from './components/PublicFacingWebsiteView';
 import { GoogleAppsSidebarLauncher } from './components/GoogleAppsSidebarLauncher';
+import { FirstTimeHomebuyerGeoPlugin } from './components/FirstTimeHomebuyerGeoPlugin';
 import { Users, Smartphone, Home, Brain, LogOut, Monitor } from 'lucide-react';
 import { safeAtob } from './utils/base64';
 
@@ -117,6 +118,20 @@ export default function App() {
         urlParams.get('mobile') === 'true' ||
         urlParams.get('mobile') === '1' ||
         urlParams.get('admin') === 'mobile'
+      );
+    } catch {
+      return false;
+    }
+  });
+
+  // Client / Homebuyer dedicated standalone state (when 'lead=1' or similar parameter is matched)
+  const [isConsumerLeadMode] = useState<boolean>(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      return (
+        urlParams.get('lead') === '1' ||
+        urlParams.get('lead_mode') === '1' ||
+        urlParams.get('client') === '1'
       );
     } catch {
       return false;
@@ -409,7 +424,29 @@ export default function App() {
     }
   };
 
-  // 1. Mobile Admin Dashboard Mode
+  // 1. Standalone Consumer/Client Lead Portal View
+  if (isConsumerLeadMode) {
+    return (
+      <ThemeProvider>
+        <BatterySaverProvider>
+          <AccountPathwayProvider>
+            <MemoryProvider>
+              <div className="min-h-screen max-w-[100vw] w-full bg-slate-950 text-slate-100 font-sans antialiased overflow-x-hidden">
+                <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+                  <FirstTimeHomebuyerGeoPlugin 
+                    onOpenByokDrawer={() => {}} 
+                    onOpenShareLinksModal={() => {}}
+                  />
+                </div>
+              </div>
+            </MemoryProvider>
+          </AccountPathwayProvider>
+        </BatterySaverProvider>
+      </ThemeProvider>
+    );
+  }
+
+  // 2. Mobile Admin Dashboard Mode
   if (isMobileAdminMode) {
     return (
       <ThemeProvider>

@@ -557,6 +557,80 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
   const [carouselIndex, setCarouselIndex] = useState<number>(0);
   const [autoRotate, setAutoRotate] = useState<boolean>(false);
 
+  // Touch swiping state (mobile view swipe left/right)
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartX.current === null || touchEndX.current === null) return;
+    const diffX = touchStartX.current - touchEndX.current;
+    const swipeThreshold = 50;
+
+    if (Math.abs(diffX) > swipeThreshold) {
+      if (diffX > 0) {
+        // Swipe Left -> Next Property in Rotation list
+        setCarouselIndex((prev) => (prev < filteredProperties.length - 1 ? prev + 1 : 0));
+      } else {
+        // Swipe Right -> Previous Property in Rotation list
+        setCarouselIndex((prev) => (prev > 0 ? prev - 1 : filteredProperties.length - 1));
+      }
+    }
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
+
+  // Mouse dragging state (desktop view drag-and-swipe control)
+  const dragStartX = useRef<number | null>(null);
+  const dragCurrentX = useRef<number | null>(null);
+  const isDraggingState = useRef<boolean>(false);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return; // Only left click drag
+    dragStartX.current = e.clientX;
+    dragCurrentX.current = e.clientX;
+    isDraggingState.current = true;
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDraggingState.current || dragStartX.current === null) return;
+    dragCurrentX.current = e.clientX;
+  };
+
+  const handleMouseUp = (e: React.MouseEvent) => {
+    if (!isDraggingState.current || dragStartX.current === null || dragCurrentX.current === null) return;
+    const diffX = dragStartX.current - dragCurrentX.current;
+    const dragThreshold = 50;
+
+    if (Math.abs(diffX) > dragThreshold) {
+      e.stopPropagation();
+      if (diffX > 0) {
+        // Drag Left -> Next Property in Rotation list
+        setCarouselIndex((prev) => (prev < filteredProperties.length - 1 ? prev + 1 : 0));
+      } else {
+        // Drag Right -> Previous Property in Rotation list
+        setCarouselIndex((prev) => (prev > 0 ? prev - 1 : filteredProperties.length - 1));
+      }
+    }
+    isDraggingState.current = false;
+    dragStartX.current = null;
+    dragCurrentX.current = null;
+  };
+
+  const handleMouseLeave = () => {
+    isDraggingState.current = false;
+    dragStartX.current = null;
+    dragCurrentX.current = null;
+  };
+
   const handleToggleFavorite = (propId: string) => {
     setFavoritePropertyIds((prev) => {
       let next: string[];
@@ -929,6 +1003,34 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
       return 0;
     });
   }, [rawFilteredProperties, favoritePropertyIds, activeDefaultPropertyId, showCuratedOnly, curatedPropertyIds]);
+
+  // Desktop left-right arrow keystroke listener (loaded below filteredProperties to avoid early variable usage)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      if (activeEl && (
+        activeEl.tagName === 'INPUT' ||
+        activeEl.tagName === 'TEXTAREA' ||
+        activeEl.tagName === 'SELECT' ||
+        activeEl.getAttribute('contenteditable') === 'true'
+      )) {
+        return;
+      }
+
+      if (carouselViewMode === 'carousel' && filteredProperties.length > 1) {
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          setCarouselIndex((prev) => (prev < filteredProperties.length - 1 ? prev + 1 : 0));
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          setCarouselIndex((prev) => (prev > 0 ? prev - 1 : filteredProperties.length - 1));
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [carouselViewMode, filteredProperties]);
 
   // Real-time Lakeview 140% County AMI Curation Statistics across checkboxed curated listings
   const curatedLakeviewStats = useMemo(() => {
@@ -3454,45 +3556,59 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
 
                 return (
                   <div className="space-y-3">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div 
+                      className="grid grid-cols-1 md:grid-cols-3 gap-3 select-none touch-pan-y active:cursor-grabbing cursor-grab"
+                      onTouchStart={handleTouchStart}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
+                      onMouseDown={handleMouseDown}
+                      onMouseMove={handleMouseMove}
+                      onMouseUp={handleMouseUp}
+                      onMouseLeave={handleMouseLeave}
+                      title="Swipe or Drag left/right to rotate listings"
+                    >
                       {visibleCards.map(({ prop, index }) => renderPropertyCard(prop, index))}
                     </div>
 
                     {/* Carousel Rotation Quick Navigation Dots */}
-                    <div className="p-2 bg-stone-950 border border-stone-800 rounded-xl flex items-center justify-between gap-2 overflow-x-auto text-[10px] font-mono">
-                      <span className="text-stone-400 shrink-0">
-                        Rotation Rail:
-                      </span>
-                      <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
-                        {filteredProperties.map((p, idx) => {
-                          const isFav = favoritePropertyIds.includes(p.id);
-                          const isCurrent = idx === carouselIndex;
-                          return (
-                            <button
-                              key={p.id}
-                              type="button"
-                              onClick={() => {
-                                setCarouselIndex(idx);
-                                setSelectedPropertyId(p.id);
-                              }}
-                              className={`px-2 py-0.5 rounded-md font-bold transition cursor-pointer flex items-center gap-1 ${
-                                isCurrent
-                                  ? 'bg-amber-500 text-stone-950 ring-1 ring-amber-400 shadow-xs'
-                                  : isFav
-                                  ? 'bg-rose-950/60 text-rose-300 border border-rose-500/50 hover:bg-rose-900/60'
-                                  : 'bg-stone-900 text-stone-400 hover:text-white border border-stone-800'
-                              }`}
-                              title={`Jump to Listing #${idx + 1}: ${p.addressLine1} ${isFav ? '(Front & Center Top 3)' : ''}`}
-                            >
-                              {isFav && <Heart className="w-2.5 h-2.5 fill-rose-400 text-rose-400" />}
-                              <span>#{idx + 1}</span>
-                            </button>
-                          );
-                        })}
+                    <div className="p-2.5 bg-stone-950 border border-stone-800 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3 text-[10px] font-mono">
+                      <div className="flex items-center gap-2 max-w-full overflow-x-auto scrollbar-none">
+                        <span className="text-stone-400 shrink-0">
+                          Rotation Rail:
+                        </span>
+                        <div className="flex items-center gap-1.5 py-0.5">
+                          {filteredProperties.map((p, idx) => {
+                            const isFav = favoritePropertyIds.includes(p.id);
+                            const isCurrent = idx === carouselIndex;
+                            return (
+                              <button
+                                key={p.id}
+                                type="button"
+                                onClick={() => {
+                                  setCarouselIndex(idx);
+                                  setSelectedPropertyId(p.id);
+                                }}
+                                className={`px-2 py-0.5 rounded-md font-bold transition cursor-pointer flex items-center gap-1 shrink-0 ${
+                                  isCurrent
+                                    ? 'bg-amber-500 text-stone-950 ring-1 ring-amber-400 shadow-xs'
+                                    : isFav
+                                    ? 'bg-rose-950/60 text-rose-300 border border-rose-500/50 hover:bg-rose-900/60'
+                                    : 'bg-stone-900 text-stone-400 hover:text-white border border-stone-800'
+                                }`}
+                                title={`Jump to Listing #${idx + 1}: ${p.addressLine1} ${isFav ? '(Front & Center Top 3)' : ''}`}
+                              >
+                                {isFav && <Heart className="w-2.5 h-2.5 fill-rose-400 text-rose-400" />}
+                                <span>#{idx + 1}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                      <span className="text-amber-400 font-bold shrink-0">
-                        Cards 1–3 = Top 3 Front & Center
-                      </span>
+
+                      <div className="flex items-center gap-1.5 text-amber-400 font-bold shrink-0">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+                        <span>Arrow Keys ⌨️ or Drag/Swipe cards 🖱️ to spin!</span>
+                      </div>
                     </div>
                   </div>
                 );
