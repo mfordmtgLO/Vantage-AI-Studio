@@ -201,7 +201,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'suite' as WorkspaceTab, label: '💎 Vantage Suite', icon: Sparkles, badge: '4-in-1' },
     { id: 'lo_agent_profiles' as WorkspaceTab, label: '👥 LO & Agent Profiles', icon: Users, badge: 'Kanndice' },
     { id: 'google_apps' as WorkspaceTab, label: '🌐 7 Google Apps Hub', icon: Layers, badge: 'Portal' },
-    { id: 'lead_discovery' as WorkspaceTab, label: '🎯 Lead Discovery', icon: Target, badge: 'Oregon' },
+    { id: 'lead_discovery' as WorkspaceTab, label: '🎯 Lead Discovery', icon: Target, badge: '2 New' },
     { id: 'studio' as WorkspaceTab, label: 'Prompt Studio & Copilot', icon: Bot },
     { id: 'brain' as WorkspaceTab, label: '2nd Brain Memory', icon: Brain },
     { id: 'real_estate' as WorkspaceTab, label: 'Real Estate GeoMap', icon: Home },
@@ -814,7 +814,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span>{tab.label}</span>
                 {tab.badge && (
                   <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-full uppercase tracking-wider ${
-                    isActive ? 'bg-white text-blue-700' : 'bg-amber-400 text-slate-950 shadow-xs'
+                    tab.id === 'lead_discovery'
+                      ? 'bg-rose-500 text-white animate-pulse shadow-sm'
+                      : isActive ? 'bg-white text-blue-700' : 'bg-amber-400 text-slate-950 shadow-xs'
                   }`}>
                     {tab.badge}
                   </span>

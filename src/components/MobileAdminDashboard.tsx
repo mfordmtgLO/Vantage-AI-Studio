@@ -4,7 +4,7 @@ import {
   Trash2, Bell, Sparkles, Smartphone, Mail, ChevronRight, Search, 
   Filter, CheckSquare, RefreshCw, Eye, Building2, ExternalLink,
   Copy, Check, Briefcase, Package, Layers, Sliders, Brain, Users,
-  Share2, LogOut, Globe, KeyRound, Link2
+  Share2, LogOut, Globe, KeyRound, Link2, Target
 } from 'lucide-react';
 import { useAccountPathway } from '../context/AccountPathwayContext';
 import { IndustryCareerTemplateSelector } from './IndustryCareerTemplateSelector';
@@ -12,6 +12,7 @@ import { TrainMyBrainQuickInput } from './TrainMyBrainQuickInput';
 import { CommercialVersionReleaseStudio } from './CommercialVersionReleaseStudio';
 import { IndustrySpecialtyBrainStudio } from './IndustrySpecialtyBrainStudio';
 import { ProfileCardsAdminPortal } from './ProfileCardsAdminPortal';
+import { LeadDiscoveryStudio } from './LeadDiscoveryStudio';
 import { GitHubCloudRunSyncStatusCard } from './GitHubCloudRunSyncStatusCard';
 import { IndustryCareerTemplate } from '../data/industryCareerTemplates';
 
@@ -31,7 +32,7 @@ export const MobileAdminDashboard: React.FC<{
   onOpenPublicWebsite?: () => void;
   onLogout?: () => void;
 }> = ({ onOpenDesktopView, onOpenPluginVault, onOpenShareLinksModal, onOpenPublicWebsite, onLogout }) => {
-  const [activeTab, setActiveTab] = useState<'notes' | 'customers' | 'profile-cards' | 'quick-sms' | 'workspace' | 'morph-suite' | 'commercial-releases' | 'settings' | 'cicd-status'>('notes');
+  const [activeTab, setActiveTab] = useState<'notes' | 'customers' | 'profile-cards' | 'quick-sms' | 'workspace' | 'morph-suite' | 'commercial-releases' | 'settings' | 'cicd-status' | 'lead-discovery'>('notes');
   const [brainSubView, setBrainSubView] = useState<'morph' | 'train'>('morph');
   const [activeTemplate, setActiveTemplate] = useState<IndustryCareerTemplate | null>(null);
   const [copiedUrlType, setCopiedUrlType] = useState<string | null>(null);
@@ -276,6 +277,16 @@ export const MobileAdminDashboard: React.FC<{
           >
             <Package className="w-3.5 h-3.5" />
             Upgraded Releases
+          </button>
+          <button
+            onClick={() => setActiveTab('lead-discovery')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 shrink-0 relative ${
+              activeTab === 'lead-discovery' ? 'bg-emerald-600 text-slate-950 font-extrabold shadow-sm' : 'bg-slate-800/70 text-slate-400'
+            }`}
+          >
+            <Target className="w-3.5 h-3.5 text-emerald-400" />
+            <span>🎯 Oregon Lead Discovery</span>
+            <span className="ml-1 px-1.5 py-0.2 rounded-full bg-rose-500 text-white font-extrabold text-[9px] animate-pulse">2 New</span>
           </button>
           <button
             onClick={() => setActiveTab('cicd-status')}
@@ -907,6 +918,13 @@ export const MobileAdminDashboard: React.FC<{
             <div className="pt-6 border-t border-slate-800">
               <CommercialVersionReleaseStudio />
             </div>
+          </div>
+        )}
+
+        {/* Tab 8: Oregon Lead Discovery (Admin Mobile) */}
+        {activeTab === 'lead-discovery' && (
+          <div className="p-2 sm:p-4 max-w-full overflow-x-hidden">
+            <LeadDiscoveryStudio />
           </div>
         )}
       </main>
