@@ -4,7 +4,7 @@ import {
   Sparkles, Mail, Calendar, FileText, Table, CheckSquare, Users, LogOut, 
   Bot, Brain, Send, Cpu, Clock, Mic, Moon, Sun, Monitor, Building2, RefreshCw, CheckCircle2,
   Database, Shield, Lock, Home, Code, FileCode, Layers, TrendingUp, Megaphone, Key,
-  Smartphone, Share2, Globe, LayoutGrid
+  Smartphone, Share2, Globe, LayoutGrid, Target
 } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { useTheme } from '../context/ThemeContext';
@@ -201,6 +201,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'suite' as WorkspaceTab, label: '💎 Vantage Suite', icon: Sparkles, badge: '4-in-1' },
     { id: 'lo_agent_profiles' as WorkspaceTab, label: '👥 LO & Agent Profiles', icon: Users, badge: 'Kanndice' },
     { id: 'google_apps' as WorkspaceTab, label: '🌐 7 Google Apps Hub', icon: Layers, badge: 'Portal' },
+    { id: 'lead_discovery' as WorkspaceTab, label: '🎯 Lead Discovery', icon: Target, badge: 'Oregon' },
     { id: 'studio' as WorkspaceTab, label: 'Prompt Studio & Copilot', icon: Bot },
     { id: 'brain' as WorkspaceTab, label: '2nd Brain Memory', icon: Brain },
     { id: 'real_estate' as WorkspaceTab, label: 'Real Estate GeoMap', icon: Home },

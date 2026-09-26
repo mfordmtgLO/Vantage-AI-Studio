@@ -25,6 +25,7 @@ import { MultiSourceDataPurgeStudio } from './MultiSourceDataPurgeStudio';
 import { PushNotificationManager } from './PushNotificationManager';
 import { LiveTwoWayNotesModal } from './LiveTwoWayNotesModal';
 import { ProfileCardsAdminPortal } from './ProfileCardsAdminPortal';
+import { LeadDiscoveryStudio } from './LeadDiscoveryStudio';
 import { GoogleAppHeader } from './GoogleAppHeader';
 import { GoogleAppsCommandDeck } from './GoogleAppsCommandDeck';
 import { GoogleAppsWorkspacePortal } from './GoogleAppsWorkspacePortal';
@@ -916,13 +917,6 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
           <button onClick={() => setActionSuccessMsg(null)} className="text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-300 font-bold text-sm">×</button>
         </div>
       )}
-
-      {/* INDUSTRY & CAREER BEHAVIORAL ADAPTABILITY BAR (FOR BOTH GOOGLE APPS PATHWAYS) */}
-      <IndustryAppsAdaptabilityBar
-        onOpenSmartStudio={() => setIsSmartAppsStudioOpen(true)}
-        onOpenDraftModal={() => setActiveTab('drafts')}
-        onOpenSheetsEngine={() => setActiveTab('sheets')}
-      />
 
       {/* SMART APPS STUDIO MODAL */}
       {isSmartAppsStudioOpen && (
@@ -2005,6 +1999,9 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
 
       {/* LO & AGENT PROFILE CARDS ADMIN PORTAL TAB */}
       {activeTab === 'lo_agent_profiles' && <ProfileCardsAdminPortal />}
+
+      {/* OREGON LEAD DISCOVERY TAB */}
+      {activeTab === 'lead_discovery' && <LeadDiscoveryStudio />}
 
       {/* ADMIN PLUGINS & CODE GENERATORS TAB */}
       {activeTab === 'admin_plugins' && (

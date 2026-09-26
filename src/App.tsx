@@ -185,19 +185,17 @@ export default function App() {
   // Google Apps 9-Dot Launcher and Persistent Sidebar State
   const [isLauncherOpen, setIsLauncherOpen] = useState<boolean>(false);
   const [isSidebarPinned, setIsSidebarPinned] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem('vantage_sidebar_pinned') === 'true';
-    } catch {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
       return false;
     }
-  });
-  const [sidebarDockSide, setSidebarDockSide] = useState<'left' | 'right'>(() => {
     try {
-      const saved = localStorage.getItem('vantage_sidebar_dock');
-      if (saved === 'left' || saved === 'right') return saved;
-    } catch {}
-    return 'left';
+      const saved = localStorage.getItem('vantage_sidebar_pinned');
+      return saved !== null ? saved === 'true' : true;
+    } catch {
+      return true;
+    }
   });
+  const sidebarDockSide = 'left';
   const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
     try {
       const saved = localStorage.getItem('vantage_sidebar_width');
@@ -214,6 +212,29 @@ export default function App() {
       localStorage.setItem('vantage_sidebar_width', String(sidebarWidth));
     } catch {}
   }, [sidebarWidth]);
+
+  // Auto-collapse sidebar on window widths below 1024px to maximize workspace area
+  useEffect(() => {
+    let wasDesktop = window.innerWidth >= 1024;
+
+    const handleResize = () => {
+      const isDesktopNow = window.innerWidth >= 1024;
+      if (wasDesktop && !isDesktopNow) {
+        setIsSidebarPinned(false);
+      } else if (!wasDesktop && isDesktopNow) {
+        try {
+          const saved = localStorage.getItem('vantage_sidebar_pinned');
+          setIsSidebarPinned(saved !== 'false');
+        } catch {
+          setIsSidebarPinned(true);
+        }
+      }
+      wasDesktop = isDesktopNow;
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Quick Undo and Voice Execution State
   const [activeVoiceWorkflow, setActiveVoiceWorkflow] = useState<string | null>(null);
@@ -767,14 +788,7 @@ export default function App() {
                   return next;
                 });
               }}
-              dockSide={sidebarDockSide}
-              onToggleDockSide={() => {
-                setSidebarDockSide((prev) => {
-                  const next = prev === 'left' ? 'right' : 'left';
-                  try { localStorage.setItem('vantage_sidebar_dock', next); } catch {}
-                  return next;
-                });
-              }}
+              dockSide="left"
               sidebarWidth={sidebarWidth}
               onSidebarWidthChange={setSidebarWidth}
               onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
@@ -794,8 +808,7 @@ export default function App() {
             <main 
               className="transition-all duration-150"
               style={{
-                paddingLeft: isSidebarPinned && sidebarDockSide === 'left' ? `${sidebarWidth}px` : undefined,
-                paddingRight: isSidebarPinned && sidebarDockSide === 'right' ? `${sidebarWidth}px` : undefined
+                paddingLeft: isSidebarPinned ? `${sidebarWidth}px` : undefined
               }}
             >
               <WorkspaceHub

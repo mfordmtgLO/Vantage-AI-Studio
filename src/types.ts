@@ -1,4 +1,4 @@
-export type WorkspaceTab = 'suite' | 'commercial_strategy' | 'dev_roadmap' | 'google_apps' | 'studio' | 'brain' | 'real_estate' | 'orchestrator' | 'scheduler' | 'drafts' | 'gmail' | 'calendar' | 'drive' | 'sheets' | 'tasks' | 'contacts' | 'voice-macros' | 'admin_plugins' | 'lo_agent_profiles';
+export type WorkspaceTab = 'suite' | 'commercial_strategy' | 'dev_roadmap' | 'google_apps' | 'studio' | 'brain' | 'real_estate' | 'orchestrator' | 'scheduler' | 'drafts' | 'gmail' | 'calendar' | 'drive' | 'sheets' | 'tasks' | 'contacts' | 'voice-macros' | 'admin_plugins' | 'lo_agent_profiles' | 'lead_discovery';
 
 export type AccountPathway = 'google_apps' | 'workspace';
 

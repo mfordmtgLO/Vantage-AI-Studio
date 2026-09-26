@@ -16,6 +16,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { WorkspaceTab } from '../types';
 import { useAccountPathway } from '../context/AccountPathwayContext';
 import { useMemory } from '../context/MemoryContext';
+import { useTheme } from '../context/ThemeContext';
 import { getWorkspaceNotificationCounts, ModuleNotificationCounts } from '../utils/workspaceNotifications';
 import { 
   Sparkles, Mail, Calendar, FileText, Table, CheckSquare, Users, 
@@ -23,7 +24,8 @@ import {
   PinOff, ChevronRight, ChevronLeft, ExternalLink, Zap, Key, 
   Building2, CheckCircle2, Sliders, Shield, ArrowRight, Globe,
   Briefcase, Code, Compass, FolderOpen, Send, DollarSign, Calculator,
-  Columns, Bell, GripVertical, RotateCcw, ArrowUp, ArrowDown, Check
+  Columns, Bell, GripVertical, RotateCcw, ArrowUp, ArrowDown, Check,
+  Sun, Moon, Target
 } from 'lucide-react';
 
 const DEFAULT_FLAGSHIP_ORDER: string[] = ['suite', 'google_apps', 'studio', 'brain', 'real_estate', 'orchestrator'];
@@ -84,6 +86,7 @@ export const GoogleAppsSidebarLauncher: React.FC<GoogleAppsSidebarLauncherProps>
 }) => {
   const { pathway, setIsWorkspaceModalOpen, connectedWorkspaceEmail } = useAccountPathway();
   const { guardrails } = useMemory();
+  const { theme, resolvedTheme, setTheme, toggleTheme } = useTheme();
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeCategory, setActiveCategory] = useState<'all' | 'flagship' | 'google_apps' | 'tools'>('all');
   const [notificationCounts, setNotificationCounts] = useState<ModuleNotificationCounts>(getWorkspaceNotificationCounts);
@@ -244,6 +247,19 @@ export const GoogleAppsSidebarLauncher: React.FC<GoogleAppsSidebarLauncherProps>
       notificationCount: notificationCounts.brain.count,
       isUrgent: false,
       description: 'Persistent context graphs, career persona adaptations, and organizational intelligence memory.'
+    },
+    {
+      id: 'lead_discovery' as WorkspaceTab,
+      name: 'Lead Discovery',
+      subtitle: 'Oregon Homebuyer Intent Feed',
+      category: 'flagship',
+      icon: Target,
+      iconBg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 dark:bg-emerald-950/60',
+      badge: 'Oregon',
+      badgeColor: 'bg-emerald-600 text-slate-950 font-black',
+      notificationCount: 5,
+      isUrgent: true,
+      description: 'Automated daily sweeps of Reddit, Oregon forums, and chat boards for renter-to-homeowner intent.'
     },
     {
       id: 'real_estate' as WorkspaceTab,
@@ -698,20 +714,22 @@ export const GoogleAppsSidebarLauncher: React.FC<GoogleAppsSidebarLauncherProps>
             </div>
           </div>
 
-          {/* Action Icons: Pin/Unpin, Dock Toggle, Close */}
+          {/* Action Icons: Dark/Light Mode, Pin/Unpin, Close */}
           <div className="flex items-center gap-1">
             
-            {/* Dock Side Switcher (Left vs Right) */}
-            {onToggleDockSide && (
-              <button
-                type="button"
-                onClick={onToggleDockSide}
-                className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-800 transition cursor-pointer"
-                title={`Dock sidebar to ${dockSide === 'left' ? 'Right' : 'Left'}`}
-              >
-                <Columns className="w-4 h-4" />
-              </button>
-            )}
+            {/* Global Dark / Light Mode Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-800 transition cursor-pointer flex items-center justify-center"
+              title={`Switch to ${resolvedTheme === 'dark' ? 'Light' : 'Dark'} Mode`}
+            >
+              {resolvedTheme === 'dark' ? (
+                <Sun className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Moon className="w-4 h-4 text-indigo-600" />
+              )}
+            </button>
 
             {/* Pin / Unpin Button */}
             <button
@@ -722,7 +740,7 @@ export const GoogleAppsSidebarLauncher: React.FC<GoogleAppsSidebarLauncherProps>
                   ? 'bg-blue-600 text-white shadow-xs' 
                   : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-800'
               }`}
-              title={isPinned ? 'Unpin Sidebar (Floating Mode)' : 'Pin as Persistent Sidebar (Cmd+B)'}
+              title={isPinned ? 'Collapse Sidebar' : 'Pin Left Sidebar (Cmd+B)'}
             >
               {isPinned ? <Pin className="w-4 h-4" /> : <PinOff className="w-4 h-4" />}
             </button>
@@ -739,8 +757,8 @@ export const GoogleAppsSidebarLauncher: React.FC<GoogleAppsSidebarLauncherProps>
           </div>
         </div>
 
-        {/* Dual-Pathway & Active Persona Status Ribbon */}
-        <div className="px-4 py-2.5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white text-xs flex items-center justify-between border-b border-slate-800 shrink-0">
+        {/* Dual-Pathway & Global Theme Status Ribbon */}
+        <div className="px-4 py-2 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white text-xs flex items-center justify-between border-b border-slate-800 shrink-0">
           <div className="flex items-center gap-2 truncate">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
             <span className="text-[11px] font-bold text-slate-200 truncate">
@@ -748,13 +766,43 @@ export const GoogleAppsSidebarLauncher: React.FC<GoogleAppsSidebarLauncherProps>
             </span>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setIsWorkspaceModalOpen(true)}
-            className="text-[10px] font-bold text-indigo-300 hover:text-white uppercase tracking-wider underline cursor-pointer shrink-0 ml-2"
-          >
-            Switch
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Global Theme Mode Segmented Switcher */}
+            <div className="flex items-center gap-0.5 bg-slate-800/90 p-0.5 rounded-lg border border-slate-700/80">
+              <button
+                type="button"
+                onClick={() => setTheme('light')}
+                className={`p-1 rounded transition ${
+                  resolvedTheme === 'light' 
+                    ? 'bg-amber-500 text-slate-950 shadow-xs' 
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Switch to Light Theme"
+              >
+                <Sun className="w-3 h-3" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setTheme('dark')}
+                className={`p-1 rounded transition ${
+                  resolvedTheme === 'dark' 
+                    ? 'bg-indigo-600 text-white shadow-xs' 
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Switch to Dark Theme"
+              >
+                <Moon className="w-3 h-3" />
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsWorkspaceModalOpen(true)}
+              className="text-[10px] font-bold text-indigo-300 hover:text-white uppercase tracking-wider underline cursor-pointer"
+            >
+              Switch
+            </button>
+          </div>
         </div>
 
         {/* Search Bar */}

@@ -26,6 +26,7 @@ import {
 import { UserMemory } from '../types';
 import { calculateTemporalDecayScore, getHalfLifeDays, getLambdaForHalfLife } from '../utils/temporalMemoryEngine';
 import { scanAndPruneKnowledge, KnowledgeHygieneReport } from '../services/knowledgePruning';
+import { executeCircadianJob, CircadianExecutionLog } from '../services/cronScheduler';
 
 interface TemporalMemoryDecayStudioProps {
   memories: UserMemory[];
@@ -44,6 +45,8 @@ export const TemporalMemoryDecayStudio: React.FC<TemporalMemoryDecayStudioProps>
   const [localMemoryState, setLocalMemoryState] = useState<UserMemory[]>(memories);
   const [isRunningHygiene, setIsRunningHygiene] = useState<boolean>(false);
   const [lastHygieneReport, setLastHygieneReport] = useState<KnowledgeHygieneReport | null>(null);
+  const [isRunningLeadSweep, setIsRunningLeadSweep] = useState<boolean>(false);
+  const [lastLeadSweepLog, setLastLeadSweepLog] = useState<CircadianExecutionLog | null>(null);
 
   const handleRunHygiene = async () => {
     setIsRunningHygiene(true);
@@ -54,6 +57,18 @@ export const TemporalMemoryDecayStudio: React.FC<TemporalMemoryDecayStudioProps>
       console.error('Failed to run knowledge hygiene pass:', err);
     } finally {
       setIsRunningHygiene(false);
+    }
+  };
+
+  const handleRunLeadSweep = async () => {
+    setIsRunningLeadSweep(true);
+    try {
+      const res = await executeCircadianJob('job_oregon_homebuyer_lead_sweep');
+      setLastLeadSweepLog(res.log);
+    } catch (err) {
+      console.error('Failed to run Oregon homebuyer lead sweep:', err);
+    } finally {
+      setIsRunningLeadSweep(false);
     }
   };
 
@@ -207,6 +222,41 @@ export const TemporalMemoryDecayStudio: React.FC<TemporalMemoryDecayStudioProps>
             <span>{isRunningHygiene ? 'Consolidating Memories...' : 'Run Nightly Consolidation Pass'}</span>
           </button>
         </div>
+
+        {/* Oregon First-Time Homebuyer & DPA Lead Sweep On-Demand Action Bar */}
+        <div className="mt-3 pt-3 border-t border-indigo-800/40 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-xs text-indigo-200">
+            <Search className="w-4 h-4 text-emerald-400 shrink-0 animate-pulse" />
+            <span>
+              <strong>Oregon Homebuyer Lead Sweep:</strong> Instantly scan Reddit, Oregon housing forums & chat boards for DPA, zero-down, FHA, USDA & 2-1 buydown renter leads.
+            </span>
+          </div>
+
+          <button
+            onClick={handleRunLeadSweep}
+            disabled={isRunningLeadSweep}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-slate-950 font-extrabold text-xs shadow-md transition cursor-pointer disabled:opacity-50"
+          >
+            <Zap className={`w-3.5 h-3.5 ${isRunningLeadSweep ? 'animate-spin' : ''}`} />
+            <span>{isRunningLeadSweep ? 'Scanning Oregon Forums & Reddit...' : 'Run Oregon Lead Sweep Now'}</span>
+          </button>
+        </div>
+
+        {/* Lead Sweep Execution Result Banner */}
+        {lastLeadSweepLog && (
+          <div className="mt-3 p-3 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-200 text-xs space-y-1">
+            <div className="flex items-center justify-between font-bold">
+              <span className="flex items-center gap-1.5 text-emerald-300">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                Oregon Homebuyer Sweep Success ({new Date(lastLeadSweepLog.executedAt).toLocaleTimeString()})
+              </span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-900/80 text-emerald-300">
+                {lastLeadSweepLog.affectedEntitiesCount} Leads Discovered
+              </span>
+            </div>
+            <p className="text-slate-300 text-[11px]">{lastLeadSweepLog.summary}</p>
+          </div>
+        )}
       </div>
 
       {/* Live Knowledge Hygiene Audit Report Banner */}
