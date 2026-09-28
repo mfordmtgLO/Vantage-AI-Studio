@@ -3,7 +3,8 @@ import {
   X, Copy, Check, ExternalLink, Smartphone, Share2, QrCode, 
   MessageSquare, Mail, Home, Building2, Brain, Mic, Sparkles, 
   ShieldCheck, Globe, CheckCircle2, ChevronDown, ChevronUp, Link as LinkIcon,
-  Users, UserCheck, Award, Download, Maximize2, Tablet, Contact, User, Star
+  Users, UserCheck, Award, Download, Maximize2, Tablet, Contact, User, Star,
+  Lock, ShieldAlert
 } from 'lucide-react';
 import { 
   LEAD_MOBILE_PLUGIN_MODULES, 
@@ -945,6 +946,19 @@ export const LeadMobileShareLinksModal: React.FC<LeadMobileShareLinksModalProps>
                     </div>
                   </div>
                 </div>
+
+                {/* Offline to Public Notice */}
+                {module.isOfflineForPublic && (
+                  <div className="mt-3 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/60 text-xs text-amber-900 dark:text-amber-200 flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-2 font-medium">
+                      <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                      <span><strong>Public Access Offline:</strong> This plugin URL is currently in Developer Testing Mode only and offline for public traffic.</span>
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-100 font-mono text-[10px] font-bold shrink-0">
+                      Dev Mode Only
+                    </span>
+                  </div>
+                )}
 
                 {/* Live URL Bar */}
                 <div className={`mt-3.5 p-2.5 rounded-xl border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 ${

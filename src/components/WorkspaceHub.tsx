@@ -13,6 +13,7 @@ import { DriveExplorerView } from './DriveExplorerView';
 import { VoiceMacroManagerView } from './VoiceMacroManagerView';
 import { StandalonePluginArchetypeGenerator } from './StandalonePluginArchetypeGenerator';
 import { RealEstateMortgageView } from './RealEstateMortgageView';
+import { GeomapDeveloperModeGate } from './GeomapDeveloperModeGate';
 import { SuiteMasterUnifiedView } from './SuiteMasterUnifiedView';
 import { TopTierCommercialStrategyHub } from './TopTierCommercialStrategyHub';
 import { PrioritizedCodeImplementationRoadmap } from './PrioritizedCodeImplementationRoadmap';
@@ -1987,11 +1988,13 @@ export const WorkspaceHub: React.FC<WorkspaceHubProps> = ({
 
       {/* REAL ESTATE & MORTGAGE GEOMAP ENGINE TAB */}
       {activeTab === 'real_estate' && (
-        <RealEstateMortgageView
-          onOpenPluginVault={() => setActiveTab('admin_plugins')}
-          onOpenByokDrawer={onOpenByokDrawer}
-          onOpenShareLinksModal={onOpenShareLinksModal}
-        />
+        <GeomapDeveloperModeGate onBackToPublic={() => setActiveTab('studio')}>
+          <RealEstateMortgageView
+            onOpenPluginVault={() => setActiveTab('admin_plugins')}
+            onOpenByokDrawer={onOpenByokDrawer}
+            onOpenShareLinksModal={onOpenShareLinksModal}
+          />
+        </GeomapDeveloperModeGate>
       )}
 
       {/* GMAIL DRAFTS TAB */}

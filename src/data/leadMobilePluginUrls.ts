@@ -23,6 +23,7 @@ export interface LeadPluginModuleUrlInfo {
     subject: string;
     body: string;
   };
+  isOfflineForPublic?: boolean;
 }
 
 export const DEV_BASE_URL = 'https://ais-dev-ytqtpwssj6gdvjvqbsrbyo-427099073161.us-east5.run.app';
@@ -92,8 +93,9 @@ export const LEAD_MOBILE_PLUGIN_MODULES: LeadPluginModuleUrlInfo[] = [
     tabTarget: 'real_estate',
     name: 'Vantage AI Studio-Real Estate GeoMap & DPA Plugin Module',
     shortName: 'GeoMap DPA',
-    badge: 'Zero BYOK • Real Estate GIS',
+    badge: '🛠️ Developer Mode Only • Offline to Public',
     iconName: 'Home',
+    isOfflineForPublic: true,
     tagline: 'Instant USDA 100% Zero-Down & $5k–$10k CRA Grant Match on Mobile & Desktop',
     description: 'Autonomous spatial real estate portal featuring Census Tract GEOID lookup, USDA Rural Development zero-down screening, live front/back-end DTI affordability sliders up to a 50% max DTI ceiling, 1-click Zillow URL geocoding, and 1-click sync with Mike Ford\'s Master Feed.',
     targetAudience: 'Mortgage Loan Officers, First-Time Homebuyers, Realtors, Real Estate Investors',

@@ -23,6 +23,15 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+  const targetUrl = event.notification.data?.smsUrl || event.notification.data?.url;
+
+  if (targetUrl && targetUrl.startsWith('sms:')) {
+    event.waitUntil(
+      clients.openWindow ? clients.openWindow(targetUrl) : Promise.resolve()
+    );
+    return;
+  }
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
@@ -31,7 +40,7 @@ self.addEventListener('notificationclick', (event) => {
         }
       }
       if (clients.openWindow) {
-        return clients.openWindow('/');
+        return clients.openWindow(targetUrl || '/');
       }
     })
   );

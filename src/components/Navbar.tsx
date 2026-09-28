@@ -362,6 +362,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <Building2 className="w-3 h-3" />
                   <span>{isWorkspaceConnected ? 'Workspace Config' : 'Workspace Login'}</span>
                 </button>
+
+                <button
+                  onClick={() => setIsWorkspaceModalOpen(true)}
+                  className="text-[11px] font-semibold px-2 py-1 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:underline cursor-pointer flex items-center gap-1 border-l border-slate-200 dark:border-slate-700 pl-2"
+                  title="Configure Email-to-SMS Gateway ([phone]@vtext.com) & High-Intent Scrape Relay"
+                >
+                  <Smartphone className="w-3 h-3 text-emerald-500" />
+                  <span>SMS Relay</span>
+                </button>
               </div>
 
               {/* Sync Workspace / Refresh Button */}

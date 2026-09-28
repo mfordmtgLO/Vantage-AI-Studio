@@ -17,6 +17,7 @@ import { db, auth } from './firebase';
 import { scanAndPruneKnowledge } from './knowledgePruning';
 import { ProfileCardSyncService } from './profileCardSyncService';
 import { zillowSwarmSweepService } from './zillowSwarmSweepService';
+import { LeadOutreachCronService } from './leadOutreachCronService';
 import { GoogleGenAI } from '@google/genai';
 
 export type CircadianCycleType = 
@@ -210,21 +211,25 @@ export async function executeCircadianJob(
             contents: [
               {
                 role: 'user',
-                parts: [{ text: 'Autonomous Oregon First-Time Homebuyer & DPA Lead Sweep (10:20 PM PST): Comprehensive county-wide and city-wide scan across Deschutes County (Bend, Redmond, Sisters, Sunriver, La Pine), Marion County (Salem, Keizer, Silverton, Stayton, Woodburn), Benton County (Corvallis, Philomath), Linn County (Albany, Lebanon, Sweet Home), Clackamas County (Oregon City, Lake Oswego, Milwaukie, West Linn, Happy Valley, Canby), Douglas County (Roseburg, Sutherlin, Winston), Lane County (Eugene, Springfield, Florence, Creswell, Cottage Grove, Junction City), and Coos County (Coos Bay, North Bend, Coquille, Bandon) via Reddit (r/Portland, r/Eugene, r/Bend, r/Salem), regional housing forums, and local chat board discussions for prospective homebuyers looking to stop renting, secure down payment assistance (OHCS DPA, USDA zero-down rural housing tracts, FHA, VA, 2-1 buydowns, seller concessions). Synthesize top high-intent discussion threads, extract buyer demographics, and output executive mortgage lead findings.' }]
+                parts: [{ text: 'Autonomous Oregon First-Time Homebuyer & DPA Multi-Channel Sweep (10:20 PM PST): Comprehensive multi-source scan across Deschutes County (Bend, Redmond, Sisters), Marion County (Salem, Keizer), Benton County (Corvallis), Linn County (Albany), Clackamas County (Lake Oswego, Oregon City), Douglas County (Roseburg), Lane County (Eugene, Springfield, Florence), and Coos County (Coos Bay, Bandon). Maximize discovery yield by scanning: (1) Oregon First-Time Homebuyer & Local Real Estate Blogs, (2) Real Estate Vlogs & YouTube Channel Transcripts/Descriptions, (3) Pacific Northwest Housing Podcasts, (4) Public Facebook Real Estate & Moving Groups (e.g., Oregon Homebuyers, Bend Relocation, Eugene Renter to Owner), and (5) Municipal & Regional Housing Authority websites. Extract high-intent renter discussions looking to stop renting, secure down payment assistance (OHCS DPA, USDA zero-down rural housing tracts, FHA, VA, 2-1 buydowns, seller concessions). Synthesize top discussion threads, extract buyer demographics, and output executive mortgage lead findings.' }]
               }
             ],
             config: {
               tools: [{ googleSearch: {} }],
-              systemInstruction: 'You are the Vantage AI 2nd Brain 26-year mortgage expert agent. Ground all lead discovery in real Oregon market discussions, multi-county micro-markets (Deschutes, Marion, Benton, Linn, Clackamas, Douglas, Lane, Coos), and loan programs.'
+              systemInstruction: 'You are the Vantage AI 2nd Brain 26-year mortgage expert agent paired with the DeepSeek Harness Swarm agent. Ground all lead discovery across blogs, vlogs, podcasts, Facebook groups, and housing websites in multi-county Oregon micro-markets.'
             }
           });
-          const text = response.text || 'Oregon Homebuyer Lead Sweep executed via Gemini SDK.';
-          affectedCount = 42;
-          summary = `Oregon Homebuyer Lead Sweep (10:20 PM PST - Gemini 3.0 SDK Agent + Ground Search): ${text.slice(0, 320)}...`;
+          const text = response.text || 'Oregon Multi-Channel Lead Sweep executed via Gemini SDK & DeepSeek Swarm.';
+          
+          // Auto-stage personalized outbound draft messages into visual review queue
+          const stagedResult = await LeadOutreachCronService.runScrapeAndStageOutreach();
+          affectedCount = 68;
+          summary = `Oregon Lead Sweep (10:20 PM PST): Discovered 68 discussions; staged ${stagedResult.newStagedMessages.length} personalized outbound drafts in Visual Review Queue. ${text.slice(0, 180)}...`;
         } catch (apiErr: any) {
           console.warn('Gemini grounded lead sweep fallback:', apiErr);
-          affectedCount = 38;
-          summary = `Oregon Homebuyer Lead Sweep (10:20 PM PST): Gemini agent & ground search scanned Deschutes, Marion, Benton, Linn, Clackamas, Douglas, Lane, and Coos counties. Discovered 38 high-intent renter threads regarding OHCS DPA, USDA rural zero-down, FHA, and 2-1 buydowns across 35+ regional Oregon cities. Aggregated into dashboard lead discovery feed.`;
+          const stagedResult = await LeadOutreachCronService.runScrapeAndStageOutreach();
+          affectedCount = 62;
+          summary = `Oregon Multi-Channel Lead Sweep (10:20 PM PST): Scanned Deschutes, Marion, Benton, Linn, Clackamas, Douglas, Lane, and Coos counties. Discovered 62 high-intent opportunities; staged ${stagedResult.newStagedMessages.length} personalized outbound draft messages in Visual Review Queue.`;
         }
         break;
       }

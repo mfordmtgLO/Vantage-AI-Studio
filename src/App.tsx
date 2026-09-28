@@ -39,6 +39,7 @@ import { PublicFacingWebsiteView } from './components/PublicFacingWebsiteView';
 import { GoogleAppsSidebarLauncher } from './components/GoogleAppsSidebarLauncher';
 import { FloatingExecutiveControlDock } from './components/FloatingExecutiveControlDock';
 import { FirstTimeHomebuyerGeoPlugin } from './components/FirstTimeHomebuyerGeoPlugin';
+import { GeomapDeveloperModeGate } from './components/GeomapDeveloperModeGate';
 import { Users, Smartphone, Home, Brain, LogOut, Monitor } from 'lucide-react';
 import { safeAtob } from './utils/base64';
 
@@ -541,15 +542,17 @@ export default function App() {
         <BatterySaverProvider>
           <AccountPathwayProvider>
             <MemoryProvider>
-              <div className="min-h-screen w-full bg-slate-950 text-slate-100 font-sans antialiased p-0 m-0">
-                <div className="w-full max-w-5xl mx-auto px-2 py-3 sm:py-6">
-                  <FirstTimeHomebuyerGeoPlugin 
-                    onOpenByokDrawer={() => {}} 
-                    onOpenShareLinksModal={() => {}}
-                    isStandalone={true}
-                  />
+              <GeomapDeveloperModeGate onBackToPublic={() => setViewMode('public')} isStandalone={true}>
+                <div className="min-h-screen w-full bg-slate-950 text-slate-100 font-sans antialiased p-0 m-0">
+                  <div className="w-full max-w-5xl mx-auto px-2 py-3 sm:py-6">
+                    <FirstTimeHomebuyerGeoPlugin 
+                      onOpenByokDrawer={() => {}} 
+                      onOpenShareLinksModal={() => {}}
+                      isStandalone={true}
+                    />
+                  </div>
                 </div>
-              </div>
+              </GeomapDeveloperModeGate>
             </MemoryProvider>
           </AccountPathwayProvider>
         </BatterySaverProvider>
@@ -564,15 +567,17 @@ export default function App() {
         <BatterySaverProvider>
           <AccountPathwayProvider>
             <MemoryProvider>
-              <div className="min-h-screen w-full bg-slate-950 text-slate-100 font-sans antialiased">
-                <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
-                  <FirstTimeHomebuyerGeoPlugin 
-                    onOpenByokDrawer={() => {}} 
-                    onOpenShareLinksModal={() => {}}
-                    isStandalone={true}
-                  />
+              <GeomapDeveloperModeGate onBackToPublic={() => setViewMode('public')} isStandalone={true}>
+                <div className="min-h-screen w-full bg-slate-950 text-slate-100 font-sans antialiased">
+                  <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+                    <FirstTimeHomebuyerGeoPlugin 
+                      onOpenByokDrawer={() => {}} 
+                      onOpenShareLinksModal={() => {}}
+                      isStandalone={true}
+                    />
+                  </div>
                 </div>
-              </div>
+              </GeomapDeveloperModeGate>
             </MemoryProvider>
           </AccountPathwayProvider>
         </BatterySaverProvider>

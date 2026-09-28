@@ -130,6 +130,104 @@
         "updatedAt": { "type": "string" }
       },
       "required": ["id", "name", "email"]
+    },
+    "PropertyNote": {
+      "title": "PropertyNote",
+      "description": "Property listing card notes and two-way SMS/email updates.",
+      "type": "object",
+      "properties": {
+        "propertyAddress": { "type": "string" },
+        "noteText": { "type": "string" },
+        "author": { "type": "string" },
+        "channel": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["propertyAddress", "noteText", "author", "createdAt"]
+    },
+    "LeadConversation": {
+      "title": "LeadConversation",
+      "description": "Two-way conversation messages between scraped high-intent leads and Loan Officer iPhone SMS.",
+      "type": "object",
+      "properties": {
+        "leadId": { "type": "string" },
+        "author": { "type": "string" },
+        "sender": { "type": "string" },
+        "text": { "type": "string" },
+        "platform": { "type": "string" },
+        "location": { "type": "string" },
+        "channel": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["leadId", "sender", "text", "createdAt"]
+    },
+    "StoredArchiveLead": {
+      "title": "StoredArchiveLead",
+      "description": "Archived discovery lead stored in Firestore CRM archives with ingested source discussion, intent score, and re-engagement readiness.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sourceType": { "type": "string" },
+        "platform": { "type": "string" },
+        "title": { "type": "string" },
+        "authorOrUser": { "type": "string" },
+        "snippet": { "type": "string" },
+        "intentScore": { "type": "number" },
+        "sentimentScore": { "type": "string" },
+        "location": { "type": "string" },
+        "matchedProgram": { "type": "string" },
+        "discoveredAt": { "type": "string" },
+        "url": { "type": "string" },
+        "status": { "type": "string" },
+        "archivedAt": { "type": "string" }
+      },
+      "required": ["id", "title", "authorOrUser", "status", "archivedAt"]
+    },
+    "PendingOutboundMessage": {
+      "title": "PendingOutboundMessage",
+      "description": "Staged pending outbound SMS, Gmail email drafts, or dual outreach messages waiting for user review, edit, or approval before delivery.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "leadId": { "type": "string" },
+        "recipientName": { "type": "string" },
+        "recipientLocation": { "type": "string" },
+        "recipientPlatform": { "type": "string" },
+        "matchedProgram": { "type": "string" },
+        "channel": { "type": "string" },
+        "subject": { "type": "string" },
+        "body": { "type": "string" },
+        "originalSnippet": { "type": "string" },
+        "status": { "type": "string" },
+        "isFlagged": { "type": "boolean" },
+        "stagedAt": { "type": "string" },
+        "priority": { "type": "string" },
+        "intentScore": { "type": "number" },
+        "approvedAt": { "type": "string" },
+        "dispatchedAt": { "type": "string" }
+      },
+      "required": ["id", "leadId", "recipientName", "channel", "body", "status", "stagedAt"]
+    },
+    "LeadOutreachCronConfig": {
+      "title": "LeadOutreachCronConfig",
+      "description": "Configuration and execution status for autonomous lead discovery sweep and outbound message staging cron scheduler.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "scheduleName": { "type": "string" },
+        "cronExpression": { "type": "string" },
+        "interval": { "type": "string" },
+        "enabled": { "type": "boolean" },
+        "preferredChannel": { "type": "string" },
+        "requireApproval": { "type": "boolean" },
+        "targetCounties": { "type": "array" },
+        "matchedPrograms": { "type": "array" },
+        "lastRunAt": { "type": "string" },
+        "nextRunAt": { "type": "string" },
+        "lastRunSummary": { "type": "string" },
+        "stagedOutreachCount": { "type": "number" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "scheduleName", "cronExpression", "enabled"]
     }
   },
   "firestore": {
@@ -148,6 +246,26 @@
     "/realtor_agents/{agentId}": {
       "schema": "RealtorAgentProfile",
       "description": "Synced Real Estate Agent profile cards."
+    },
+    "/property_notes/{noteId}": {
+      "schema": "PropertyNote",
+      "description": "Public or shared two-way listing card notes from LO, Realtors, and buyers."
+    },
+    "/lead_conversations/{convId}": {
+      "schema": "LeadConversation",
+      "description": "Real-time synced two-way conversation messages between lead scrape threads and LO iPhone."
+    },
+    "/stored_archives/{archiveId}": {
+      "schema": "StoredArchiveLead",
+      "description": "Archived discovery leads persisted in Firestore for search and AI re-engagement."
+    },
+    "/pending_outbound_queue/{msgId}": {
+      "schema": "PendingOutboundMessage",
+      "description": "Visual queue of pending outbound SMS & Gmail draft messages waiting for review, edit, or approval."
+    },
+    "/lead_outreach_cron_configs/{configId}": {
+      "schema": "LeadOutreachCronConfig",
+      "description": "Autonomous scrape and outreach staging cron job configurations."
     }
   }
 }
