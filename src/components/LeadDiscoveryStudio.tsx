@@ -53,6 +53,13 @@ import { useAccountPathway } from '../context/AccountPathwayContext';
 import { WorkspaceCommunicationSettings } from './WorkspaceCommunicationSettings';
 import { LeadOutreachQueueAndSchedulerDeck } from './LeadOutreachQueueAndSchedulerDeck';
 import { LeadOutreachCronService } from '../services/leadOutreachCronService';
+import {
+  US_STATES,
+  STATE_COUNTIES_MAP,
+  getCountiesByState,
+  getStateDetails,
+  generateLocalizedLeadsForSweep
+} from '../data/usStatesAndCounties';
 
 export type LeadCrmStatus = 'new_discovery_scrape' | 'active_two_way' | 'dormant_7_days' | 'archived_discovery';
 export type TwoWayOutreachMode = 'both' | 'sms_only' | 'gmail_only';
@@ -307,7 +314,17 @@ export const LeadDiscoveryStudio: React.FC = () => {
   const [showScrapeAnalyticsModal, setShowScrapeAnalyticsModal] = useState(false);
   const [autoStaleAlertsEnabled, setAutoStaleAlertsEnabled] = useState(true);
   const [showRawResults, setShowRawResults] = useState(false);
+  const [selectedSweepState, setSelectedSweepState] = useState<string>('OR');
   const [selectedSweepCounty, setSelectedSweepCounty] = useState<string>('all_8_counties');
+
+  const handleStateChange = (stateCode: string) => {
+    setSelectedSweepState(stateCode);
+    const counties = getCountiesByState(stateCode);
+    if (counties.length > 0) {
+      setSelectedSweepCounty(counties[0].id);
+    }
+  };
+
   const [sweepMode, setSweepMode] = useState<'hybrid' | 'gemini_only' | 'deepseek_only'>('hybrid');
   const [threadReplyInputs, setThreadReplyInputs] = useState<Record<string, string>>({});
   const [selectedLeadForSmsHistory, setSelectedLeadForSmsHistory] = useState<LeadItem | null>(null);
@@ -1090,25 +1107,19 @@ Email: fordmj@gmail.com`;
     setIsSweeping(true);
     try {
       const res = await executeCircadianJob('job_oregon_homebuyer_lead_sweep');
-      const countyNameMap: Record<string, string> = {
-        'all_8_counties': 'All 8 Core Counties (Deschutes, Marion, Benton, Linn, Clackamas, Douglas, Lane, Coos)',
-        'deschutes': 'Deschutes County (Bend, Redmond, Sisters)',
-        'marion': 'Marion County (Salem, Keizer, Silverton)',
-        'benton': 'Benton County (Corvallis, Philomath)',
-        'linn': 'Linn County (Albany, Lebanon, Sweet Home)',
-        'clackamas': 'Clackamas County (Lake Oswego, Oregon City, Milwaukie)',
-        'douglas': 'Douglas County (Roseburg, Sutherlin)',
-        'lane': 'Lane County (Eugene, Springfield, Florence)',
-        'coos': 'Coos County (Coos Bay, North Bend, Bandon)'
-      };
-      const targetName = countyNameMap[selectedSweepCounty] || 'All 8 Core Counties';
+      const stateInfo = getStateDetails(selectedSweepState);
+      const stateCounties = getCountiesByState(selectedSweepState);
+      const matchedCountyObj = stateCounties.find(c => c.id === selectedSweepCounty) || stateCounties[0];
+      const targetName = `${matchedCountyObj.name} (${stateInfo.name})`;
       const modeLabel = sweepMode === 'hybrid' ? 'Hybrid Auto-Balanced' : sweepMode === 'gemini_only' ? 'Gemini-Only Grounding' : 'DeepSeek-Only Swarm';
       if (res.log) {
-        res.log.summary = `[${modeLabel}] Target County Sweep (${targetName}): ${res.log.summary}`;
+        res.log.summary = `[${modeLabel}] Target Sweep [${stateInfo.name} - ${targetName}] (DPA Engine: ${stateInfo.dpaProgram}): ${res.log.summary}`;
       }
       setSweepLog(res.log);
       
-      const newlyDiscoveredBatch: LeadItem[] = selectedSweepCounty === 'lane' ? [
+      let newlyDiscoveredBatch: LeadItem[];
+      if (selectedSweepState === 'OR' && selectedSweepCounty === 'lane') {
+        newlyDiscoveredBatch = [
         {
           id: `lead_lane_1_${Date.now()}`,
           sourceType: 'forum',
@@ -1157,7 +1168,9 @@ Email: fordmj@gmail.com`;
           status: 'new',
           timestamp: Date.now() - 2000
         }
-      ] : [
+      ];
+      } else if (selectedSweepState === 'OR' && selectedSweepCounty === 'all_8_counties') {
+        newlyDiscoveredBatch = [
         {
           id: `lead_sweep_1_${Date.now()}`,
           sourceType: 'forum',
@@ -1287,6 +1300,9 @@ Email: fordmj@gmail.com`;
           timestamp: Date.now() - 7000
         }
       ];
+      } else {
+        newlyDiscoveredBatch = generateLocalizedLeadsForSweep(selectedSweepState, selectedSweepCounty);
+      }
 
       setLeads(prev => [...newlyDiscoveredBatch, ...prev]);
 
@@ -1594,6 +1610,9 @@ Email: fordmj@gmail.com`;
   const blogCount = leads.filter(l => l.sourceType === 'blog' && (!l.isFilteredOut || showRawResults)).length;
   const staleAlertCount = leads.filter(l => l.isStaleReactivated).length;
 
+  const activeStateObj = getStateDetails(selectedSweepState);
+  const stateCountiesList = getCountiesByState(selectedSweepState);
+
   return (
     <div className="space-y-6">
       {/* Hero Header Banner */}
@@ -1603,36 +1622,61 @@ Email: fordmj@gmail.com`;
         </div>
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-              <span>Oregon Renter-to-Homeowner Intelligence Feed</span>
+            <div className="inline-flex flex-wrap items-center gap-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                <span>{activeStateObj.name} Renter-to-Homeowner Intelligence Feed</span>
+              </div>
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                50-State NLP Coverage Active
+              </span>
             </div>
             <h1 className="text-2xl font-black text-white tracking-tight">
               Lead Discovery &amp; Renter Intent Sweep
             </h1>
             <p className="text-slate-300 text-sm max-w-2xl">
-              Automated daily 10:20 PM PST scan of Oregon forums, Reddit communities, and housing chat boards powered by Gemini 3.0 SDK and Live Google Search Grounding. Connect instantly with renters looking to stop renting and buy a home.
+              Automated daily 10:20 PM PST scan of {activeStateObj.name} forums, Reddit communities, and housing chat boards powered by Gemini 3.0 SDK and Live Google Search Grounding. Matched with <strong className="text-emerald-400">{activeStateObj.dpaProgram}</strong>.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 bg-slate-950/80 px-3 py-2 rounded-xl border border-indigo-500/40 shadow-inner">
-              <span className="text-[11px] font-bold text-slate-300">Sweep Target:</span>
-              <select
-                value={selectedSweepCounty}
-                onChange={(e) => setSelectedSweepCounty(e.target.value)}
-                className="bg-transparent text-xs text-emerald-300 font-extrabold focus:outline-none cursor-pointer"
-              >
-                <option value="all_8_counties" className="bg-slate-900 text-white">🌟 All 8 Core Counties (Default)</option>
-                <option value="deschutes" className="bg-slate-900 text-white">🏔️ Deschutes County (Bend, Redmond, Sisters)</option>
-                <option value="marion" className="bg-slate-900 text-white">🏛️ Marion County (Salem, Keizer, Silverton)</option>
-                <option value="benton" className="bg-slate-900 text-white">🔬 Benton County (Corvallis, Philomath)</option>
-                <option value="linn" className="bg-slate-900 text-white">🌾 Linn County (Albany, Lebanon, Sweet Home)</option>
-                <option value="clackamas" className="bg-slate-900 text-white">🌲 Clackamas County (Lake Oswego, Oregon City)</option>
-                <option value="douglas" className="bg-slate-900 text-white">🌲 Douglas County (Roseburg, Sutherlin)</option>
-                <option value="lane" className="bg-slate-900 text-white">🌲 Lane County (Eugene, Springfield, Florence)</option>
-                <option value="coos" className="bg-slate-900 text-white">🌊 Coos County (Coos Bay, North Bend, Bandon)</option>
-              </select>
+            {/* 50-State Dropdown & Cascading Submenu County Selector */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 bg-slate-950/90 p-2 rounded-2xl border border-indigo-500/40 shadow-inner">
+              {/* Step 1: 50-State Selector */}
+              <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-900 rounded-xl border border-slate-700">
+                <Globe className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">State:</span>
+                <select
+                  value={selectedSweepState}
+                  onChange={(e) => handleStateChange(e.target.value)}
+                  className="bg-transparent text-xs text-white font-black focus:outline-none cursor-pointer pr-1"
+                  title="Choose any US State"
+                >
+                  {US_STATES.map((st) => (
+                    <option key={st.code} value={st.code} className="bg-slate-900 text-white font-bold">
+                      {st.code} - {st.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Step 2: Submenu County Selector (Populated based on State) */}
+              <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-900 rounded-xl border border-emerald-500/40">
+                <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span className="text-[10px] font-extrabold text-emerald-300 uppercase tracking-wider">County:</span>
+                <select
+                  value={selectedSweepCounty}
+                  onChange={(e) => setSelectedSweepCounty(e.target.value)}
+                  className="bg-transparent text-xs text-emerald-300 font-extrabold focus:outline-none cursor-pointer max-w-[210px] truncate"
+                  title={`Select a county in ${activeStateObj.name}`}
+                >
+                  {stateCountiesList.map((c) => (
+                    <option key={c.id} value={c.id} className="bg-slate-900 text-white">
+                      {c.name} {c.majorCities ? `(${c.majorCities})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <button
@@ -2022,6 +2066,61 @@ Email: fordmj@gmail.com`;
 
       {/* Advanced Filter & Sort Bar */}
       <div className="flex flex-col gap-4 bg-slate-900/90 backdrop-blur-md border border-slate-800 p-4 rounded-2xl shadow-md">
+        {/* 50-State Quick Selector Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800">
+          <div className="flex flex-wrap items-center gap-1.5 text-xs">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1 mr-1">
+              <Globe className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Target State:</span>
+            </span>
+            {[
+              { code: 'OR', label: '🌲 Oregon' },
+              { code: 'WA', label: '🏔️ Washington' },
+              { code: 'CA', label: '☀️ California' },
+              { code: 'ID', label: '🥔 Idaho' },
+              { code: 'AZ', label: '🌵 Arizona' },
+              { code: 'TX', label: '🤠 Texas' },
+              { code: 'FL', label: '🌴 Florida' },
+              { code: 'CO', label: '🏔️ Colorado' },
+              { code: 'NY', label: '🗽 New York' }
+            ].map(st => (
+              <button
+                key={st.code}
+                type="button"
+                onClick={() => handleStateChange(st.code)}
+                className={`px-2.5 py-1 rounded-xl text-xs font-extrabold transition cursor-pointer flex items-center gap-1 ${
+                  selectedSweepState === st.code
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 shadow-md ring-1 ring-emerald-400'
+                    : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                <span>{st.label}</span>
+              </button>
+            ))}
+
+            {/* Full 50-State Dropdown inside quick bar */}
+            <div className="relative inline-flex items-center">
+              <select
+                value={selectedSweepState}
+                onChange={(e) => handleStateChange(e.target.value)}
+                className="px-2.5 py-1 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold text-slate-300 focus:outline-none focus:border-indigo-500 cursor-pointer"
+              >
+                <option value="" disabled>More States (All 50)...</option>
+                {US_STATES.map(s => (
+                  <option key={s.code} value={s.code} className="bg-slate-900 text-white">
+                    {s.code} - {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400 bg-emerald-950/40 px-3 py-1 rounded-xl border border-emerald-500/30">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Active: {activeStateObj.name} ({stateCountiesList.find(c => c.id === selectedSweepCounty)?.name || 'All Counties'})</span>
+          </div>
+        </div>
+
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           {/* Source Type Pills */}
           <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
