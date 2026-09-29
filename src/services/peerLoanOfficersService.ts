@@ -39,6 +39,20 @@ export const STORAGE_ALL_PEER_LOS_KEY = 'vantage_all_peer_los_v1';
  * Pre-configured with typical peer profiles so out-of-state outreach works out of the box.
  */
 export const DEFAULT_PEER_LO_ROSTER: Record<string, PeerLoanOfficer> = {
+  OR: {
+    id: 'peer_or_mford',
+    name: 'Mike Ford',
+    nmlsNumber: '102938',
+    company: 'Churchill Mortgage',
+    title: 'Senior Mortgage Advisor / Team Lead',
+    email: 'mford@cfmtg.com',
+    phone: '(541) 729-2097',
+    licensedStates: ['OR', 'WA'],
+    defaultStates: ['OR'],
+    applicationUrl: 'https://cfmtg.com/mford/',
+    branchLocation: 'Eugene / Willamette Valley Branch, OR',
+    localDpaProgram: 'Oregon Housing and Community Services (OHCS) & Flex 97 DPA'
+  },
   WA: {
     id: 'peer_wa_jenkins',
     name: 'Sarah Jenkins',
@@ -177,6 +191,24 @@ export class PeerLoanOfficersService {
     // Initialize with default roster + any profiles in ProfileCardSyncService
     const initialPeersMap = new Map<string, PeerLoanOfficer>();
     Object.values(DEFAULT_PEER_LO_ROSTER).forEach(p => initialPeersMap.set(p.id, p));
+
+    // Pre-seed an additional Oregon-licensed colleague for regional assignments (Portland / Bend / Medford)
+    if (!initialPeersMap.has('peer_or_miller')) {
+      initialPeersMap.set('peer_or_miller', {
+        id: 'peer_or_miller',
+        name: 'David Miller',
+        nmlsNumber: '204910',
+        company: 'Churchill Mortgage',
+        title: 'Senior Mortgage Specialist / Regional Partner',
+        email: 'dmiller@cfmtg.com',
+        phone: '(503) 555-0182',
+        licensedStates: ['OR', 'WA'],
+        defaultStates: [],
+        applicationUrl: 'https://cfmtg.com/dmiller/',
+        branchLocation: 'Portland / Central Oregon (Bend) Branch, OR',
+        localDpaProgram: 'OHCS Flex Lending & City of Portland / Bend Down Payment Assistance'
+      });
+    }
 
     try {
       const syncProfiles = ProfileCardSyncService.getLoanOfficers();
@@ -822,6 +854,67 @@ Oregon Pre-Approval Portal: https://cfmtg.com/mford/`;
     // ==========================================
     // 2. OREGON CONVERSION BRIDGE (IN-STATE)
     // ==========================================
+    const isMikeFord = peer.id.includes('mford') || peer.name.toLowerCase().includes('mike ford');
+
+    // If assigned to another Oregon licensed colleague (e.g. closer to Bend, Medford, Portland)
+    if (!isMikeFord) {
+      if (channel === 'sms') {
+        return `Hi ${author}! Saw your post on ${matchedProgram} in ${location}. I've connected you with our local Oregon senior lending specialist ${peer.name} (${peer.phone}) based right in your area. Start your pre-approval: ${peer.applicationUrl} or text back here!`;
+      }
+
+      if (channel === 'gmail') {
+        return `Hi ${author},
+
+I saw your recent question regarding "${title || 'Homeownership Options'}" in ${location}.
+
+"${snippet || 'Looking for low down payment options and pre-approval guidance.'}"
+
+While I am a 26-year Oregon mortgage veteran (NMLS #102938), I want to make sure you have direct access to our top local Oregon senior loan specialist based right in your market area:
+
+• Specialist: ${peer.name} (NMLS #${peer.nmlsNumber})
+• Title: ${peer.title} | ${peer.company}
+• Local Branch: ${peer.branchLocation}
+• Direct Cell / Text: ${peer.phone}
+• Work Email: ${peer.email}
+• Local Grant Program: ${peer.localDpaProgram || 'OHCS Flex Lending & Local Oregon DPA'}
+• Secure Digital Loan Portal: ${peer.applicationUrl}
+
+With current Oregon housing programs (including OHCS Flex Lending, local County DPA grants, and zero-down options), you can often stop renting without needing 20% down. ${peer.name} will run a quick, no-pressure 10-minute numbers review to look at your exact monthly payment targets and program qualifications.
+
+When you're ready to see your numbers with zero guesswork, start directly through ${peer.name.split(' ')[0]}'s portal above!
+
+(Note: If you have any general lending or scenario questions, feel free to also reach me directly at: fordmj@gmail.com / (541) 729-2097)
+
+Best regards,
+
+Mike Ford
+Mortgage Loan Officer | 26 Years Oregon Lending Experience (NMLS #102938)
+Direct Cell / Text: (541) 729-2097 | Email: fordmj@gmail.com
+Oregon Pre-Approval Portal: https://cfmtg.com/mford/`;
+      }
+
+      if (tone === 'warm') {
+        return `Hi ${author}! I totally understand your situation in ${location}. While I'm a 26-year Oregon mortgage veteran, I've paired you directly with our local Oregon specialist ${peer.name} (NMLS #${peer.nmlsNumber}) at ${peer.company} (${peer.branchLocation}). ${peer.name.split(' ')[0]} helps buyers in your area use ${peer.localDpaProgram || matchedProgram} every week. You can explore your numbers with zero obligation through ${peer.name.split(' ')[0]}'s secure portal: ${peer.applicationUrl} or text ${peer.phone}!`;
+      }
+
+      if (tone === 'direct') {
+        return `Hi ${author}, regarding your inquiry about ${title || 'home financing'} in ${location}: I've assigned your request to our local Oregon lending specialist ${peer.name} (NMLS #${peer.nmlsNumber}). Connect directly with ${peer.name} at ${peer.phone} or review your purchase capacity through ${peer.name.split(' ')[0]}'s digital application: ${peer.applicationUrl}. Zero-down and DPA options can cover up to 100% of closing hurdles!`;
+      }
+
+      if (tone === 'reengagement') {
+        return `Hi ${author}! Following up on your home search in ${location}. Did you get your questions answered regarding ${peer.localDpaProgram || matchedProgram}? Our local Oregon colleague ${peer.name} (NMLS #${peer.nmlsNumber}) is available at ${peer.phone} or via secure portal at ${peer.applicationUrl}. Let us know if you'd like to run updated numbers!`;
+      }
+
+      // Default assigned peer response
+      return `Hi ${author}! As a 26-year mortgage loan officer here in Oregon (NMLS #102938), I wanted to make sure you get immediate local attention in ${location}. I've connected you with our senior Oregon lending specialist ${peer.name} (NMLS #${peer.nmlsNumber}) from our ${peer.branchLocation}.
+
+When you're ready to see your numbers with zero guesswork, start your official pre-approval directly through ${peer.name.split(' ')[0]}'s portal:
+👉 ${peer.applicationUrl}
+
+Feel free to text or call ${peer.name} directly at ${peer.phone} or reply here!`;
+    }
+
+    // Default: Mike Ford personal Oregon response
     if (channel === 'sms') {
       return `Hi ${author}! As a 26-year Oregon mortgage LO, I saw your post on ${matchedProgram} in ${location}. Stop renting with zero-down/DPA options! Start your 10-min pre-approval: https://cfmtg.com/mford/ or text me back here!`;
     }

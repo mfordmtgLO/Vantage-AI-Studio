@@ -168,7 +168,6 @@ export const StatePartnerLoanOfficersModal: React.FC<StatePartnerLoanOfficersMod
 
   // Filter states
   const filteredStates = US_STATES.filter(st => {
-    if (st.code === 'OR') return false; // Mike is personally licensed in OR
     if (!searchFilter.trim()) return true;
     const q = searchFilter.toLowerCase();
     const partner = directory[st.code];

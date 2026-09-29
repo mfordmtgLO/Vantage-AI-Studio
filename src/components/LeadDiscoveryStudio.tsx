@@ -2100,12 +2100,12 @@ Email: fordmj@gmail.com`;
             </button>
             <button
               onClick={() => {
-                const st = selectedSweepState === 'OR' ? 'WA' : selectedSweepState;
+                const st = selectedSweepState || 'OR';
                 setTargetPartnerState(st);
                 setShowStatePartnerModal(true);
               }}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-purple-300 font-extrabold text-xs shadow-lg transition cursor-pointer border border-purple-500/40 relative"
-              title="Configure Licensed Peer Loan Officers for all 50 states (Colleague Name, NMLS, & Personal App Link)"
+              title="Configure Licensed Peer Loan Officers for Oregon and all 50 states (Colleague Name, NMLS, & Personal App Link)"
             >
               <Users className="w-4 h-4 text-purple-400" />
               <span>🤝 State Partners Directory</span>
@@ -3270,340 +3270,350 @@ Email: fordmj@gmail.com`;
 
       {/* Join Conversation / Reply Modal */}
       {selectedLeadForReply && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-xl rounded-2xl bg-slate-900 border border-indigo-500/40 p-6 shadow-2xl space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <div>
-                <div className="flex items-center gap-2">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-hidden animate-in fade-in">
+          <div className="w-full max-w-2xl max-h-[calc(100vh-2rem)] sm:max-h-[92vh] rounded-2xl bg-slate-900 border border-indigo-500/40 shadow-2xl flex flex-col overflow-hidden my-auto">
+            
+            {/* Pinned Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4 shrink-0 bg-slate-900 z-10">
+              <div className="min-w-0 flex-1 pr-3">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">
                     {selectedLeadForReply.platform} • {selectedLeadForReply.location}
                   </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-500/40">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-500/40 whitespace-nowrap">
                     Mode: {twoWayOutreachMode === 'both' ? '⚡ Dual (SMS + Gmail)' : twoWayOutreachMode === 'sms_only' ? '📱 SMS Only' : '✉️ Gmail Draft Only'}
                   </span>
                 </div>
-                <h3 className="text-white font-bold text-base leading-snug mt-0.5">
+                <h3 className="text-white font-bold text-base leading-snug mt-0.5 truncate" title={`Join Discussion: ${selectedLeadForReply.title}`}>
                   Join Discussion: {selectedLeadForReply.title}
                 </h3>
               </div>
               <button
                 onClick={() => setSelectedLeadForReply(null)}
-                className="text-slate-400 hover:text-white text-sm font-bold p-1 cursor-pointer"
+                className="text-slate-400 hover:text-white text-sm font-bold p-1.5 rounded-xl hover:bg-slate-800 transition cursor-pointer shrink-0"
+                title="Close modal"
               >
                 ✕
               </button>
             </div>
 
-            {/* Quick In-Modal Channel Toggle */}
-            <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs">
-              <span className="font-bold text-slate-300 flex items-center gap-1.5">
-                <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Outreach Channel:</span>
-              </span>
-              <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-700">
-                <button
-                  type="button"
-                  onClick={() => setTwoWayOutreachMode('both')}
-                  className={`px-2.5 py-1 rounded text-[11px] font-extrabold transition cursor-pointer ${twoWayOutreachMode === 'both' ? 'bg-gradient-to-r from-amber-500 to-emerald-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
-                >
-                  ⚡ Both
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTwoWayOutreachMode('sms_only')}
-                  className={`px-2.5 py-1 rounded text-[11px] font-extrabold transition cursor-pointer ${twoWayOutreachMode === 'sms_only' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
-                >
-                  📱 SMS
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTwoWayOutreachMode('gmail_only')}
-                  className={`px-2.5 py-1 rounded text-[11px] font-extrabold transition cursor-pointer ${twoWayOutreachMode === 'gmail_only' ? 'bg-rose-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
-                >
-                  ✉️ Gmail
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-slate-300 space-y-1">
-                <span className="text-emerald-400 font-semibold">Original Renter Query ({selectedLeadForReply.authorOrUser}):</span>
-                <p className="italic">&ldquo;{selectedLeadForReply.snippet}&rdquo;</p>
+            {/* Scrollable Modal Body */}
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+              {/* Quick In-Modal Channel Toggle */}
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs">
+                <span className="font-bold text-slate-300 flex items-center gap-1.5">
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Outreach Channel:</span>
+                </span>
+                <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-700">
+                  <button
+                    type="button"
+                    onClick={() => setTwoWayOutreachMode('both')}
+                    className={`px-2.5 py-1 rounded text-[11px] font-extrabold transition cursor-pointer ${twoWayOutreachMode === 'both' ? 'bg-gradient-to-r from-amber-500 to-emerald-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    ⚡ Both
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTwoWayOutreachMode('sms_only')}
+                    className={`px-2.5 py-1 rounded text-[11px] font-extrabold transition cursor-pointer ${twoWayOutreachMode === 'sms_only' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    📱 SMS
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTwoWayOutreachMode('gmail_only')}
+                    className={`px-2.5 py-1 rounded text-[11px] font-extrabold transition cursor-pointer ${twoWayOutreachMode === 'gmail_only' ? 'bg-rose-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    ✉️ Gmail
+                  </button>
+                </div>
               </div>
 
-              {/* MessageThreadID & Direct Comment Anchor Badges */}
-              {(() => {
-                const threadMeta = getOrRegisterMessageThread(
-                  selectedLeadForReply.id,
-                  selectedLeadForReply.authorOrUser,
-                  selectedLeadForReply.platform,
-                  selectedLeadForReply.targetCommentId
-                );
-                return (
-                  <div className="p-2.5 rounded-xl bg-indigo-950/70 border border-indigo-500/40 text-[11px] font-mono text-indigo-300 flex flex-wrap items-center justify-between gap-2 shadow-inner">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                      <span className="font-bold text-white font-sans text-xs">AI 2nd Brain Routing Anchor:</span>
-                      <span className="px-2 py-0.5 rounded bg-indigo-900/90 text-indigo-200 border border-indigo-400/40 font-bold">
-                        MessageThreadID: #{threadMeta.messageThreadId}
-                      </span>
-                      <span className="px-2 py-0.5 rounded bg-emerald-950/90 text-emerald-300 border border-emerald-500/40 font-bold flex items-center gap-1">
-                        <Check className="w-3 h-3 text-emerald-400" />
-                        <span>Target-Comment-ID: #{threadMeta.targetCommentId}</span>
+              <div className="space-y-3">
+                <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-slate-300 space-y-1">
+                  <span className="text-emerald-400 font-semibold">Original Renter Query ({selectedLeadForReply.authorOrUser}):</span>
+                  <p className="italic">&ldquo;{selectedLeadForReply.snippet}&rdquo;</p>
+                </div>
+
+                {/* MessageThreadID & Direct Comment Anchor Badges */}
+                {(() => {
+                  const threadMeta = getOrRegisterMessageThread(
+                    selectedLeadForReply.id,
+                    selectedLeadForReply.authorOrUser,
+                    selectedLeadForReply.platform,
+                    selectedLeadForReply.targetCommentId
+                  );
+                  return (
+                    <div className="p-2.5 rounded-xl bg-indigo-950/70 border border-indigo-500/40 text-[11px] font-mono text-indigo-300 flex flex-wrap items-center justify-between gap-2 shadow-inner">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                        <span className="font-bold text-white font-sans text-xs">AI 2nd Brain Routing Anchor:</span>
+                        <span className="px-2 py-0.5 rounded bg-indigo-900/90 text-indigo-200 border border-indigo-400/40 font-bold">
+                          MessageThreadID: #{threadMeta.messageThreadId}
+                        </span>
+                        <span className="px-2 py-0.5 rounded bg-emerald-950/90 text-emerald-300 border border-emerald-500/40 font-bold flex items-center gap-1">
+                          <Check className="w-3 h-3 text-emerald-400" />
+                          <span>Target-Comment-ID: #{threadMeta.targetCommentId}</span>
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-sans">
+                        Direct User Comment • General Thread Bypassed
                       </span>
                     </div>
-                    <span className="text-[10px] text-slate-400 font-sans">
-                      Direct User Comment • General Thread Bypassed
-                    </span>
-                  </div>
-                );
-              })()}
+                  );
+                })()}
 
-              {/* Out-of-State Licensed Partner Assignment Indicator */}
-              {(() => {
-                const locLower = selectedLeadForReply.location.toLowerCase();
-                const isOregon = locLower.includes('or') || locLower.includes('oregon') || locLower.includes('portland') || locLower.includes('eugene') || locLower.includes('bend') || locLower.includes('salem') || locLower.includes('medford');
-                if (isOregon) return null;
-                const stateCode = PeerLoanOfficersService.extractStateCode(selectedLeadForReply.location, selectedSweepState);
-                const defaultPeer = PeerLoanOfficersService.getPeerForState(stateCode);
-                const activePeer = selectedPeerOverrideForLead || defaultPeer;
-                const isCurrentDefault = PeerLoanOfficersService.isDefaultPeerForState(activePeer.id, stateCode);
-                const peersData = PeerLoanOfficersService.getPeersForState(stateCode);
+                {/* State Licensed Partner / Local Colleague Assignment Indicator */}
+                {(() => {
+                  const stateCode = PeerLoanOfficersService.extractStateCode(selectedLeadForReply.location, selectedSweepState);
+                  const isOregon = stateCode === 'OR' || PeerLoanOfficersService.isOregonLocation(selectedLeadForReply.location, selectedSweepState);
+                  const targetStateCode = isOregon ? 'OR' : stateCode;
+                  const defaultPeer = PeerLoanOfficersService.getPeerForState(targetStateCode);
+                  const activePeer = selectedPeerOverrideForLead || defaultPeer;
+                  const isCurrentDefault = PeerLoanOfficersService.isDefaultPeerForState(activePeer.id, targetStateCode);
+                  const peersData = PeerLoanOfficersService.getPeersForState(targetStateCode);
 
-                return (
-                  <div className="p-3.5 rounded-2xl bg-purple-950/40 border border-purple-500/40 text-xs text-purple-200 space-y-2.5 shadow-inner">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4 text-purple-400 shrink-0" />
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-white">Target {stateCode} Licensed Peer:</span>{' '}
-                            <strong className="text-purple-300">{activePeer.name}</strong>{' '}
-                            <span className="font-mono text-purple-400 text-[11px]">(NMLS #{activePeer.nmlsNumber})</span>
-                            {isCurrentDefault && (
-                              <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 text-[10px] font-mono border border-amber-500/40 font-bold">
-                                ⭐ State Default
-                              </span>
-                            )}
+                  return (
+                    <div className="p-3.5 rounded-2xl bg-purple-950/40 border border-purple-500/40 text-xs text-purple-200 space-y-2.5 shadow-inner">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Users className="w-4 h-4 text-purple-400 shrink-0" />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-white">
+                                {isOregon ? 'Assigned Oregon Lending Specialist:' : `Target ${targetStateCode} Licensed Peer:`}
+                              </span>{' '}
+                              <strong className="text-purple-300">{activePeer.name}</strong>{' '}
+                              <span className="font-mono text-purple-400 text-[11px]">(NMLS #{activePeer.nmlsNumber})</span>
+                              {isCurrentDefault && (
+                                <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 text-[10px] font-mono border border-amber-500/40 font-bold">
+                                  ⭐ {isOregon ? 'OR Default' : `${targetStateCode} Default`}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[10px] text-slate-400 truncate max-w-sm mt-0.5">
+                              App Portal: <span className="font-mono text-amber-300">{activePeer.applicationUrl}</span> • {activePeer.branchLocation}
+                            </div>
                           </div>
-                          <div className="text-[10px] text-slate-400 truncate max-w-sm mt-0.5">
-                            App Portal: <span className="font-mono text-amber-300">{activePeer.applicationUrl}</span> • {activePeer.branchLocation}
-                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={handleSyncPeerCardsFromHomebuyers}
+                            disabled={isSyncingPeerCards}
+                            className="text-[10px] font-bold text-purple-300 hover:text-white bg-purple-950 px-2 py-1 rounded-lg border border-purple-500/40 hover:bg-purple-900 transition cursor-pointer flex items-center gap-1"
+                            title="Sync Peer LO cards from First-Time Homebuyers Google sign-in dashboard"
+                          >
+                            <RefreshCw className={`w-3 h-3 text-purple-400 ${isSyncingPeerCards ? 'animate-spin' : ''}`} />
+                            <span>Sync LO Cards</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTargetPartnerState(targetStateCode);
+                              setShowStatePartnerModal(true);
+                            }}
+                            className="text-[11px] font-bold text-purple-300 hover:text-white bg-purple-900/70 px-2.5 py-1 rounded-lg border border-purple-400/40 hover:bg-purple-800 transition cursor-pointer"
+                          >
+                            Directory Manager
+                          </button>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={handleSyncPeerCardsFromHomebuyers}
-                          disabled={isSyncingPeerCards}
-                          className="text-[10px] font-bold text-purple-300 hover:text-white bg-purple-950 px-2 py-1 rounded-lg border border-purple-500/40 hover:bg-purple-900 transition cursor-pointer flex items-center gap-1"
-                          title="Sync Peer LO cards from First-Time Homebuyers Google sign-in dashboard"
-                        >
-                          <RefreshCw className={`w-3 h-3 text-purple-400 ${isSyncingPeerCards ? 'animate-spin' : ''}`} />
-                          <span>Sync LO Cards</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setTargetPartnerState(stateCode);
-                            setShowStatePartnerModal(true);
+                      {/* Inline Colleague Switcher Dropdown & Default Checkbox */}
+                      <div className="pt-2 border-t border-purple-900/50 flex flex-col sm:flex-row sm:items-center gap-2">
+                        <span className="text-[11px] font-bold text-slate-300 shrink-0 flex items-center gap-1">
+                          <span>👤 {isOregon ? 'Assign Lead to Colleague (OR):' : `Select ${targetStateCode} Colleague:`}</span>
+                        </span>
+                        <select
+                          value={activePeer.id}
+                          onChange={(e) => {
+                            const chosen = allSyncedPeersList.find(p => p.id === e.target.value) || activePeer;
+                            setSelectedPeerOverrideForLead(chosen);
+                            // Refresh draft immediately with chosen colleague
+                            const newDraft = PeerLoanOfficersService.generateConversionBridgeTemplate({
+                              author: selectedLeadForReply.authorOrUser,
+                              location: selectedLeadForReply.location,
+                              matchedProgram: selectedLeadForReply.matchedProgram,
+                              sweepState: selectedSweepState,
+                              title: selectedLeadForReply.title,
+                              snippet: selectedLeadForReply.snippet,
+                              overridePeer: chosen
+                            });
+                            setCustomDraftReply(newDraft);
                           }}
-                          className="text-[11px] font-bold text-purple-300 hover:text-white bg-purple-900/70 px-2.5 py-1 rounded-lg border border-purple-400/40 hover:bg-purple-800 transition cursor-pointer"
+                          className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-900 border border-purple-500/50 text-xs text-purple-200 font-semibold focus:outline-none focus:border-purple-400 cursor-pointer"
                         >
-                          Directory Manager
-                        </button>
+                          <optgroup label={isOregon ? 'Oregon Licensed Loan Officers' : `Licensed in ${targetStateCode}`}>
+                            {peersData.licensedPeers.map(p => {
+                              const isDef = PeerLoanOfficersService.isDefaultPeerForState(p.id, targetStateCode);
+                              return (
+                                <option key={p.id} value={p.id}>
+                                  {isDef ? '⭐ [Default] ' : '✓ '}{p.name} • {p.title} ({p.branchLocation || p.company}) - NMLS #{p.nmlsNumber}
+                                </option>
+                              );
+                            })}
+                          </optgroup>
+                          {peersData.allPeers.filter(p => !peersData.licensedPeers.some(lp => lp.id === p.id)).length > 0 && (
+                            <optgroup label="Other Synced Nationwide Colleagues">
+                              {peersData.allPeers
+                                .filter(p => !peersData.licensedPeers.some(lp => lp.id === p.id))
+                                .map(p => (
+                                  <option key={p.id} value={p.id}>
+                                    {p.name} • {p.title} ({p.company}) - NMLS #{p.nmlsNumber}
+                                  </option>
+                                ))}
+                            </optgroup>
+                          )}
+                        </select>
+
+                        {/* Quick "Default for [targetStateCode]" Checkbox */}
+                        <label className="flex items-center gap-1.5 cursor-pointer text-[11px] font-bold text-amber-300 bg-amber-950/70 hover:bg-amber-900/80 px-2.5 py-1.5 rounded-xl border border-amber-500/40 transition shrink-0 shadow-sm" title={`Make ${activePeer.name} the automatic default for all new ${targetStateCode} inquiries`}>
+                          <input
+                            type="checkbox"
+                            checked={isCurrentDefault}
+                            onChange={(e) => {
+                              PeerLoanOfficersService.setDefaultPeerForState(targetStateCode, activePeer.id, e.target.checked);
+                              const updatedDir = PeerLoanOfficersService.getDirectory();
+                              setPeerDirectory(updatedDir);
+                              setAllSyncedPeersList(PeerLoanOfficersService.getAllPeerLoanOfficers());
+                              setSyncLoSuccessMsg(e.target.checked
+                                ? `✓ Set ${activePeer.name} as automatic DEFAULT for ${targetStateCode}!`
+                                : `✓ Removed ${activePeer.name} as default for ${targetStateCode}.`);
+                              setTimeout(() => setSyncLoSuccessMsg(null), 3500);
+                            }}
+                            className="w-3.5 h-3.5 rounded border-amber-500 text-amber-500 focus:ring-amber-500 cursor-pointer"
+                          />
+                          <span>Default for {targetStateCode}</span>
+                        </label>
                       </div>
                     </div>
+                  );
+                })()}
 
-                    {/* Inline Colleague Switcher Dropdown & Default Checkbox */}
-                    <div className="pt-2 border-t border-purple-900/50 flex flex-col sm:flex-row sm:items-center gap-2">
-                      <span className="text-[11px] font-bold text-slate-300 shrink-0 flex items-center gap-1">
-                        <span>👤 Select {stateCode} Colleague:</span>
-                      </span>
-                      <select
-                        value={activePeer.id}
-                        onChange={(e) => {
-                          const chosen = allSyncedPeersList.find(p => p.id === e.target.value) || activePeer;
-                          setSelectedPeerOverrideForLead(chosen);
-                          // Refresh draft immediately with chosen colleague
-                          const newDraft = PeerLoanOfficersService.generateConversionBridgeTemplate({
-                            author: selectedLeadForReply.authorOrUser,
-                            location: selectedLeadForReply.location,
-                            matchedProgram: selectedLeadForReply.matchedProgram,
-                            sweepState: selectedSweepState,
-                            title: selectedLeadForReply.title,
-                            snippet: selectedLeadForReply.snippet,
-                            overridePeer: chosen
-                          });
-                          setCustomDraftReply(newDraft);
-                        }}
-                        className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-900 border border-purple-500/50 text-xs text-purple-200 font-semibold focus:outline-none focus:border-purple-400 cursor-pointer"
-                      >
-                        <optgroup label={`Licensed in ${stateCode}`}>
-                          {peersData.licensedPeers.map(p => {
-                            const isDef = PeerLoanOfficersService.isDefaultPeerForState(p.id, stateCode);
-                            return (
-                              <option key={p.id} value={p.id}>
-                                {isDef ? '⭐ [Default] ' : '✓ '}{p.name} • {p.title} ({p.company}) - NMLS #{p.nmlsNumber}
-                              </option>
-                            );
-                          })}
-                        </optgroup>
-                        {peersData.allPeers.filter(p => !peersData.licensedPeers.some(lp => lp.id === p.id)).length > 0 && (
-                          <optgroup label="Other Synced Nationwide Colleagues">
-                            {peersData.allPeers
-                              .filter(p => !peersData.licensedPeers.some(lp => lp.id === p.id))
-                              .map(p => (
-                                <option key={p.id} value={p.id}>
-                                  {p.name} • {p.title} ({p.company}) - NMLS #{p.nmlsNumber}
-                                </option>
-                              ))}
-                          </optgroup>
-                        )}
-                      </select>
-
-                      {/* Quick "Default for [stateCode]" Checkbox */}
-                      <label className="flex items-center gap-1.5 cursor-pointer text-[11px] font-bold text-amber-300 bg-amber-950/70 hover:bg-amber-900/80 px-2.5 py-1.5 rounded-xl border border-amber-500/40 transition shrink-0 shadow-sm" title={`Make ${activePeer.name} the automatic default for all new ${stateCode} inquiries`}>
-                        <input
-                          type="checkbox"
-                          checked={isCurrentDefault}
-                          onChange={(e) => {
-                            PeerLoanOfficersService.setDefaultPeerForState(stateCode, activePeer.id, e.target.checked);
-                            const updatedDir = PeerLoanOfficersService.getDirectory();
-                            setPeerDirectory(updatedDir);
-                            setAllSyncedPeersList(PeerLoanOfficersService.getAllPeerLoanOfficers());
-                            setSyncLoSuccessMsg(e.target.checked
-                              ? `✓ Set ${activePeer.name} as automatic DEFAULT for ${stateCode}!`
-                              : `✓ Removed ${activePeer.name} as default for ${stateCode}.`);
-                            setTimeout(() => setSyncLoSuccessMsg(null), 3500);
-                          }}
-                          className="w-3.5 h-3.5 rounded border-amber-500 text-amber-500 focus:ring-amber-500 cursor-pointer"
-                        />
-                        <span>Default for {stateCode}</span>
-                      </label>
-                    </div>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>AI-Generated 26-Year Mortgage Expert Reply Draft</span>
+                    </label>
+                    <button
+                      onClick={handleGenerateGeoMapCarouselLink}
+                      type="button"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/40 hover:bg-emerald-500/20 text-emerald-300 text-[11px] font-extrabold transition cursor-pointer"
+                    >
+                      <span>✨ Attach GeoMap Carousel &amp; Profile</span>
+                    </button>
                   </div>
-                );
-              })()}
 
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>AI-Generated 26-Year Mortgage Expert Reply Draft</span>
-                  </label>
-                  <button
-                    onClick={handleGenerateGeoMapCarouselLink}
-                    type="button"
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/40 hover:bg-emerald-500/20 text-emerald-300 text-[11px] font-extrabold transition cursor-pointer"
-                  >
-                    <span>✨ Attach GeoMap Carousel &amp; Profile</span>
-                  </button>
+                  {/* AI Tone Variant Quick Suggestions */}
+                  <div className="flex items-center gap-2 py-1 overflow-x-auto">
+                    <span className="text-[10px] font-bold text-slate-400 shrink-0">AI Suggestion Tones:</span>
+                    <button
+                      onClick={() => handleSelectAiToneVariant('warm')}
+                      type="button"
+                      className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold transition cursor-pointer whitespace-nowrap"
+                    >
+                      🌱 Warm Advisory
+                    </button>
+                    <button
+                      onClick={() => handleSelectAiToneVariant('direct')}
+                      type="button"
+                      className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold transition cursor-pointer whitespace-nowrap"
+                    >
+                      ⚡ Direct &amp; Actionable
+                    </button>
+                    <button
+                      onClick={() => handleSelectAiToneVariant('specialist')}
+                      type="button"
+                      className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold transition cursor-pointer whitespace-nowrap"
+                    >
+                      🛡️ Program Specialist
+                    </button>
+                    <button
+                      onClick={() => handleSelectAiToneVariant('reengagement')}
+                      type="button"
+                      className="px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-500/40 hover:bg-amber-500/30 text-amber-300 text-[10px] font-bold transition cursor-pointer whitespace-nowrap"
+                    >
+                      💬 Re-engagement (Inactive 7+ Days)
+                    </button>
+                    <button
+                      onClick={() => handleSelectAiToneVariant('preapproval_app')}
+                      type="button"
+                      className="px-2.5 py-1 rounded-lg bg-emerald-600/30 border border-emerald-500/50 hover:bg-emerald-600/40 text-emerald-300 text-[10px] font-extrabold transition cursor-pointer whitespace-nowrap"
+                      title="Direct official Oregon pre-approval application (https://cfmtg.com/mford/)"
+                    >
+                      📝 Pre-Approval App (Oregon: cfmtg.com)
+                    </button>
+                    <button
+                      onClick={() => handleSelectAiToneVariant('out_of_state_referral')}
+                      type="button"
+                      className="px-2.5 py-1 rounded-lg bg-purple-600/30 border border-purple-500/50 hover:bg-purple-600/40 text-purple-300 text-[10px] font-extrabold transition cursor-pointer whitespace-nowrap"
+                      title="Compliant out-of-state referral & relocation triage response"
+                    >
+                      🤝 Out-of-State Referral (Non-OR)
+                    </button>
+                  </div>
+
+                  <textarea
+                    rows={4}
+                    value={customDraftReply || PeerLoanOfficersService.generateConversionBridgeTemplate({
+                      author: selectedLeadForReply.authorOrUser,
+                      location: selectedLeadForReply.location,
+                      matchedProgram: selectedLeadForReply.matchedProgram,
+                      sweepState: selectedSweepState,
+                      title: selectedLeadForReply.title,
+                      snippet: selectedLeadForReply.snippet,
+                      overridePeer: selectedPeerOverrideForLead || undefined,
+                      tone: 'standard'
+                    })}
+                    onChange={(e) => setCustomDraftReply(e.target.value)}
+                    className="w-full p-3 rounded-xl bg-slate-950 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 leading-relaxed font-sans"
+                  />
+
+                  {selectedLeadForReply && (
+                    <div className="p-3 rounded-xl bg-indigo-950/80 border border-indigo-500/40 text-xs space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-indigo-300 flex items-center gap-1.5">
+                          <MapPin className="w-3.5 h-3.5 text-indigo-400" />
+                          <span>GeoMap Plugin Centered on Prospect Location: {selectedLeadForReply.location}</span>
+                        </span>
+                        <a
+                          href={`${window.location.origin}/?real_estate=true&lead=${encodeURIComponent(selectedLeadForReply.authorOrUser)}&center=${encodeURIComponent(selectedLeadForReply.location)}&program=${encodeURIComponent(selectedLeadForReply.matchedProgram)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-[11px] transition shadow cursor-pointer shrink-0"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          <span>View Local Listings ({selectedLeadForReply.location})</span>
+                        </a>
+                      </div>
+                      <p className="text-[11px] text-slate-300">
+                        Deep-link automatically centers the GeoMap plugin on the prospect&apos;s exact market area with prefiltered low/no down payment loan programs.
+                      </p>
+                    </div>
+                  )}
+
+                  {generatedCarouselLink && (
+                    <div className="p-2.5 rounded-lg bg-emerald-950/60 border border-emerald-500/30 text-[11px] text-emerald-200 flex items-center justify-between gap-2">
+                      <span className="truncate">🔗 <strong>Carousel Magic Link Attached:</strong> {generatedCarouselLink}</span>
+                      <span className="shrink-0 text-[10px] font-bold bg-emerald-500 text-slate-950 px-2 py-0.5 rounded">Ready</span>
+                    </div>
+                  )}
                 </div>
 
-                {/* AI Tone Variant Quick Suggestions */}
-                <div className="flex items-center gap-2 py-1 overflow-x-auto">
-                  <span className="text-[10px] font-bold text-slate-400 shrink-0">AI Suggestion Tones:</span>
-                  <button
-                    onClick={() => handleSelectAiToneVariant('warm')}
-                    type="button"
-                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold transition cursor-pointer whitespace-nowrap"
-                  >
-                    🌱 Warm Advisory
-                  </button>
-                  <button
-                    onClick={() => handleSelectAiToneVariant('direct')}
-                    type="button"
-                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold transition cursor-pointer whitespace-nowrap"
-                  >
-                    ⚡ Direct &amp; Actionable
-                  </button>
-                  <button
-                    onClick={() => handleSelectAiToneVariant('specialist')}
-                    type="button"
-                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold transition cursor-pointer whitespace-nowrap"
-                  >
-                    🛡️ Program Specialist
-                  </button>
-                  <button
-                    onClick={() => handleSelectAiToneVariant('reengagement')}
-                    type="button"
-                    className="px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-500/40 hover:bg-amber-500/30 text-amber-300 text-[10px] font-bold transition cursor-pointer whitespace-nowrap"
-                  >
-                    💬 Re-engagement (Inactive 7+ Days)
-                  </button>
-                  <button
-                    onClick={() => handleSelectAiToneVariant('preapproval_app')}
-                    type="button"
-                    className="px-2.5 py-1 rounded-lg bg-emerald-600/30 border border-emerald-500/50 hover:bg-emerald-600/40 text-emerald-300 text-[10px] font-extrabold transition cursor-pointer whitespace-nowrap"
-                    title="Direct official Oregon pre-approval application (https://cfmtg.com/mford/)"
-                  >
-                    📝 Pre-Approval App (Oregon: cfmtg.com)
-                  </button>
-                  <button
-                    onClick={() => handleSelectAiToneVariant('out_of_state_referral')}
-                    type="button"
-                    className="px-2.5 py-1 rounded-lg bg-purple-600/30 border border-purple-500/50 hover:bg-purple-600/40 text-purple-300 text-[10px] font-extrabold transition cursor-pointer whitespace-nowrap"
-                    title="Compliant out-of-state referral & relocation triage response"
-                  >
-                    🤝 Out-of-State Referral (Non-OR)
-                  </button>
-                </div>
-
-                <textarea
-                  rows={5}
-                  value={customDraftReply || PeerLoanOfficersService.generateConversionBridgeTemplate({
-                    author: selectedLeadForReply.authorOrUser,
-                    location: selectedLeadForReply.location,
-                    matchedProgram: selectedLeadForReply.matchedProgram,
-                    sweepState: selectedSweepState,
-                    title: selectedLeadForReply.title,
-                    snippet: selectedLeadForReply.snippet,
-                    tone: 'standard'
-                  })}
-                  onChange={(e) => setCustomDraftReply(e.target.value)}
-                  className="w-full p-3 rounded-xl bg-slate-950 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 leading-relaxed"
-                />
-                {selectedLeadForReply && (
-                  <div className="p-3 rounded-xl bg-indigo-950/80 border border-indigo-500/40 text-xs space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-indigo-300 flex items-center gap-1.5">
-                        <MapPin className="w-3.5 h-3.5 text-indigo-400" />
-                        <span>GeoMap Plugin Centered on Prospect Location: {selectedLeadForReply.location}</span>
-                      </span>
-                      <a
-                        href={`${window.location.origin}/?real_estate=true&lead=${encodeURIComponent(selectedLeadForReply.authorOrUser)}&center=${encodeURIComponent(selectedLeadForReply.location)}&program=${encodeURIComponent(selectedLeadForReply.matchedProgram)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-[11px] transition shadow cursor-pointer shrink-0"
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                        <span>View Local Listings ({selectedLeadForReply.location})</span>
-                      </a>
-                    </div>
-                    <p className="text-[11px] text-slate-300">
-                      Deep-link automatically centers the GeoMap plugin on the prospect&apos;s exact market area with prefiltered low/no down payment loan programs.
-                    </p>
-                  </div>
-                )}
-
-                {generatedCarouselLink && (
-                  <div className="p-2.5 rounded-lg bg-emerald-950/60 border border-emerald-500/30 text-[11px] text-emerald-200 flex items-center justify-between gap-2">
-                    <span className="truncate">🔗 <strong>Carousel Magic Link Attached:</strong> {generatedCarouselLink}</span>
-                    <span className="shrink-0 text-[10px] font-bold bg-emerald-500 text-slate-950 px-2 py-0.5 rounded">Ready</span>
+                {replySuccessMsg && (
+                  <div className="p-3 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-200 text-xs font-semibold">
+                    {replySuccessMsg}
                   </div>
                 )}
               </div>
-
-              {replySuccessMsg && (
-                <div className="p-3 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-200 text-xs font-semibold">
-                  {replySuccessMsg}
-                </div>
-              )}
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
+            {/* Pinned Sticky Action Footer */}
+            <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 border-t border-slate-800 shrink-0 bg-slate-900 z-10">
               <div className="flex flex-wrap items-center gap-2">
                 {/* 1. Free Gmail Draft */}
                 <button
@@ -3638,6 +3648,7 @@ Email: fordmj@gmail.com`;
                       sweepState: selectedSweepState,
                       title: selectedLeadForReply.title,
                       snippet: selectedLeadForReply.snippet,
+                      overridePeer: selectedPeerOverrideForLead || undefined,
                       channel: 'sms'
                     })
                   );
@@ -3706,6 +3717,7 @@ Email: fordmj@gmail.com`;
                 )}
               </div>
             </div>
+
           </div>
         </div>
       )}
