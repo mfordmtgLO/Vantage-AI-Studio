@@ -102,6 +102,8 @@
         "photoUrl": { "type": "string" },
         "specialties": { "type": "array" },
         "primaryState": { "type": "string" },
+        "applicationUrl": { "type": "string" },
+        "licensedStates": { "type": "array" },
         "syncedFrom": { "type": "string" },
         "pairedAgentIds": { "type": "array" },
         "pairedAgents": { "type": "array" },
@@ -228,6 +230,47 @@
         "updatedAt": { "type": "string" }
       },
       "required": ["id", "scheduleName", "cronExpression", "enabled"]
+    },
+    "AutoArchiveRuleConfig": {
+      "title": "AutoArchiveRuleConfig",
+      "description": "User defined threshold rule governing the automatic archiving of dormant discovery leads to Firestore stored_archives collection.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "enabled": { "type": "boolean" },
+        "maxDormantDays": { "type": "number" },
+        "autoRunOnSweep": { "type": "boolean" },
+        "autoRunOnMount": { "type": "boolean" },
+        "notifyOnArchive": { "type": "boolean" },
+        "destinationCollection": { "type": "string" },
+        "lastRunAt": { "type": "string" },
+        "lastRunSummary": { "type": "string" },
+        "totalArchivedCount": { "type": "number" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "enabled", "maxDormantDays", "destinationCollection"]
+    },
+    "LeadNotificationSettings": {
+      "title": "LeadNotificationSettings",
+      "description": "Intelligent priority mobile push notification settings specifically for Active Two-Way lead responses, isolated from standard Gmail drafts.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "activeTwoWayPushEnabled": { "type": "boolean" },
+        "priorityLevel": { "type": "string", "enum": ["urgent", "high", "normal"] },
+        "soundEnabled": { "type": "boolean" },
+        "audioChime": { "type": "string" },
+        "vibratePatternEnabled": { "type": "boolean" },
+        "carrierSmsRelayEnabled": { "type": "boolean" },
+        "targetMobileNumber": { "type": "string" },
+        "separateFromGmailDrafts": { "type": "boolean" },
+        "customPrefix": { "type": "string" },
+        "requireImmediateAck": { "type": "boolean" },
+        "lastAlertSentAt": { "type": "string" },
+        "totalAlertsDelivered": { "type": "number" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "activeTwoWayPushEnabled", "priorityLevel", "separateFromGmailDrafts"]
     }
   },
   "firestore": {
@@ -266,6 +309,14 @@
     "/lead_outreach_cron_configs/{configId}": {
       "schema": "LeadOutreachCronConfig",
       "description": "Autonomous scrape and outreach staging cron job configurations."
+    },
+    "/lead_auto_archive_rules/{ruleId}": {
+      "schema": "AutoArchiveRuleConfig",
+      "description": "Saved Auto-Archive Rule threshold settings and execution metrics."
+    },
+    "/lead_notification_settings/{settingId}": {
+      "schema": "LeadNotificationSettings",
+      "description": "Saved intelligent priority push notification parameters for Active Two-Way lead responses."
     }
   }
 }

@@ -37,7 +37,9 @@ import {
   Filter,
   Search,
   CheckCheck,
-  Flag
+  Flag,
+  Hash,
+  Archive
 } from 'lucide-react';
 import {
   LeadOutreachCronService,
@@ -47,6 +49,10 @@ import {
   CronInterval
 } from '../services/leadOutreachCronService';
 import { LeadItem } from './LeadDiscoveryStudio';
+import {
+  getOrRegisterMessageThread,
+  formatAiBrainOutreachHeaders
+} from '../utils/messageThreadRouting';
 
 interface LeadOutreachQueueAndSchedulerDeckProps {
   leads: LeadItem[];
@@ -208,17 +214,27 @@ export const LeadOutreachQueueAndSchedulerDeck: React.FC<LeadOutreachQueueAndSch
       timestamp: Date.now()
     };
 
-    // 1. Channel Dispatch Logic
+    // 1. Channel Dispatch Logic with MessageThreadID Direct Comment Anchoring
+    const threadMeta = getOrRegisterMessageThread(
+      msg.leadId,
+      msg.recipientName,
+      msg.recipientPlatform,
+      msg.targetCommentId
+    );
+    const formatted = formatAiBrainOutreachHeaders(
+      threadMeta,
+      msg.subject,
+      msg.body,
+      'fordmj@gmail.com',
+      '5417292097'
+    );
+
     if (msg.channel === 'gmail' || msg.channel === 'both') {
-      const recipientEmail = 'fordmj@gmail.com';
-      const composeUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(recipientEmail)}&su=${encodeURIComponent(msg.subject)}&body=${encodeURIComponent(msg.body)}`;
-      window.open(composeUrl, '_blank', 'noopener,noreferrer');
+      window.open(formatted.webComposeUrl, '_blank', 'noopener,noreferrer');
     }
 
     if (msg.channel === 'sms' || msg.channel === 'both') {
-      const smsBody = msg.body.length > 280 ? `${msg.body.slice(0, 275)}...` : msg.body;
-      const smsUrl = `sms:+15417292097?body=${encodeURIComponent(smsBody)}`;
-      window.open(smsUrl, '_blank');
+      window.open(formatted.iphoneSmsUrl, '_blank');
     }
 
     // 2. Trigger iPhone Push Alert & Notification
@@ -1120,6 +1136,21 @@ export const LeadOutreachQueueAndSchedulerDeck: React.FC<LeadOutreachQueueAndSch
                                 </span>
                               )}
                             </div>
+
+                            {/* MessageThreadID & Direct Comment Anchor Badges */}
+                            <div className="flex flex-wrap items-center gap-1.5 mt-1.5 font-mono text-[10px]">
+                              <span className="px-2 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-500/40 flex items-center gap-1 font-bold">
+                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                                <span>MessageThreadID: #{msg.messageThreadId || `th_${msg.leadId.slice(0, 10)}`}</span>
+                              </span>
+                              <span className="px-2 py-0.5 rounded bg-emerald-950/70 text-emerald-300 border border-emerald-500/40 flex items-center gap-1 font-bold">
+                                <Check className="w-2.5 h-2.5 text-emerald-400" />
+                                <span>Anchor: #{msg.targetCommentId || `cmt_${msg.leadId.slice(0, 8)}`}</span>
+                              </span>
+                              <span className="hidden sm:inline px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 text-[9px]">
+                                Direct User Reply • General Thread Noise Excluded
+                              </span>
+                            </div>
                           </div>
                         </div>
 
@@ -1499,6 +1530,22 @@ export const LeadOutreachQueueAndSchedulerDeck: React.FC<LeadOutreachQueueAndSch
                       </span>
                     ))}
                   </div>
+                </div>
+
+                {/* Auto-Archive Dormant Lead Integration */}
+                <div className="p-3.5 rounded-2xl bg-amber-950/20 border border-amber-500/30 flex items-center justify-between gap-3 text-xs mt-3">
+                  <div className="flex items-center gap-2 text-slate-300">
+                    <Archive className="w-4 h-4 text-amber-400 shrink-0" />
+                    <div>
+                      <span className="font-bold text-white">Autonomous Dormant Auto-Archive:</span>
+                      <p className="text-[11px] text-slate-400">
+                        Leads exceeding your configured threshold are automatically moved to Firestore <code className="text-emerald-300 font-mono">stored_archives</code> collection during sweeps.
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-mono text-amber-300 bg-amber-900/40 px-2 py-0.5 rounded border border-amber-500/40 shrink-0">
+                    Threshold Engine Synced
+                  </span>
                 </div>
               </div>
             </div>

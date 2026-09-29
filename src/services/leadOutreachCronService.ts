@@ -11,6 +11,11 @@
 
 import { collection, doc, getDocs, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from './firebase';
+import {
+  getOrRegisterMessageThread,
+  formatAiBrainOutreachHeaders,
+  MessageThreadMetadata
+} from '../utils/messageThreadRouting';
 
 export type OutreachChannel = 'sms' | 'gmail' | 'both';
 export type QueueMessageStatus = 'pending_approval' | 'flagged' | 'approved_dispatched' | 'dismissed';
@@ -19,6 +24,10 @@ export type CronInterval = 'hourly' | 'every_4_hours' | 'daily_1020pm' | 'daily_
 export interface PendingOutboundMessage {
   id: string;
   leadId: string;
+  messageThreadId: string;            // Unique MessageThreadID mapping for this lead
+  targetCommentId: string;            // Specific user comment ID for direct reply anchoring
+  parentMessageId?: string;           // Direct parent message ID
+  headerMetadata?: Record<string, string>; // RFC 2822 & routing headers
   recipientName: string;
   recipientLocation: string;
   recipientPlatform: string;
@@ -88,13 +97,31 @@ export const INITIAL_PENDING_MESSAGES: PendingOutboundMessage[] = [
   {
     id: 'outbound_msg_pdx_99',
     leadId: 'lead_1',
+    messageThreadId: 'th_pdx_renter_99_e4b102',
+    targetCommentId: 'cmt_pdx_renter_99_c1',
+    parentMessageId: 'cmt_pdx_renter_99_c1',
+    headerMetadata: {
+      'X-Message-Thread-ID': 'th_pdx_renter_99_e4b102',
+      'X-Target-Comment-ID': 'cmt_pdx_renter_99_c1',
+      'X-Direct-Reply-Target': 'u/PDX_Renter_99',
+      'X-Route-Mode': 'direct_parent_comment_anchor',
+      'In-Reply-To': '<cmt_pdx_renter_99_c1@reddit.internal>',
+      'References': '<th_pdx_renter_99_e4b102@reddit.internal>'
+    },
     recipientName: 'u/PDX_Renter_99',
     recipientLocation: 'Portland, OR (Multnomah County)',
     recipientPlatform: 'Reddit (r/Portland)',
     matchedProgram: 'OHCS Flex Lending & DPA / Lakeview Zero-Down',
     channel: 'both',
-    subject: 'Re: Portland First-Time Buyer OHCS Down Payment Assistance & Zero-Down Options',
-    body: `Hi PDX_Renter_99,
+    subject: 'Re: Portland First-Time Buyer OHCS Down Payment Assistance & Zero-Down Options [Thread: #th_pdx_renter_99_e4b102]',
+    body: `// ─── VANTAGE AI 2ND BRAIN • DIRECT COMMENT ROUTING METADATA ───
+// MessageThreadID: th_pdx_renter_99_e4b102
+// Target-Comment-ID: #cmt_pdx_renter_99_c1 (In-Reply-To Direct Parent)
+// Direct-Recipient: @u/PDX_Renter_99 (Reddit r/Portland)
+// Routing-Anchor: Direct User Comment (Isolated from general thread noise)
+// ───────────────────────────────────────────────────────────────
+
+Hi PDX_Renter_99,
 
 I saw your post regarding transitioning from paying $2,100/mo in inner SE Portland rent to buying your first home on a $65k salary. 
 
@@ -116,13 +143,31 @@ Direct / SMS: (541) 729-2097 | Email: fordmj@gmail.com`,
   {
     id: 'outbound_msg_sarah_hillsboro',
     leadId: 'lead_2',
+    messageThreadId: 'th_sarahm_hillsboro_d819c4',
+    targetCommentId: 'cmt_sarahm_hillsboro_c2',
+    parentMessageId: 'cmt_sarahm_hillsboro_c2',
+    headerMetadata: {
+      'X-Message-Thread-ID': 'th_sarahm_hillsboro_d819c4',
+      'X-Target-Comment-ID': 'cmt_sarahm_hillsboro_c2',
+      'X-Direct-Reply-Target': 'SarahM_Hillsboro',
+      'X-Route-Mode': 'direct_parent_comment_anchor',
+      'In-Reply-To': '<cmt_sarahm_hillsboro_c2@biggerpockets.internal>',
+      'References': '<th_sarahm_hillsboro_d819c4@biggerpockets.internal>'
+    },
     recipientName: 'SarahM_Hillsboro',
     recipientLocation: 'Beaverton / Hillsboro, OR (Washington County)',
     recipientPlatform: 'BiggerPockets Oregon Board',
     matchedProgram: '2-1 Rate Buydowns & Seller Concessions',
     channel: 'gmail',
-    subject: 'Navigating Seller Concessions & 2-1 Rate Buydowns in Washington County',
-    body: `Hi Sarah,
+    subject: 'Navigating Seller Concessions & 2-1 Rate Buydowns in Washington County [Thread: #th_sarahm_hillsboro_d819c4]',
+    body: `// ─── VANTAGE AI 2ND BRAIN • DIRECT COMMENT ROUTING METADATA ───
+// MessageThreadID: th_sarahm_hillsboro_d819c4
+// Target-Comment-ID: #cmt_sarahm_hillsboro_c2 (In-Reply-To Direct Parent)
+// Direct-Recipient: @SarahM_Hillsboro (BiggerPockets Oregon Board)
+// Routing-Anchor: Direct User Comment (Isolated from general thread noise)
+// ───────────────────────────────────────────────────────────────
+
+Hi Sarah,
 
 I came across your question on BiggerPockets regarding 2-1 interest rate buydowns and seller concessions for first-time buyers in Beaverton/Hillsboro.
 
@@ -146,13 +191,24 @@ Direct: (541) 729-2097 | Email: fordmj@gmail.com`,
   {
     id: 'outbound_msg_florence_coast',
     leadId: 'lead_lane_1',
+    messageThreadId: 'th_florence_coast_buyer_f91801',
+    targetCommentId: 'cmt_florence_coast_buyer_c3',
+    parentMessageId: 'cmt_florence_coast_buyer_c3',
+    headerMetadata: {
+      'X-Message-Thread-ID': 'th_florence_coast_buyer_f91801',
+      'X-Target-Comment-ID': 'cmt_florence_coast_buyer_c3',
+      'X-Direct-Reply-Target': 'u/FlorenceCoastBuyer',
+      'X-Route-Mode': 'direct_parent_comment_anchor',
+      'In-Reply-To': '<cmt_florence_coast_buyer_c3@pnwhousing.internal>',
+      'References': '<th_florence_coast_buyer_f91801@pnwhousing.internal>'
+    },
     recipientName: 'u/FlorenceCoastBuyer',
     recipientLocation: 'Florence, OR (Lane County)',
     recipientPlatform: 'Oregon Housing Forum (Lane)',
     matchedProgram: 'USDA Rural Development & OHCS DPA',
     channel: 'sms',
-    subject: 'Quick Note: USDA 100% Zero-Down Eligibility in Florence & Coastal Lane County',
-    body: `Hi FlorenceCoastBuyer! As a 26-year Oregon mortgage LO, I saw your question regarding USDA 100% zero-down in Florence. Good news: coastal Lane County tracts outside Eugene/Springfield metro strictly qualify for USDA RD zero-down financing! Let's connect for a quick 10-min numbers review. —Mike Ford (541) 729-2097`,
+    subject: 'Quick Note: USDA 100% Zero-Down Eligibility in Florence & Coastal Lane County [Thread: #th_florence_coast_buyer_f91801]',
+    body: `[Thread: #th_florence_coast_buyer_f91801 -> @u/FlorenceCoastBuyer] Hi FlorenceCoastBuyer! As a 26-year Oregon mortgage LO, I saw your question regarding USDA 100% zero-down in Florence. Good news: coastal Lane County tracts outside Eugene/Springfield metro strictly qualify for USDA RD zero-down financing! Let's connect for a quick 10-min numbers review. —Mike Ford (541) 729-2097`,
     originalSnippet: 'Looking for a starter home in Florence or near the Siuslaw river. We want to know if USDA rural housing zero-down applies here or if we need conventional 3% down.',
     status: 'flagged',
     isFlagged: true,
@@ -435,18 +491,41 @@ export class LeadOutreachCronService {
     const now = new Date();
     const timestampStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    // Generate realistic multi-county discovery candidates
+    // Generate realistic multi-county discovery candidates with unique MessageThreadIDs
+    const lead1Id = `lead_coos_${Date.now()}`;
+    const meta1 = getOrRegisterMessageThread(lead1Id, 'u/CoosBayWaterfront', 'Coos Bay Housing Discord');
+    const lead2Id = `lead_bend_${Date.now()}`;
+    const meta2 = getOrRegisterMessageThread(lead2Id, 'BendNurse91', 'Oregon Local Chat (Discord)');
+
     const newItems: PendingOutboundMessage[] = [
       {
         id: `outbound_staged_${Date.now()}_1`,
-        leadId: `lead_coos_${Date.now()}`,
+        leadId: lead1Id,
+        messageThreadId: meta1.messageThreadId,
+        targetCommentId: meta1.targetCommentId,
+        parentMessageId: meta1.targetCommentId,
+        headerMetadata: {
+          'X-Message-Thread-ID': meta1.messageThreadId,
+          'X-Target-Comment-ID': meta1.targetCommentId,
+          'X-Direct-Reply-Target': 'u/CoosBayWaterfront',
+          'X-Route-Mode': 'direct_parent_comment_anchor',
+          'In-Reply-To': `<${meta1.targetCommentId}@discord.internal>`,
+          'References': `<${meta1.messageThreadId}@discord.internal>`
+        },
         recipientName: 'u/CoosBayWaterfront',
         recipientLocation: 'Coos Bay / North Bend, OR (Coos County)',
         recipientPlatform: 'Coos Bay / North Bend Housing Discord',
         matchedProgram: 'USDA 0% Down & Coos County DPA',
         channel: activeConfig.preferredChannel,
-        subject: 'USDA 100% Zero-Down Loan Eligibility in Coos County',
-        body: `Hi CoosBayWaterfront! 
+        subject: `USDA 100% Zero-Down Loan Eligibility in Coos County [Thread: #${meta1.messageThreadId}]`,
+        body: `// ─── VANTAGE AI 2ND BRAIN • DIRECT COMMENT ROUTING METADATA ───
+// MessageThreadID: ${meta1.messageThreadId}
+// Target-Comment-ID: #${meta1.targetCommentId} (In-Reply-To Direct Parent)
+// Direct-Recipient: @u/CoosBayWaterfront (Coos Bay / North Bend Housing Discord)
+// Routing-Anchor: Direct User Comment (Isolated from general thread noise)
+// ───────────────────────────────────────────────────────────────
+
+Hi CoosBayWaterfront! 
 
 I noticed your thread regarding purchasing a starter home in Coos Bay with low down payment options. 
 
@@ -467,14 +546,32 @@ Direct / SMS: (541) 729-2097 | Email: fordmj@gmail.com`,
       },
       {
         id: `outbound_staged_${Date.now()}_2`,
-        leadId: `lead_bend_${Date.now()}`,
+        leadId: lead2Id,
+        messageThreadId: meta2.messageThreadId,
+        targetCommentId: meta2.targetCommentId,
+        parentMessageId: meta2.targetCommentId,
+        headerMetadata: {
+          'X-Message-Thread-ID': meta2.messageThreadId,
+          'X-Target-Comment-ID': meta2.targetCommentId,
+          'X-Direct-Reply-Target': 'BendNurse91',
+          'X-Route-Mode': 'direct_parent_comment_anchor',
+          'In-Reply-To': `<${meta2.targetCommentId}@discord.internal>`,
+          'References': `<${meta2.messageThreadId}@discord.internal>`
+        },
         recipientName: 'BendNurse91',
         recipientLocation: 'Bend / Redmond, OR (Deschutes County)',
         recipientPlatform: 'Oregon Local Chat (Discord)',
         matchedProgram: 'Physician / Healthcare Zero Down & VA Loans',
         channel: activeConfig.preferredChannel,
-        subject: 'Healthcare Worker & First-Time Buyer Zero-Down Options in Deschutes County',
-        body: `Hi BendNurse91,
+        subject: `Healthcare Worker & First-Time Buyer Zero-Down Options in Deschutes County [Thread: #${meta2.messageThreadId}]`,
+        body: `// ─── VANTAGE AI 2ND BRAIN • DIRECT COMMENT ROUTING METADATA ───
+// MessageThreadID: ${meta2.messageThreadId}
+// Target-Comment-ID: #${meta2.targetCommentId} (In-Reply-To Direct Parent)
+// Direct-Recipient: @BendNurse91 (Oregon Local Chat Discord)
+// Routing-Anchor: Direct User Comment (Isolated from general thread noise)
+// ───────────────────────────────────────────────────────────────
+
+Hi BendNurse91,
 
 Saw your question regarding escalating rents in Bend and zero-down mortgage options for healthcare professionals. 
 

@@ -40,5 +40,13 @@ service cloud.firestore {
     match /lead_outreach_cron_configs/{configId} {
       allow read, write: if true;
     }
+
+    match /lead_auto_archive_rules/{ruleId} {
+      allow read, write: if true;
+    }
+
+    match /lead_notification_settings/{settingId} {
+      allow read, write: if true;
+    }
   }
 }

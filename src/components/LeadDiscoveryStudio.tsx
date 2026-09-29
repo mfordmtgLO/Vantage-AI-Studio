@@ -8,7 +8,7 @@
  * Aggregates automated sweep results from Reddit, Oregon forums, chat boards, and mortgage blogs.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Search, 
   MessageSquare, 
@@ -28,6 +28,7 @@ import {
   ArrowUpDown,
   SlidersHorizontal,
   Trash2,
+  Archive,
   BrainCircuit,
   History,
   BookOpen,
@@ -41,7 +42,9 @@ import {
   Link2,
   Wifi,
   Activity,
-  Sliders
+  Sliders,
+  Bell,
+  RefreshCw
 } from 'lucide-react';
 import { executeCircadianJob, CircadianExecutionLog } from '../services/cronScheduler';
 import { getCommunicationSettings } from '../utils/communicationSettingsStorage';
@@ -60,6 +63,29 @@ import {
   getStateDetails,
   generateLocalizedLeadsForSweep
 } from '../data/usStatesAndCounties';
+import { ThreadWebsiteViewerModal, ThreadWebsiteData } from './ThreadWebsiteViewerModal';
+import {
+  getOrRegisterMessageThread,
+  formatAiBrainOutreachHeaders,
+  MessageThreadMetadata
+} from '../utils/messageThreadRouting';
+import { AutoArchiveRuleModal } from './AutoArchiveRuleModal';
+import {
+  LeadAutoArchiveService,
+  AutoArchiveRuleConfig,
+  calculateLeadDormantDays
+} from '../services/leadAutoArchiveService';
+import { ActiveTwoWayNotificationModal } from './ActiveTwoWayNotificationModal';
+import {
+  ActiveTwoWayNotificationService,
+  ActiveTwoWayNotificationConfig,
+  ActiveTwoWayResponsePayload
+} from '../services/activeTwoWayNotificationService';
+import { StatePartnerLoanOfficersModal } from './StatePartnerLoanOfficersModal';
+import {
+  PeerLoanOfficersService,
+  PeerLoanOfficer
+} from '../services/peerLoanOfficersService';
 
 export type LeadCrmStatus = 'new_discovery_scrape' | 'active_two_way' | 'dormant_7_days' | 'archived_discovery';
 export type TwoWayOutreachMode = 'both' | 'sms_only' | 'gmail_only';
@@ -79,9 +105,15 @@ export interface LeadItem {
   url: string;
   status: 'new' | 'contacted' | 'saved' | 'ignored' | LeadCrmStatus;
   timestamp: number; // for sorting
+  messageThreadId?: string;      // Unique MessageThreadID mapping for this lead
+  targetCommentId?: string;      // Specific original user comment identifier
+  parentCommentId?: string;      // Direct parent comment ID
   isStaleReactivated?: boolean;
   isFilteredOut?: boolean;
   filterReason?: string;
+  archivedAt?: string;
+  archivedReason?: string;
+  dormantDaysCount?: number;
 }
 
 export const getLeadCrmStatus = (lead: LeadItem): LeadCrmStatus => {
@@ -311,6 +343,47 @@ export const LeadDiscoveryStudio: React.FC = () => {
   });
 
   const [showOutreachHistoryModal, setShowOutreachHistoryModal] = useState(false);
+  const [showAutoArchiveModal, setShowAutoArchiveModal] = useState(false);
+  const [autoArchiveConfig, setAutoArchiveConfig] = useState<AutoArchiveRuleConfig>(() => LeadAutoArchiveService.getRuleConfig());
+  const [showActiveTwoWayNotifModal, setShowActiveTwoWayNotifModal] = useState(false);
+  const [activeTwoWayNotifConfig, setActiveTwoWayNotifConfig] = useState<ActiveTwoWayNotificationConfig>(() => ActiveTwoWayNotificationService.getConfig());
+  const [showStatePartnerModal, setShowStatePartnerModal] = useState(false);
+  const [targetPartnerState, setTargetPartnerState] = useState<string>('WA');
+  const [peerDirectory, setPeerDirectory] = useState<Record<string, PeerLoanOfficer>>(() => PeerLoanOfficersService.getDirectory());
+  const [allSyncedPeersList, setAllSyncedPeersList] = useState<PeerLoanOfficer[]>(() => PeerLoanOfficersService.getAllPeerLoanOfficers());
+  const [selectedPeerOverrideForLead, setSelectedPeerOverrideForLead] = useState<PeerLoanOfficer | null>(null);
+  const [isSyncingPeerCards, setIsSyncingPeerCards] = useState(false);
+  const [syncLoSuccessMsg, setSyncLoSuccessMsg] = useState<string | null>(null);
+
+  const handleSyncPeerCardsFromHomebuyers = async () => {
+    setIsSyncingPeerCards(true);
+    setSyncLoSuccessMsg(null);
+    try {
+      const res = await PeerLoanOfficersService.syncFromFirstTimeHomebuyerDashboard();
+      const updatedDir = PeerLoanOfficersService.getDirectory();
+      const updatedList = PeerLoanOfficersService.getAllPeerLoanOfficers();
+      setPeerDirectory(updatedDir);
+      setAllSyncedPeersList(updatedList);
+      setSyncLoSuccessMsg(`✓ Synced ${res.count} Peer LO Cards from First-Time Homebuyers Backend! Roster updated & ready.`);
+      setTimeout(() => setSyncLoSuccessMsg(null), 4500);
+    } catch (err) {
+      console.error('Error syncing peer cards:', err);
+      setSyncLoSuccessMsg('⚠️ Sync completed with cached offline profiles.');
+      setTimeout(() => setSyncLoSuccessMsg(null), 3000);
+    } finally {
+      setIsSyncingPeerCards(false);
+    }
+  };
+  const [activeTwoWayPriorityAlert, setActiveTwoWayPriorityAlert] = useState<{
+    leadId: string;
+    author: string;
+    text: string;
+    location?: string;
+    matchedProgram?: string;
+    time: string;
+  } | null>(null);
+  const [activeThreadWebsite, setActiveThreadWebsite] = useState<ThreadWebsiteData | null>(null);
+  const [isThreadWebsiteOpen, setIsThreadWebsiteOpen] = useState(false);
   const [showScrapeAnalyticsModal, setShowScrapeAnalyticsModal] = useState(false);
   const [autoStaleAlertsEnabled, setAutoStaleAlertsEnabled] = useState(true);
   const [showRawResults, setShowRawResults] = useState(false);
@@ -495,6 +568,87 @@ export const LeadDiscoveryStudio: React.FC = () => {
     }
   };
 
+  const handleExecuteAutoArchiveSweep = async (customConfig?: AutoArchiveRuleConfig) => {
+    const configToUse = customConfig || autoArchiveConfig;
+    const result = await LeadAutoArchiveService.runAutoArchiveSweep(leads, configToUse);
+    setLeads(result.updatedLeads as LeadItem[]);
+    const updatedCfg = LeadAutoArchiveService.getRuleConfig();
+    setAutoArchiveConfig(updatedCfg);
+
+    if (result.archivedCount > 0) {
+      setArchiveFeedbackMsg(`✓ Auto-Archive Rule: ${result.archivedCount} dormant leads moved to Firestore 'stored_archives' collection (Threshold: >= ${configToUse.maxDormantDays} days).`);
+      setTimeout(() => setArchiveFeedbackMsg(''), 5000);
+
+      if (configToUse.notifyOnArchive && typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+        try {
+          new Notification('📦 [AI AUTO-ARCHIVE RULE EXECUTED]', {
+            body: `${result.archivedCount} dormant leads moved to Stored Archives (Dormancy >= ${configToUse.maxDormantDays} days).`,
+            icon: '/assets/icon-192.png'
+          });
+        } catch {}
+      }
+    }
+    return { count: result.archivedCount, summary: result.summary };
+  };
+
+  // Autonomous Auto-Archive Audit on Studio Launch
+  const autoArchiveMountRanRef = useRef(false);
+  useEffect(() => {
+    if (autoArchiveMountRanRef.current) return;
+    autoArchiveMountRanRef.current = true;
+    if (autoArchiveConfig.enabled && autoArchiveConfig.autoRunOnMount) {
+      const timer = setTimeout(() => {
+        handleExecuteAutoArchiveSweep();
+      }, 1200);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  // Fetch Remote Active Two-Way Notification Settings from Firestore
+  useEffect(() => {
+    ActiveTwoWayNotificationService.fetchRemoteConfig().then(remote => {
+      if (remote) {
+        setActiveTwoWayNotifConfig(remote);
+      }
+    }).catch(() => {});
+  }, []);
+
+  // Fetch Remote State-Licensed Peer Loan Officers Directory from Firestore
+  useEffect(() => {
+    PeerLoanOfficersService.fetchRemoteDirectory().then(dir => {
+      if (dir) {
+        setPeerDirectory(dir);
+      }
+    }).catch(() => {});
+  }, []);
+
+  // Automatically generate state-aware Conversion Bridge draft whenever a lead is selected for reply
+  useEffect(() => {
+    if (selectedLeadForReply) {
+      const isOregon = PeerLoanOfficersService.isOregonLocation(selectedLeadForReply.location, selectedSweepState);
+      const stateCode = PeerLoanOfficersService.extractStateCode(selectedLeadForReply.location, selectedSweepState);
+      const defaultPeer = !isOregon ? PeerLoanOfficersService.getPeerForState(stateCode) : null;
+      setSelectedPeerOverrideForLead(defaultPeer);
+
+      const template = PeerLoanOfficersService.generateConversionBridgeTemplate({
+        author: selectedLeadForReply.authorOrUser,
+        location: selectedLeadForReply.location,
+        matchedProgram: selectedLeadForReply.matchedProgram,
+        sweepState: selectedSweepState,
+        title: selectedLeadForReply.title,
+        snippet: selectedLeadForReply.snippet,
+        overridePeer: defaultPeer || undefined,
+        tone: 'standard'
+      });
+      setCustomDraftReply(template);
+      setGeneratedCarouselLink('');
+    } else {
+      setSelectedPeerOverrideForLead(null);
+      setCustomDraftReply('');
+      setGeneratedCarouselLink('');
+    }
+  }, [selectedLeadForReply?.id, selectedSweepState]);
+
   const handleBulkMoveToPipeline = () => {
     handleBulkSetCrmStatus('active_two_way');
   };
@@ -515,13 +669,32 @@ export const LeadDiscoveryStudio: React.FC = () => {
     } : l));
   };
 
+  const handleDispatchPriorityActiveTwoWayAlert = async (payload: ActiveTwoWayResponsePayload) => {
+    // 1. Dispatch distinct priority push (Hardware vibration, audio chime, lock screen push)
+    await ActiveTwoWayNotificationService.dispatchPriorityResponsePush(payload, activeTwoWayNotifConfig);
+
+    // 2. Set distinct high-priority floating alert banner (separate from standard Gmail draft notification)
+    setActiveTwoWayPriorityAlert({
+      leadId: payload.leadId,
+      author: payload.author,
+      text: payload.replyText,
+      location: payload.location,
+      matchedProgram: payload.matchedProgram,
+      time: 'Just now'
+    });
+
+    // 3. Mark CRM state to active_two_way
+    handleUpdateLeadCrmStatus(payload.leadId, 'active_two_way');
+  };
+
   const synthesizeReengagementContent = (lead: LeadItem, strategy: 'dpa_grant_boost' | 'geomap_inventory' | 'rate_update' | 'payment_review') => {
-    let subject = `🌟 New DPA Grant Allocations & ${lead.matchedProgram} in ${lead.location}`;
-    let body = '';
+    const threadMeta = getOrRegisterMessageThread(lead.id, lead.authorOrUser, lead.platform, lead.targetCommentId);
+    let baseSubject = `🌟 New DPA Grant Allocations & ${lead.matchedProgram} in ${lead.location}`;
+    let rawBody = '';
 
     if (strategy === 'dpa_grant_boost') {
-      subject = `🌟 New DPA Grant Allocations & ${lead.matchedProgram} in ${lead.location}`;
-      body = `Hi ${lead.authorOrUser},
+      baseSubject = `🌟 New DPA Grant Allocations & ${lead.matchedProgram} in ${lead.location}`;
+      rawBody = `Hi ${lead.authorOrUser},
 
 I wanted to follow up regarding your earlier inquiry about homeownership in ${lead.location}:
 "${lead.snippet}"
@@ -539,8 +712,8 @@ Mortgage Loan Officer | 26 Years Oregon Lending Experience
 Direct Cell / Text: (541) 729-2097
 Email: fordmj@gmail.com`;
     } else if (strategy === 'geomap_inventory') {
-      subject = `🏡 Curated Homes in ${lead.location} Prequalified for ${lead.matchedProgram}`;
-      body = `Hi ${lead.authorOrUser},
+      baseSubject = `🏡 Curated Homes in ${lead.location} Prequalified for ${lead.matchedProgram}`;
+      rawBody = `Hi ${lead.authorOrUser},
 
 Following up on your search for homes in ${lead.location}!
 
@@ -558,8 +731,8 @@ Mortgage Loan Officer | 26 Years Oregon Lending Experience
 Direct Cell / Text: (541) 729-2097
 Email: fordmj@gmail.com`;
     } else if (strategy === 'rate_update') {
-      subject = `📉 Market & Rate Update: Stopping Rent in ${lead.location}`;
-      body = `Hi ${lead.authorOrUser},
+      baseSubject = `📉 Market & Rate Update: Stopping Rent in ${lead.location}`;
+      rawBody = `Hi ${lead.authorOrUser},
 
 Checking back in on your goal to stop renting in ${lead.location}!
 
@@ -576,8 +749,8 @@ Mortgage Loan Officer | 26 Years Oregon Lending Experience
 Direct Cell / Text: (541) 729-2097
 Email: fordmj@gmail.com`;
     } else {
-      subject = `📊 10-Minute Custom Payment Comparison Review for ${lead.authorOrUser}`;
-      body = `Hi ${lead.authorOrUser},
+      baseSubject = `📊 10-Minute Custom Payment Comparison Review for ${lead.authorOrUser}`;
+      rawBody = `Hi ${lead.authorOrUser},
 
 As a 26-year Oregon mortgage veteran, I wanted to reach out regarding your inquiry on ${lead.title} in ${lead.location}.
 
@@ -593,7 +766,8 @@ Direct Cell / Text: (541) 729-2097
 Email: fordmj@gmail.com`;
     }
 
-    return { subject, body };
+    const formatted = formatAiBrainOutreachHeaders(threadMeta, baseSubject, rawBody);
+    return { subject: formatted.emailSubject, body: formatted.emailBodyWithHeaders };
   };
 
   const handleOpenReengagementModal = (lead: LeadItem, defaultStrategy: 'dpa_grant_boost' | 'geomap_inventory' | 'rate_update' | 'payment_review' = 'dpa_grant_boost') => {
@@ -688,6 +862,109 @@ Email: fordmj@gmail.com`;
     setThreadReplyInputs(prev => ({ ...prev, [leadId]: '' }));
   };
 
+  const handleOpenThreadWebsite = (historyItem: typeof outreachHistory[0]) => {
+    const matchedLead = leads.find(l => l.id === historyItem.leadId);
+    setActiveThreadWebsite({
+      leadId: historyItem.leadId,
+      url: historyItem.url,
+      title: historyItem.title,
+      platform: historyItem.platform,
+      author: historyItem.author,
+      location: matchedLead?.location || 'Oregon',
+      matchedProgram: matchedLead?.matchedProgram || 'USDA Rural Development 0% Down',
+      messages: historyItem.messages.map(m => ({
+        ...m,
+        badge: m.sender === 'lo' ? 'Verified Oregon Mortgage LO • 26 Yrs Exp' : undefined
+      })),
+      articleSnippet: matchedLead?.snippet
+    });
+    setIsThreadWebsiteOpen(true);
+  };
+
+  const handleOpenLeadWebsite = (lead: LeadItem) => {
+    const existingHistory = outreachHistory.find(h => h.leadId === lead.id);
+    const messages = existingHistory?.messages?.map(m => ({
+      ...m,
+      badge: m.sender === 'lo' ? 'Verified Oregon Mortgage LO • 26 Yrs Exp' : undefined
+    })) || [
+      {
+        sender: 'renter' as const,
+        authorName: lead.authorOrUser,
+        text: lead.snippet,
+        timestamp: lead.discoveredAt || 'Recent Inquiry',
+        likes: 3,
+        badge: `Prospective Buyer • ${lead.location}`
+      }
+    ];
+
+    setActiveThreadWebsite({
+      leadId: lead.id,
+      url: lead.url,
+      title: lead.title,
+      platform: lead.platform,
+      author: lead.authorOrUser,
+      location: lead.location,
+      matchedProgram: lead.matchedProgram,
+      messages,
+      articleSnippet: lead.snippet
+    });
+    setIsThreadWebsiteOpen(true);
+  };
+
+  const handlePostThreadComment = (leadId: string, authorName: string, text: string) => {
+    setOutreachHistory(prev => {
+      const exists = prev.some(item => item.leadId === leadId);
+      if (exists) {
+        return prev.map(item => {
+          if (item.leadId === leadId) {
+            return {
+              ...item,
+              messages: [
+                ...item.messages,
+                {
+                  sender: 'lo',
+                  authorName,
+                  text,
+                  timestamp: 'Just now'
+                }
+              ]
+            };
+          }
+          return item;
+        });
+      } else {
+        const lead = leads.find(l => l.id === leadId);
+        return [
+          ...prev,
+          {
+            leadId,
+            title: lead?.title || 'Oregon Housing Inquiry',
+            platform: lead?.platform || 'Housing Blog / Forum',
+            author: lead?.authorOrUser || 'Homebuyer',
+            url: lead?.url || 'https://pnwrealestateblog.org/oregon-usda-zones',
+            messages: [
+              {
+                sender: 'renter',
+                authorName: lead?.authorOrUser || 'Homebuyer',
+                text: lead?.snippet || '',
+                timestamp: 'Original Inquiry'
+              },
+              {
+                sender: 'lo',
+                authorName,
+                text,
+                timestamp: 'Just now'
+              }
+            ]
+          }
+        ];
+      }
+    });
+
+    // Mark lead as active two-way in CRM
+    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: 'active_two_way' } : l));
+  };
+
   const [cellSmsNotification, setCellSmsNotification] = useState<{ leadId: string; author: string; text: string; time: string } | null>(null);
   const [cellSmsReplyModalOpen, setCellSmsReplyModalOpen] = useState(false);
   const [cellSmsReplyText, setCellSmsReplyText] = useState('');
@@ -698,15 +975,22 @@ Email: fordmj@gmail.com`;
   const [connectionPingLog, setConnectionPingLog] = useState<string>('');
 
   const handleSimulateIncomingSmsReply = (leadId: string) => {
+    const lead = leads.find(l => l.id === leadId);
     setOutreachHistory(prev => prev.map(item => {
       if (item.leadId === leadId) {
         const incomingText = `Hi Mike! Just received your text and checked out the GeoMap local listings link for ${item.author}. We're ready to review loan options and schedule our pre-approval call today!`;
-        setCellSmsNotification({
+        
+        // Dispatch priority response push notification to mobile device
+        handleDispatchPriorityActiveTwoWayAlert({
           leadId: item.leadId,
           author: item.author,
-          text: incomingText,
-          time: 'Just now'
+          location: lead?.location || 'Oregon',
+          matchedProgram: lead?.matchedProgram || 'Housing Assistance',
+          replyText: incomingText,
+          platform: item.platform,
+          messageThreadId: lead?.messageThreadId
         });
+
         return {
           ...item,
           messages: [
@@ -715,7 +999,7 @@ Email: fordmj@gmail.com`;
               sender: 'renter',
               authorName: item.author,
               text: incomingText,
-              timestamp: 'Just now'
+              timestamp: 'Just now (Priority Inbound Reply)'
             }
           ]
         };
@@ -758,28 +1042,35 @@ Email: fordmj@gmail.com`;
   };
 
   const handleOpenGmailDraft = async (lead: LeadItem, customText?: string) => {
-    const defaultBody = customText || `Hi ${lead.authorOrUser},
+    const threadMeta = getOrRegisterMessageThread(
+      lead.id,
+      lead.authorOrUser,
+      lead.platform,
+      lead.targetCommentId
+    );
+    const rawBody = customText || PeerLoanOfficersService.generateConversionBridgeTemplate({
+      author: lead.authorOrUser,
+      location: lead.location,
+      matchedProgram: lead.matchedProgram,
+      sweepState: selectedSweepState,
+      title: lead.title,
+      snippet: lead.snippet,
+      overridePeer: selectedPeerOverrideForLead || undefined,
+      channel: 'gmail'
+    });
 
-I saw your recent question regarding "${lead.title}" in ${lead.location}.
-
-"${lead.snippet}"
-
-As a 26-year mortgage loan officer here in Oregon, I specialize in ${lead.matchedProgram}. 
-
-With current Oregon housing programs (including OHCS Flex Lending, local County DPA, and zero-down options), you can often stop renting without needing 20% down. We can run a quick, no-pressure 10-minute numbers review to look at your exact monthly payment targets and program qualifications.
-
-Feel free to reply directly to this email or call/text my direct cell at (541) 729-2097. When you reply, our conversation will stay synchronized with your loan discovery file.
-
-Best regards,
-
-Mike Ford
-Mortgage Loan Officer | 26 Years Oregon Lending Experience
-Direct Cell / Text: (541) 729-2097
-Email: fordmj@gmail.com`;
-
-    const subject = `Re: Mortgage & Homeownership Guidance for ${lead.authorOrUser} - ${lead.title}`;
+    const baseSubject = `Re: Mortgage & Homeownership Guidance for ${lead.authorOrUser} - ${lead.title}`;
     const recipient = lead.authorOrUser.includes('@') ? lead.authorOrUser : '';
-    const composeUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(recipient)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(defaultBody)}`;
+    const formatted = formatAiBrainOutreachHeaders(
+      threadMeta,
+      baseSubject,
+      rawBody,
+      recipient || 'fordmj@gmail.com'
+    );
+
+    const subject = formatted.emailSubject;
+    const defaultBody = formatted.emailBodyWithHeaders;
+    const composeUrl = formatted.webComposeUrl;
 
     // Open pre-filled Gmail web draft in new window
     window.open(composeUrl, '_blank', 'noopener,noreferrer');
@@ -794,8 +1085,9 @@ Email: fordmj@gmail.com`;
           badge: '/assets/icon-192.png',
           data: {
             gmailDraftUrl: composeUrl,
-            smsUrl: `sms:+15417292097?body=${encodeURIComponent(`Hi ${lead.authorOrUser}! Following up on ${lead.matchedProgram} in ${lead.location}. Let's connect!`)}`,
-            leadId: lead.id
+            smsUrl: formatted.iphoneSmsUrl,
+            leadId: lead.id,
+            messageThreadId: threadMeta.messageThreadId
           }
         };
 
@@ -817,7 +1109,7 @@ Email: fordmj@gmail.com`;
     setCellSmsNotification({
       leadId: lead.id,
       author: lead.authorOrUser,
-      text: `[AI Automated Gmail Draft]: "Re: ${lead.title} in ${lead.location} (${lead.matchedProgram})" — 1-Click to Review/Send in Gmail!`,
+      text: `[AI Automated Gmail Draft (Thread #${threadMeta.messageThreadId})]: "Re: ${lead.title} in ${lead.location}" — 1-Click to Review/Send in Gmail!`,
       time: 'Just now'
     });
 
@@ -835,7 +1127,7 @@ Email: fordmj@gmail.com`;
             {
               sender: 'lo',
               authorName: 'Mike Ford (LO / Gmail Draft)',
-              text: `[Gmail Draft Fashioned]: "${defaultBody.slice(0, 140)}..."`,
+              text: `[Gmail Draft Fashioned • Thread #${threadMeta.messageThreadId}]: "${rawBody.slice(0, 140)}..."`,
               timestamp: 'Just now'
             }
           ]
@@ -857,7 +1149,7 @@ Email: fordmj@gmail.com`;
               {
                 sender: 'lo',
                 authorName: 'Mike Ford (LO / Gmail Draft)',
-                text: `[Gmail Draft Fashioned]: "${defaultBody.slice(0, 140)}..."`,
+                text: `[Gmail Draft Fashioned • Thread #${threadMeta.messageThreadId}]: "${rawBody.slice(0, 140)}..."`,
                 timestamp: 'Just now'
               }
             ],
@@ -876,6 +1168,8 @@ Email: fordmj@gmail.com`;
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           leadId: lead.id,
+          messageThreadId: threadMeta.messageThreadId,
+          targetCommentId: threadMeta.targetCommentId,
           author: lead.authorOrUser,
           title: lead.title,
           matchedProgram: lead.matchedProgram,
@@ -890,17 +1184,28 @@ Email: fordmj@gmail.com`;
 
   // Dual Outreach Dispatcher (Simultaneous SMS + Gmail Draft)
   const handleExecuteDualOutreach = (lead: LeadItem, customText?: string) => {
-    // 1. Open Pre-filled Gmail Draft
+    const threadMeta = getOrRegisterMessageThread(
+      lead.id,
+      lead.authorOrUser,
+      lead.platform,
+      lead.targetCommentId
+    );
+
+    // 1. Open Pre-filled Gmail Draft with explicit header metadata
     handleOpenGmailDraft(lead, customText);
 
-    // 2. Open Native iPhone Apple Messages
-    const defaultSms = customText || `Hi ${lead.authorOrUser}! As a 26-year mortgage loan officer here in Oregon, I saw your inquiry about ${lead.matchedProgram} in ${lead.location}. Let's run a quick 10-minute numbers review!`;
-    const smsUrl = `sms:+15417292097?body=${encodeURIComponent(defaultSms)}`;
-    window.open(smsUrl, '_blank');
+    // 2. Open Native iPhone Apple Messages anchored to user comment
+    const rawSms = customText || `Hi ${lead.authorOrUser}! As a 26-year mortgage loan officer here in Oregon, I saw your inquiry about ${lead.matchedProgram} in ${lead.location}. Let's run a quick 10-minute numbers review!`;
+    const formatted = formatAiBrainOutreachHeaders(
+      threadMeta,
+      `Re: ${lead.title}`,
+      rawSms
+    );
+    window.open(formatted.iphoneSmsUrl, '_blank');
 
     // 3. Mark CRM state to active_two_way
     handleUpdateLeadCrmStatus(lead.id, 'active_two_way');
-    setReplySuccessMsg(`✓ Dual Outreach Executed: Pre-filled Gmail Draft opened + iPhone SMS link triggered!`);
+    setReplySuccessMsg(`✓ Dual Outreach Executed: Pre-filled Gmail Draft opened with MessageThreadID #${threadMeta.messageThreadId} + iPhone SMS link triggered!`);
     setTimeout(() => setReplySuccessMsg(''), 5000);
   };
 
@@ -911,9 +1216,27 @@ Email: fordmj@gmail.com`;
     } else if (twoWayOutreachMode === 'gmail_only') {
       handleOpenGmailDraft(lead, customText);
     } else {
-      const defaultSms = customText || `Hi ${lead.authorOrUser}! As a 26-year Oregon LO, I saw your post on ${lead.matchedProgram} in ${lead.location}. Text me back here to connect!`;
-      const smsUrl = `sms:+15417292097?body=${encodeURIComponent(defaultSms)}`;
-      window.open(smsUrl, '_blank');
+      const threadMeta = getOrRegisterMessageThread(
+        lead.id,
+        lead.authorOrUser,
+        lead.platform,
+        lead.targetCommentId
+      );
+      const rawSms = customText || PeerLoanOfficersService.generateConversionBridgeTemplate({
+        author: lead.authorOrUser,
+        location: lead.location,
+        matchedProgram: lead.matchedProgram,
+        sweepState: selectedSweepState,
+        title: lead.title,
+        overridePeer: selectedPeerOverrideForLead || undefined,
+        channel: 'sms'
+      });
+      const formatted = formatAiBrainOutreachHeaders(
+        threadMeta,
+        `Re: ${lead.title}`,
+        rawSms
+      );
+      window.open(formatted.iphoneSmsUrl, '_blank');
       handleUpdateLeadCrmStatus(lead.id, 'active_two_way');
     }
   };
@@ -1037,6 +1360,17 @@ Email: fordmj@gmail.com`;
         setTestOutboundReAlertSms(data.outboundReAlertSms);
         setTestStage('ai_lead_followup');
         setTestStatusFeedback('✓ Step 3 Complete: AI Continuous Listener detected new lead comment and auto-fired next text alert to Mike\'s iPhone!');
+
+        // Dispatch intelligent priority push notification to mobile device
+        handleDispatchPriorityActiveTwoWayAlert({
+          leadId: testLeadId,
+          author: 'u/BendOutdoorBuyer',
+          location: 'Bend, OR (Deschutes County)',
+          matchedProgram: 'OHCS Flex Lending & Employer Grant',
+          replyText: testLeadFollowupInput,
+          platform: 'Bend Outdoor Recreation & Housing Guild',
+          messageThreadId: 'th_bend_outdoor_88'
+        });
       }
     } catch (err: any) {
       setTestStatusFeedback(`❌ Step 3 Error: ${err.message}`);
@@ -1070,15 +1404,18 @@ Email: fordmj@gmail.com`;
           `Got the GeoMap property listings link! The starter home in our market looks perfect. Let's talk.`
         ];
         const randomReplyText = possibleReplies[Math.floor(Math.random() * possibleReplies.length)];
+        const targetLead = leads.find(l => l.id === targetThread.leadId);
 
-        setCellSmsNotification({
+        // Dispatch intelligent priority push alert isolated from standard Gmail draft notifications
+        handleDispatchPriorityActiveTwoWayAlert({
           leadId: targetThread.leadId,
           author: targetThread.author,
-          text: randomReplyText,
-          time: 'Just now'
+          location: targetLead?.location || 'Oregon',
+          matchedProgram: targetLead?.matchedProgram || 'Housing Assistance',
+          replyText: randomReplyText,
+          platform: targetThread.platform,
+          messageThreadId: targetLead?.messageThreadId
         });
-
-        setTimeout(() => setCellSmsNotification(null), 8000);
 
         return prev.map((item, idx) => {
           if (idx === targetIndex) {
@@ -1434,6 +1771,13 @@ Email: fordmj@gmail.com`;
             },
             ...prev
           ]);
+
+          // Autonomous Auto-Archive Rule Sweep Check
+          if (autoArchiveConfig.enabled && autoArchiveConfig.autoRunOnSweep) {
+            setTimeout(() => {
+              handleExecuteAutoArchiveSweep();
+            }, 1000);
+          }
         }
       }
     } catch (err) {
@@ -1453,7 +1797,27 @@ Email: fordmj@gmail.com`;
 
   const handleSendDraftReply = () => {
     if (!selectedLeadForReply) return;
-    const finalReplyText = customDraftReply || `Hi ${selectedLeadForReply.authorOrUser}! As a 26-year mortgage loan officer here in Oregon, I help first-time buyers navigate ${selectedLeadForReply.matchedProgram} every day. You don't necessarily need a massive down payment to stop renting in ${selectedLeadForReply.location}. With OHCS Flex Lending and local DPA grants, we frequently bridge closing costs and down payments for borrowers in your exact income bracket. Let's connect if you'd like a quick no-pressure breakdown of what it takes to own your own home!`;
+    const threadMeta = getOrRegisterMessageThread(
+      selectedLeadForReply.id,
+      selectedLeadForReply.authorOrUser,
+      selectedLeadForReply.platform,
+      selectedLeadForReply.targetCommentId
+    );
+    const rawReply = customDraftReply || PeerLoanOfficersService.generateConversionBridgeTemplate({
+      author: selectedLeadForReply.authorOrUser,
+      location: selectedLeadForReply.location,
+      matchedProgram: selectedLeadForReply.matchedProgram,
+      sweepState: selectedSweepState,
+      title: selectedLeadForReply.title,
+      snippet: selectedLeadForReply.snippet,
+      tone: 'standard'
+    });
+    const formatted = formatAiBrainOutreachHeaders(
+      threadMeta,
+      `Re: ${selectedLeadForReply.title}`,
+      rawReply
+    );
+    const finalReplyText = formatted.emailBodyWithHeaders;
     
     setOutreachHistory(prev => [
       {
@@ -1474,7 +1838,7 @@ Email: fordmj@gmail.com`;
       ...prev
     ]);
 
-    setReplySuccessMsg(`✓ Reply delivered to initial post, dispatched to cell iPhone via SMS/push, & linked with GeoMap plugin property card for "${selectedLeadForReply.authorOrUser}"!`);
+    setReplySuccessMsg(`✓ Direct reply anchored to comment #${threadMeta.targetCommentId} (Thread #${threadMeta.messageThreadId}), dispatched to cell iPhone via SMS/push, & linked with GeoMap plugin for "${selectedLeadForReply.authorOrUser}"!`);
     setTimeout(() => {
       handleStatusChange(selectedLeadForReply.id, 'contacted');
       setSelectedLeadForReply(null);
@@ -1518,23 +1882,40 @@ Email: fordmj@gmail.com`;
     const link = `${baseUrl}/?real_estate=true&lead=${encodeURIComponent(selectedLeadForReply.authorOrUser)}&market=${encodeURIComponent(selectedLeadForReply.location)}&property=${encodeURIComponent(matchedPropertyListing)}&program=${encodeURIComponent(selectedLeadForReply.matchedProgram)}&source=multichannel_exposure`;
     setGeneratedCarouselLink(link);
 
-    const brandingSignature = `\n\n---\n🏠 **Mike Ford** | 26-Year Oregon Mortgage Veteran (NMLS #102938)\n📊 **Vantage AI 2nd Brain GeoMap Carousel Match**: Closest Prequalified Property Listing for **${matchedCity}** -> *${matchedPropertyListing}* (${selectedLeadForReply.matchedProgram}).\n🔗 **Explore Live Interactive Carousel & Zero-Down Listings**: ${link}\n📱 *(Dispatched instantly to Loan Officer cell iPhone & synced across chat/blog/vlog/FB/YouTube/TikTok/X channels for maximum eyeball exposure)*`;
+    const brandingSignature = PeerLoanOfficersService.generateGeoMapBrandingSignature({
+      location: selectedLeadForReply.location,
+      sweepState: selectedSweepState,
+      matchedCity,
+      matchedPropertyListing,
+      carouselLink: link,
+      matchedProgram: selectedLeadForReply.matchedProgram,
+      overridePeer: selectedPeerOverrideForLead || undefined
+    });
     
-    setCustomDraftReply(prev => (prev || `Hi ${selectedLeadForReply.authorOrUser}! As a 26-year mortgage loan officer here in Oregon, I help first-time buyers navigate ${selectedLeadForReply.matchedProgram} every day. Based on your location in ${selectedLeadForReply.location}, our Vantage AI 2nd Brain matched you with our closest prequalified property listing for ${matchedCity}. You don't necessarily need a massive down payment to stop renting here.`) + brandingSignature);
+    setCustomDraftReply(prev => (prev || PeerLoanOfficersService.generateConversionBridgeTemplate({
+      author: selectedLeadForReply.authorOrUser,
+      location: selectedLeadForReply.location,
+      matchedProgram: selectedLeadForReply.matchedProgram,
+      sweepState: selectedSweepState,
+      title: selectedLeadForReply.title,
+      snippet: selectedLeadForReply.snippet,
+      overridePeer: selectedPeerOverrideForLead || undefined,
+      tone: 'standard'
+    })) + brandingSignature);
   };
 
-  const handleSelectAiToneVariant = (tone: 'warm' | 'direct' | 'specialist' | 'reengagement') => {
+  const handleSelectAiToneVariant = (tone: 'warm' | 'direct' | 'specialist' | 'reengagement' | 'preapproval_app' | 'out_of_state_referral') => {
     if (!selectedLeadForReply) return;
-    let draft = '';
-    if (tone === 'warm') {
-      draft = `Hi ${selectedLeadForReply.authorOrUser}! I totally understand your situation in ${selectedLeadForReply.location}. As a 26-year Oregon mortgage veteran, I see renters making the leap into homeownership every week without draining savings. With programs like ${selectedLeadForReply.matchedProgram}, you have fantastic options. Let's chat whenever you have a quick 5 minutes—no pressure at all!`;
-    } else if (tone === 'direct') {
-      draft = `Hi ${selectedLeadForReply.authorOrUser}, regarding your post about ${selectedLeadForReply.title}: Your target market in ${selectedLeadForReply.location} qualifies for ${selectedLeadForReply.matchedProgram}. Down payment assistance and zero-down options can cover up to 100% of closing hurdles here in Oregon. Let's review your numbers today!`;
-    } else if (tone === 'reengagement') {
-      draft = `Hi ${selectedLeadForReply.authorOrUser}! Did you get your questions answered and check out the curated local property listings already prequalified for low or no down payment loan programs for ${selectedLeadForReply.location}? Let me know if you'd like to review updated rates or schedule a quick walkthrough!`;
-    } else {
-      draft = `Hello ${selectedLeadForReply.authorOrUser}! Specializing in ${selectedLeadForReply.matchedProgram} across ${selectedLeadForReply.location}, I wanted to drop a quick note. Renting right now in Oregon means missing out on appreciation, whereas OHCS DPA and zero-down programs make monthly payments comparable to rent. Let's connect on your custom loan scenario!`;
-    }
+    const draft = PeerLoanOfficersService.generateConversionBridgeTemplate({
+      author: selectedLeadForReply.authorOrUser,
+      location: selectedLeadForReply.location,
+      matchedProgram: selectedLeadForReply.matchedProgram,
+      sweepState: selectedSweepState,
+      title: selectedLeadForReply.title,
+      snippet: selectedLeadForReply.snippet,
+      overridePeer: selectedPeerOverrideForLead || undefined,
+      tone
+    });
     setCustomDraftReply(draft);
   };
 
@@ -1698,6 +2079,45 @@ Email: fordmj@gmail.com`;
             >
               <MessageSquare className="w-4 h-4" />
               <span>Outreach Tracker ({outreachHistory.length})</span>
+            </button>
+            <button
+              onClick={() => setShowAutoArchiveModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-extrabold text-xs shadow-lg transition cursor-pointer border border-amber-500/40 relative"
+              title={`Configure Auto-Archive Rule: threshold set to ${autoArchiveConfig.maxDormantDays} dormant days (${autoArchiveConfig.enabled ? 'Active' : 'Paused'})`}
+            >
+              <Archive className="w-4 h-4 text-amber-400" />
+              <span>⚙️ Auto-Archive ({autoArchiveConfig.maxDormantDays}d)</span>
+              <span className={`w-2 h-2 rounded-full ${autoArchiveConfig.enabled ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
+            </button>
+            <button
+              onClick={() => setShowActiveTwoWayNotifModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-extrabold text-xs shadow-lg transition cursor-pointer border border-amber-500/40 relative"
+              title={`Configure Intelligent Priority Push Notifications for Active Two-Way Lead Responses (${activeTwoWayNotifConfig.enabled ? 'Active' : 'Muted'})`}
+            >
+              <Bell className="w-4 h-4 text-amber-400 animate-bounce" />
+              <span>🔔 Priority 2-Way Alerts</span>
+              <span className={`w-2 h-2 rounded-full ${activeTwoWayNotifConfig.enabled ? 'bg-amber-400 animate-pulse' : 'bg-slate-500'}`} />
+            </button>
+            <button
+              onClick={() => {
+                const st = selectedSweepState === 'OR' ? 'WA' : selectedSweepState;
+                setTargetPartnerState(st);
+                setShowStatePartnerModal(true);
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-purple-300 font-extrabold text-xs shadow-lg transition cursor-pointer border border-purple-500/40 relative"
+              title="Configure Licensed Peer Loan Officers for all 50 states (Colleague Name, NMLS, & Personal App Link)"
+            >
+              <Users className="w-4 h-4 text-purple-400" />
+              <span>🤝 State Partners Directory</span>
+            </button>
+            <button
+              onClick={handleSyncPeerCardsFromHomebuyers}
+              disabled={isSyncingPeerCards}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-950/70 hover:bg-purple-900 text-purple-200 font-extrabold text-xs shadow-lg transition cursor-pointer border border-purple-500/60 disabled:opacity-50"
+              title="Sync & import all Peer LO profile cards saved inside the First-time Homebuyer Google login backend dashboard"
+            >
+              <RefreshCw className={`w-4 h-4 text-purple-400 ${isSyncingPeerCards ? 'animate-spin' : ''}`} />
+              <span>{isSyncingPeerCards ? 'Syncing Cards...' : '🔄 Sync Peer LO Cards'}</span>
             </button>
             <button
               onClick={() => {
@@ -2189,6 +2609,15 @@ Email: fordmj@gmail.com`;
               <span>📦 Archived Discovery ({archivedCount})</span>
             </button>
             <button
+              type="button"
+              onClick={() => setShowAutoArchiveModal(true)}
+              className="px-3 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-amber-300 border border-amber-500/40 shadow-sm"
+              title={`Auto-Archive Rule: Leads dormant >= ${autoArchiveConfig.maxDormantDays} days automatically moved to Stored Archives`}
+            >
+              <Archive className="w-3.5 h-3.5 text-amber-400" />
+              <span>Auto-Archive: &ge;{autoArchiveConfig.maxDormantDays}d ({autoArchiveConfig.enabled ? 'Active' : 'Off'})</span>
+            </button>
+            <button
               onClick={() => setActiveFilter('forum')}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
                 activeFilter === 'forum'
@@ -2316,6 +2745,16 @@ Email: fordmj@gmail.com`;
             {archiveFeedbackMsg}
           </span>
           <button onClick={() => setArchiveFeedbackMsg('')} className="text-slate-400 hover:text-white text-xs cursor-pointer">✕</button>
+        </div>
+      )}
+
+      {syncLoSuccessMsg && (
+        <div className="p-3.5 rounded-xl bg-purple-950/90 border border-purple-500/60 text-purple-200 text-xs font-bold flex items-center justify-between shadow-lg animate-in fade-in">
+          <span className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            {syncLoSuccessMsg}
+          </span>
+          <button onClick={() => setSyncLoSuccessMsg(null)} className="text-purple-300 hover:text-white text-xs cursor-pointer">✕</button>
         </div>
       )}
 
@@ -2551,6 +2990,53 @@ Email: fordmj@gmail.com`;
                 );
               })()}
 
+              {/* Stored Archives or Dormancy Threshold Status Indicator */}
+              {getLeadCrmStatus(lead) === 'archived_discovery' ? (
+                <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-700/80 text-xs">
+                  <div className="flex items-center gap-1.5 text-slate-300">
+                    <Archive className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span className="font-bold text-white">Stored Archives:</span>
+                    <span className="text-[11px] text-slate-400">
+                      {lead.archivedReason || `Archived to Firestore collection (Threshold: >= ${autoArchiveConfig.maxDormantDays}d)`}
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/30">
+                    Firestore: /stored_archives
+                  </span>
+                </div>
+              ) : (() => {
+                const days = calculateLeadDormantDays(lead);
+                if (days >= 3) {
+                  const qualifies = days >= autoArchiveConfig.maxDormantDays;
+                  return (
+                    <div className={`flex flex-wrap items-center justify-between gap-1.5 px-3 py-1.5 rounded-xl text-xs ${
+                      qualifies
+                        ? 'bg-rose-950/40 border border-rose-500/40 text-rose-300'
+                        : 'bg-amber-950/30 border border-amber-500/30 text-amber-300'
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <Clock className={`w-3.5 h-3.5 ${qualifies ? 'text-rose-400' : 'text-amber-400'}`} />
+                        <span>Dormancy: <strong>{days} Days Inactive</strong></span>
+                        {qualifies && (
+                          <span className="px-1.5 py-0.2 rounded bg-rose-500 text-slate-950 text-[10px] font-black uppercase tracking-wider">
+                            Meets Auto-Archive (&ge; {autoArchiveConfig.maxDormantDays}d)
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowAutoArchiveModal(true)}
+                        className="text-[10px] text-slate-400 hover:text-white underline cursor-pointer font-sans"
+                        title="Configure Auto-Archive Rule threshold"
+                      >
+                        Auto-Archive Threshold ({autoArchiveConfig.maxDormantDays}d) ➔
+                      </button>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
               {autoStaleAlertsEnabled && lead.isStaleReactivated && (
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/40 text-amber-300 font-bold text-xs">
                   <Clock className="w-3.5 h-3.5 animate-pulse text-amber-400 shrink-0" />
@@ -2704,15 +3190,14 @@ Email: fordmj@gmail.com`;
                     <span>Archive</span>
                   </button>
                 )}
-                <a
-                  href={lead.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition"
-                  title="Open Source Link"
+                <button
+                  type="button"
+                  onClick={() => handleOpenLeadWebsite(lead)}
+                  className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition cursor-pointer"
+                  title="Open Source Website & Comments Thread"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
-                </a>
+                </button>
               </div>
             </div>
           </div>
@@ -2846,6 +3331,162 @@ Email: fordmj@gmail.com`;
                 <p className="italic">&ldquo;{selectedLeadForReply.snippet}&rdquo;</p>
               </div>
 
+              {/* MessageThreadID & Direct Comment Anchor Badges */}
+              {(() => {
+                const threadMeta = getOrRegisterMessageThread(
+                  selectedLeadForReply.id,
+                  selectedLeadForReply.authorOrUser,
+                  selectedLeadForReply.platform,
+                  selectedLeadForReply.targetCommentId
+                );
+                return (
+                  <div className="p-2.5 rounded-xl bg-indigo-950/70 border border-indigo-500/40 text-[11px] font-mono text-indigo-300 flex flex-wrap items-center justify-between gap-2 shadow-inner">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="font-bold text-white font-sans text-xs">AI 2nd Brain Routing Anchor:</span>
+                      <span className="px-2 py-0.5 rounded bg-indigo-900/90 text-indigo-200 border border-indigo-400/40 font-bold">
+                        MessageThreadID: #{threadMeta.messageThreadId}
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-emerald-950/90 text-emerald-300 border border-emerald-500/40 font-bold flex items-center gap-1">
+                        <Check className="w-3 h-3 text-emerald-400" />
+                        <span>Target-Comment-ID: #{threadMeta.targetCommentId}</span>
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-sans">
+                      Direct User Comment • General Thread Bypassed
+                    </span>
+                  </div>
+                );
+              })()}
+
+              {/* Out-of-State Licensed Partner Assignment Indicator */}
+              {(() => {
+                const locLower = selectedLeadForReply.location.toLowerCase();
+                const isOregon = locLower.includes('or') || locLower.includes('oregon') || locLower.includes('portland') || locLower.includes('eugene') || locLower.includes('bend') || locLower.includes('salem') || locLower.includes('medford');
+                if (isOregon) return null;
+                const stateCode = PeerLoanOfficersService.extractStateCode(selectedLeadForReply.location, selectedSweepState);
+                const defaultPeer = PeerLoanOfficersService.getPeerForState(stateCode);
+                const activePeer = selectedPeerOverrideForLead || defaultPeer;
+                const isCurrentDefault = PeerLoanOfficersService.isDefaultPeerForState(activePeer.id, stateCode);
+                const peersData = PeerLoanOfficersService.getPeersForState(stateCode);
+
+                return (
+                  <div className="p-3.5 rounded-2xl bg-purple-950/40 border border-purple-500/40 text-xs text-purple-200 space-y-2.5 shadow-inner">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-purple-400 shrink-0" />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-white">Target {stateCode} Licensed Peer:</span>{' '}
+                            <strong className="text-purple-300">{activePeer.name}</strong>{' '}
+                            <span className="font-mono text-purple-400 text-[11px]">(NMLS #{activePeer.nmlsNumber})</span>
+                            {isCurrentDefault && (
+                              <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 text-[10px] font-mono border border-amber-500/40 font-bold">
+                                ⭐ State Default
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-slate-400 truncate max-w-sm mt-0.5">
+                            App Portal: <span className="font-mono text-amber-300">{activePeer.applicationUrl}</span> • {activePeer.branchLocation}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleSyncPeerCardsFromHomebuyers}
+                          disabled={isSyncingPeerCards}
+                          className="text-[10px] font-bold text-purple-300 hover:text-white bg-purple-950 px-2 py-1 rounded-lg border border-purple-500/40 hover:bg-purple-900 transition cursor-pointer flex items-center gap-1"
+                          title="Sync Peer LO cards from First-Time Homebuyers Google sign-in dashboard"
+                        >
+                          <RefreshCw className={`w-3 h-3 text-purple-400 ${isSyncingPeerCards ? 'animate-spin' : ''}`} />
+                          <span>Sync LO Cards</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTargetPartnerState(stateCode);
+                            setShowStatePartnerModal(true);
+                          }}
+                          className="text-[11px] font-bold text-purple-300 hover:text-white bg-purple-900/70 px-2.5 py-1 rounded-lg border border-purple-400/40 hover:bg-purple-800 transition cursor-pointer"
+                        >
+                          Directory Manager
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Inline Colleague Switcher Dropdown & Default Checkbox */}
+                    <div className="pt-2 border-t border-purple-900/50 flex flex-col sm:flex-row sm:items-center gap-2">
+                      <span className="text-[11px] font-bold text-slate-300 shrink-0 flex items-center gap-1">
+                        <span>👤 Select {stateCode} Colleague:</span>
+                      </span>
+                      <select
+                        value={activePeer.id}
+                        onChange={(e) => {
+                          const chosen = allSyncedPeersList.find(p => p.id === e.target.value) || activePeer;
+                          setSelectedPeerOverrideForLead(chosen);
+                          // Refresh draft immediately with chosen colleague
+                          const newDraft = PeerLoanOfficersService.generateConversionBridgeTemplate({
+                            author: selectedLeadForReply.authorOrUser,
+                            location: selectedLeadForReply.location,
+                            matchedProgram: selectedLeadForReply.matchedProgram,
+                            sweepState: selectedSweepState,
+                            title: selectedLeadForReply.title,
+                            snippet: selectedLeadForReply.snippet,
+                            overridePeer: chosen
+                          });
+                          setCustomDraftReply(newDraft);
+                        }}
+                        className="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-900 border border-purple-500/50 text-xs text-purple-200 font-semibold focus:outline-none focus:border-purple-400 cursor-pointer"
+                      >
+                        <optgroup label={`Licensed in ${stateCode}`}>
+                          {peersData.licensedPeers.map(p => {
+                            const isDef = PeerLoanOfficersService.isDefaultPeerForState(p.id, stateCode);
+                            return (
+                              <option key={p.id} value={p.id}>
+                                {isDef ? '⭐ [Default] ' : '✓ '}{p.name} • {p.title} ({p.company}) - NMLS #{p.nmlsNumber}
+                              </option>
+                            );
+                          })}
+                        </optgroup>
+                        {peersData.allPeers.filter(p => !peersData.licensedPeers.some(lp => lp.id === p.id)).length > 0 && (
+                          <optgroup label="Other Synced Nationwide Colleagues">
+                            {peersData.allPeers
+                              .filter(p => !peersData.licensedPeers.some(lp => lp.id === p.id))
+                              .map(p => (
+                                <option key={p.id} value={p.id}>
+                                  {p.name} • {p.title} ({p.company}) - NMLS #{p.nmlsNumber}
+                                </option>
+                              ))}
+                          </optgroup>
+                        )}
+                      </select>
+
+                      {/* Quick "Default for [stateCode]" Checkbox */}
+                      <label className="flex items-center gap-1.5 cursor-pointer text-[11px] font-bold text-amber-300 bg-amber-950/70 hover:bg-amber-900/80 px-2.5 py-1.5 rounded-xl border border-amber-500/40 transition shrink-0 shadow-sm" title={`Make ${activePeer.name} the automatic default for all new ${stateCode} inquiries`}>
+                        <input
+                          type="checkbox"
+                          checked={isCurrentDefault}
+                          onChange={(e) => {
+                            PeerLoanOfficersService.setDefaultPeerForState(stateCode, activePeer.id, e.target.checked);
+                            const updatedDir = PeerLoanOfficersService.getDirectory();
+                            setPeerDirectory(updatedDir);
+                            setAllSyncedPeersList(PeerLoanOfficersService.getAllPeerLoanOfficers());
+                            setSyncLoSuccessMsg(e.target.checked
+                              ? `✓ Set ${activePeer.name} as automatic DEFAULT for ${stateCode}!`
+                              : `✓ Removed ${activePeer.name} as default for ${stateCode}.`);
+                            setTimeout(() => setSyncLoSuccessMsg(null), 3500);
+                          }}
+                          className="w-3.5 h-3.5 rounded border-amber-500 text-amber-500 focus:ring-amber-500 cursor-pointer"
+                        />
+                        <span>Default for {stateCode}</span>
+                      </label>
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
@@ -2892,11 +3533,35 @@ Email: fordmj@gmail.com`;
                   >
                     💬 Re-engagement (Inactive 7+ Days)
                   </button>
+                  <button
+                    onClick={() => handleSelectAiToneVariant('preapproval_app')}
+                    type="button"
+                    className="px-2.5 py-1 rounded-lg bg-emerald-600/30 border border-emerald-500/50 hover:bg-emerald-600/40 text-emerald-300 text-[10px] font-extrabold transition cursor-pointer whitespace-nowrap"
+                    title="Direct official Oregon pre-approval application (https://cfmtg.com/mford/)"
+                  >
+                    📝 Pre-Approval App (Oregon: cfmtg.com)
+                  </button>
+                  <button
+                    onClick={() => handleSelectAiToneVariant('out_of_state_referral')}
+                    type="button"
+                    className="px-2.5 py-1 rounded-lg bg-purple-600/30 border border-purple-500/50 hover:bg-purple-600/40 text-purple-300 text-[10px] font-extrabold transition cursor-pointer whitespace-nowrap"
+                    title="Compliant out-of-state referral & relocation triage response"
+                  >
+                    🤝 Out-of-State Referral (Non-OR)
+                  </button>
                 </div>
 
                 <textarea
                   rows={5}
-                  value={customDraftReply || `Hi ${selectedLeadForReply.authorOrUser}! As a 26-year mortgage loan officer here in Oregon, I help first-time buyers navigate ${selectedLeadForReply.matchedProgram} every day. You don't necessarily need a massive down payment to stop renting in ${selectedLeadForReply.location}. With OHCS Flex Lending and local DPA grants, we frequently bridge closing costs and down payments for borrowers in your exact income bracket. Let's connect if you'd like a quick no-pressure breakdown of what it takes to own your own home!`}
+                  value={customDraftReply || PeerLoanOfficersService.generateConversionBridgeTemplate({
+                    author: selectedLeadForReply.authorOrUser,
+                    location: selectedLeadForReply.location,
+                    matchedProgram: selectedLeadForReply.matchedProgram,
+                    sweepState: selectedSweepState,
+                    title: selectedLeadForReply.title,
+                    snippet: selectedLeadForReply.snippet,
+                    tone: 'standard'
+                  })}
                   onChange={(e) => setCustomDraftReply(e.target.value)}
                   className="w-full p-3 rounded-xl bg-slate-950 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 leading-relaxed"
                 />
@@ -2956,19 +3621,42 @@ Email: fordmj@gmail.com`;
                 </button>
 
                 {/* 2. Apple Messages SMS */}
-                <a
-                  href={`sms:+15417292097?body=${encodeURIComponent(customDraftReply || `Hi ${selectedLeadForReply.authorOrUser}! As a 26-year Oregon LO, I saw your post regarding ${selectedLeadForReply.matchedProgram} in ${selectedLeadForReply.location}. Let's connect!`)}`}
-                  onClick={() => {
-                    if (selectedLeadForReply) {
-                      handleUpdateLeadCrmStatus(selectedLeadForReply.id, 'active_two_way');
-                    }
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-950/60 hover:bg-indigo-900/80 text-indigo-300 font-extrabold text-xs transition cursor-pointer border border-indigo-500/40"
-                  title="Open native iPhone Messages app"
-                >
-                  <Smartphone className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>📱 Apple Messages SMS</span>
-                </a>
+                {(() => {
+                  const threadMeta = getOrRegisterMessageThread(
+                    selectedLeadForReply.id,
+                    selectedLeadForReply.authorOrUser,
+                    selectedLeadForReply.platform,
+                    selectedLeadForReply.targetCommentId
+                  );
+                  const formatted = formatAiBrainOutreachHeaders(
+                    threadMeta,
+                    `Re: ${selectedLeadForReply.title}`,
+                    customDraftReply || PeerLoanOfficersService.generateConversionBridgeTemplate({
+                      author: selectedLeadForReply.authorOrUser,
+                      location: selectedLeadForReply.location,
+                      matchedProgram: selectedLeadForReply.matchedProgram,
+                      sweepState: selectedSweepState,
+                      title: selectedLeadForReply.title,
+                      snippet: selectedLeadForReply.snippet,
+                      channel: 'sms'
+                    })
+                  );
+                  return (
+                    <a
+                      href={formatted.iphoneSmsUrl}
+                      onClick={() => {
+                        if (selectedLeadForReply) {
+                          handleUpdateLeadCrmStatus(selectedLeadForReply.id, 'active_two_way');
+                        }
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-950/60 hover:bg-indigo-900/80 text-indigo-300 font-extrabold text-xs transition cursor-pointer border border-indigo-500/40"
+                      title={`Open native iPhone Messages app with MessageThreadID #${threadMeta.messageThreadId}`}
+                    >
+                      <Smartphone className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>📱 Apple Messages SMS</span>
+                    </a>
+                  );
+                })()}
 
                 <button
                   type="button"
@@ -3210,8 +3898,18 @@ Email: fordmj@gmail.com`;
                   type="button"
                   onClick={() => {
                     handleSendFreeGmailReengagement();
-                    const smsUrl = `sms:+15417292097?body=${encodeURIComponent(`Hi ${selectedLeadForReengagement.authorOrUser}! Following up from Oregon LO Mike Ford regarding ${selectedLeadForReengagement.matchedProgram} in ${selectedLeadForReengagement.location}. Check your email or reply here!`)}`;
-                    window.open(smsUrl, '_blank');
+                    const threadMeta = getOrRegisterMessageThread(
+                      selectedLeadForReengagement.id,
+                      selectedLeadForReengagement.authorOrUser,
+                      selectedLeadForReengagement.platform,
+                      selectedLeadForReengagement.targetCommentId
+                    );
+                    const formatted = formatAiBrainOutreachHeaders(
+                      threadMeta,
+                      reengagementSubject,
+                      `Hi ${selectedLeadForReengagement.authorOrUser}! Following up from Oregon LO Mike Ford regarding ${selectedLeadForReengagement.matchedProgram} in ${selectedLeadForReengagement.location}. Check your email or reply here!`
+                    );
+                    window.open(formatted.iphoneSmsUrl, '_blank');
                   }}
                   className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-400 hover:to-emerald-400 text-slate-950 font-black text-xs transition cursor-pointer shadow ring-1 ring-amber-400"
                   title="Simultaneous Dual Re-Engagement: Opens Gmail compose and Apple Messages SMS"
@@ -3232,15 +3930,30 @@ Email: fordmj@gmail.com`;
                 </button>
 
                 {/* 3. Apple Messages SMS Link */}
-                <a
-                  href={`sms:+15417292097?body=${encodeURIComponent(`Hi ${selectedLeadForReengagement.authorOrUser}! Following up from Oregon LO Mike Ford regarding updated ${selectedLeadForReengagement.matchedProgram} grant allocations in ${selectedLeadForReengagement.location}. Let's run a quick numbers review!`)}`}
-                  onClick={() => handleUpdateLeadCrmStatus(selectedLeadForReengagement.id, 'active_two_way')}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs transition cursor-pointer shadow"
-                  title="Launch physical Apple Messages on iPhone"
-                >
-                  <Smartphone className="w-4 h-4" />
-                  <span>📱 iPhone SMS</span>
-                </a>
+                {(() => {
+                  const threadMeta = getOrRegisterMessageThread(
+                    selectedLeadForReengagement.id,
+                    selectedLeadForReengagement.authorOrUser,
+                    selectedLeadForReengagement.platform,
+                    selectedLeadForReengagement.targetCommentId
+                  );
+                  const formatted = formatAiBrainOutreachHeaders(
+                    threadMeta,
+                    reengagementSubject,
+                    `Hi ${selectedLeadForReengagement.authorOrUser}! Following up from Oregon LO Mike Ford regarding updated ${selectedLeadForReengagement.matchedProgram} grant allocations in ${selectedLeadForReengagement.location}. Let's run a quick numbers review!`
+                  );
+                  return (
+                    <a
+                      href={formatted.iphoneSmsUrl}
+                      onClick={() => handleUpdateLeadCrmStatus(selectedLeadForReengagement.id, 'active_two_way')}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs transition cursor-pointer shadow"
+                      title={`Launch physical Apple Messages on iPhone with MessageThreadID #${threadMeta.messageThreadId}`}
+                    >
+                      <Smartphone className="w-3.5 h-3.5" />
+                      <span>📱 iPhone SMS</span>
+                    </a>
+                  );
+                })()}
 
                 {/* 4. Google Workspace Pathway: Background Draft */}
                 <button
@@ -3255,6 +3968,92 @@ Email: fordmj@gmail.com`;
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating High-Priority 'Active Two-Way' Mobile Push Notification (Completely separate from standard Gmail draft notification) */}
+      {activeTwoWayPriorityAlert && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-auto sm:right-6 z-[60] w-[94vw] sm:max-w-md rounded-2xl bg-gradient-to-b from-slate-900 via-slate-900 to-amber-950/50 border-2 border-amber-500 p-4 shadow-2xl shadow-amber-500/20 space-y-3 animate-in slide-in-from-top-4">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-2">
+              <Zap className="w-4 h-4 text-amber-400 animate-pulse" />
+              <span>⚡ PRIORITY ACTIVE 2-WAY LEAD RESPONSE</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setActiveTwoWayPriorityAlert(null)}
+              className="text-slate-400 hover:text-white text-xs font-bold cursor-pointer p-1"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="text-xs text-white space-y-1.5 bg-slate-950/80 p-3 rounded-xl border border-amber-500/30">
+            <div className="flex items-center justify-between">
+              <span className="font-black text-amber-300 text-sm">{activeTwoWayPriorityAlert.author}</span>
+              <span className="text-[10px] text-emerald-400 font-mono font-bold bg-emerald-950/80 px-2 py-0.5 rounded-full border border-emerald-500/40">
+                ● Active Two-Way Lead
+              </span>
+            </div>
+            {activeTwoWayPriorityAlert.location && (
+              <div className="text-[11px] text-slate-300 font-semibold flex items-center gap-1">
+                <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
+                <span>{activeTwoWayPriorityAlert.location}</span>
+                {activeTwoWayPriorityAlert.matchedProgram && (
+                  <span className="text-indigo-300 font-medium truncate">• {activeTwoWayPriorityAlert.matchedProgram}</span>
+                )}
+              </div>
+            )}
+            <p className="italic text-slate-100 text-xs leading-relaxed pt-1 border-t border-slate-800">
+              &ldquo;{activeTwoWayPriorityAlert.text}&rdquo;
+            </p>
+          </div>
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <div className="flex flex-wrap items-center gap-2">
+              {(() => {
+                const lead = leads.find(l => l.id === activeTwoWayPriorityAlert.leadId);
+                const threadMeta = lead ? getOrRegisterMessageThread(lead.id, lead.authorOrUser, lead.platform, lead.targetCommentId) : null;
+                const cleanPhone = (activeTwoWayNotifConfig.targetMobileNumber || '5417292097').replace(/[^0-9]/g, '');
+                const smsText = `Hi ${activeTwoWayPriorityAlert.author}! Just got your message regarding ${activeTwoWayPriorityAlert.matchedProgram || 'financing options'} in ${activeTwoWayPriorityAlert.location || 'Oregon'}. Let's review your exact numbers today!${threadMeta ? `\n\n[Thread #${threadMeta.messageThreadId}]` : ''}`;
+                const smsUrl = `sms:+1${cleanPhone}?body=${encodeURIComponent(smsText)}`;
+                return (
+                  <a
+                    href={smsUrl}
+                    onClick={() => setActiveTwoWayPriorityAlert(null)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-400 hover:to-emerald-400 text-slate-950 font-black text-xs transition cursor-pointer shadow-md"
+                  >
+                    <Smartphone className="w-3.5 h-3.5" />
+                    <span>📱 1-Tap Apple Messages</span>
+                  </a>
+                );
+              })()}
+              <button
+                type="button"
+                onClick={() => {
+                  const lead = leads.find(l => l.id === activeTwoWayPriorityAlert.leadId);
+                  if (lead) {
+                    setSelectedLeadForReply(lead);
+                  }
+                  setActiveTwoWayPriorityAlert(null);
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-extrabold text-xs transition cursor-pointer border border-amber-500/40"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>Open 2-Way Reply</span>
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTwoWayPriorityAlert(null);
+                setShowActiveTwoWayNotifModal(true);
+              }}
+              className="text-[11px] text-slate-400 hover:text-amber-300 transition flex items-center gap-1 cursor-pointer shrink-0"
+              title="Notification Settings"
+            >
+              <Sliders className="w-3 h-3" />
+              <span>Config</span>
+            </button>
           </div>
         </div>
       )}
@@ -3512,15 +4311,16 @@ Email: fordmj@gmail.com`;
                         <span>Connection: SMS &amp; Email Linked</span>
                       </span>
                     </div>
-                    <a
-                      href={item.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-[11px] text-emerald-400 hover:text-emerald-300 font-bold"
+                    <button
+                      type="button"
+                      onClick={() => handleOpenThreadWebsite(item)}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 hover:text-emerald-200 font-bold text-xs border border-emerald-500/40 transition cursor-pointer shadow-sm"
+                      title="Open source website with full conversation comments"
                     >
-                      <span>Open Thread URL</span>
+                      <Globe className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Open Thread URL &amp; Comments</span>
                       <ExternalLink className="w-3 h-3" />
-                    </a>
+                    </button>
                   </div>
 
                   <h4 className="text-white font-bold text-xs">{item.title}</h4>
@@ -4756,6 +5556,63 @@ Email: fordmj@gmail.com`;
           </div>
         </div>
       )}
+
+      {/* In-App Live Website & Conversation Comments Viewer Modal */}
+      <ThreadWebsiteViewerModal
+        threadData={activeThreadWebsite}
+        isOpen={isThreadWebsiteOpen}
+        onClose={() => setIsThreadWebsiteOpen(false)}
+        onPostNewComment={handlePostThreadComment}
+      />
+
+      {/* Auto-Archive Rule & Dormant Threshold Settings Modal */}
+      <AutoArchiveRuleModal
+        isOpen={showAutoArchiveModal}
+        onClose={() => setShowAutoArchiveModal(false)}
+        leads={leads}
+        onExecuteAutoArchiveNow={handleExecuteAutoArchiveSweep}
+        onConfigSaved={(saved) => setAutoArchiveConfig(saved)}
+      />
+
+      {/* Intelligent Priority Push Notification Settings Modal for Active Two-Way Leads */}
+      <ActiveTwoWayNotificationModal
+        isOpen={showActiveTwoWayNotifModal}
+        onClose={() => setShowActiveTwoWayNotifModal(false)}
+        onConfigSaved={(saved) => setActiveTwoWayNotifConfig(saved)}
+        onTriggerTestAlert={async () => {
+          await ActiveTwoWayNotificationService.dispatchPriorityResponsePush(
+            {
+              leadId: 'test_active_2way_lead',
+              author: 'u/BendOutdoorBuyer',
+              location: 'Bend, OR (Deschutes County)',
+              matchedProgram: 'OHCS Flex Lending & Employer DPA Grant',
+              replyText: 'Thanks for the quick reply Mike! Can we jump on a 10-minute numbers review this afternoon? Rent just went up $250.',
+              platform: 'Reddit (r/Bend & Local Housing Forum)',
+              messageThreadId: 'th_bend_outdoor_88'
+            },
+            activeTwoWayNotifConfig
+          );
+          setActiveTwoWayPriorityAlert({
+            leadId: 'test_active_2way_lead',
+            author: 'u/BendOutdoorBuyer',
+            text: 'Thanks for the quick reply Mike! Can we jump on a 10-minute numbers review this afternoon? Rent just went up $250.',
+            location: 'Bend, OR (Deschutes County)',
+            matchedProgram: 'OHCS Flex Lending & Employer DPA Grant',
+            time: 'Just now'
+          });
+        }}
+      />
+
+      {/* State Licensed Peer Loan Officer Directory & State Partner Manager Modal */}
+      <StatePartnerLoanOfficersModal
+        isOpen={showStatePartnerModal}
+        onClose={() => setShowStatePartnerModal(false)}
+        initialSelectedState={targetPartnerState}
+        onPartnerSaved={(updated) => {
+          setPeerDirectory(updated);
+          setAllSyncedPeersList(PeerLoanOfficersService.getAllPeerLoanOfficers());
+        }}
+      />
     </div>
   );
 };

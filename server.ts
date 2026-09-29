@@ -545,6 +545,8 @@ app.post("/api/lead-discovery/create-gmail-draft", async (req, res) => {
   try {
     const {
       leadId = 'lead_general',
+      messageThreadId = `th_${leadId}_${Date.now().toString(36)}`,
+      targetCommentId = `cmt_${leadId}_01`,
       author = 'Prospect',
       title = 'First-Time Homebuyer Inquiry',
       matchedProgram = 'OHCS First-Time Buyer Program',
@@ -554,8 +556,23 @@ app.post("/api/lead-discovery/create-gmail-draft", async (req, res) => {
       userGoogleToken
     } = req.body;
 
-    const subject = `Re: Mortgage & Homeownership Guidance for ${author} - ${title}`;
-    const defaultBody = customBody || `Hi ${author},
+    const baseSubject = `Re: Mortgage & Homeownership Guidance for ${author} - ${title}`;
+    const subject = baseSubject.includes(messageThreadId) 
+      ? baseSubject 
+      : `${baseSubject} [Thread: #${messageThreadId}]`;
+
+    // Ensure AI 2nd Brain header metadata block is attached to the body
+    const headerBlock = [
+      `// ─── VANTAGE AI 2ND BRAIN • DIRECT COMMENT ROUTING METADATA ───`,
+      `// MessageThreadID: ${messageThreadId}`,
+      `// Target-Comment-ID: #${targetCommentId} (In-Reply-To Direct Parent)`,
+      `// Direct-Recipient: @${author}`,
+      `// Routing-Anchor: Direct User Comment (Isolated from general thread noise)`,
+      `// ───────────────────────────────────────────────────────────────`,
+      ``
+    ].join('\n');
+
+    let defaultBody = customBody || `Hi ${author},
 
 Thank you for reaching out regarding ${title} in ${location}.
 
@@ -575,8 +592,12 @@ Mortgage Loan Officer | 26 Years Oregon Lending Experience
 Direct Cell / Text: (541) 729-2097
 Email: fordmj@gmail.com`;
 
+    if (!defaultBody.includes(messageThreadId)) {
+      defaultBody = `${headerBlock}${defaultBody}`;
+    }
+
     const webComposeUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(recipientEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(defaultBody)}`;
-    const iphoneSmsQuickUrl = `sms:+15417292097?body=${encodeURIComponent(`Hi ${author}! Regarding your ${matchedProgram} inquiry in ${location}: Let's connect for a quick 10-min numbers review.`)}`;
+    const iphoneSmsQuickUrl = `sms:+15417292097?body=${encodeURIComponent(`[Thread: #${messageThreadId} -> @${author}] Regarding ${matchedProgram} in ${location}: Let's connect for a quick 10-min numbers review.`)}`;
 
     let draftCreatedInGoogle = false;
     let googleDraftId: string | null = null;
@@ -586,6 +607,10 @@ Email: fordmj@gmail.com`;
         const rawEmail = [
           recipientEmail ? `To: ${recipientEmail}` : '',
           `Subject: ${subject}`,
+          `X-Message-Thread-ID: ${messageThreadId}`,
+          `X-Target-Comment-ID: ${targetCommentId}`,
+          `In-Reply-To: <${targetCommentId}@vantageai.internal>`,
+          `References: <${messageThreadId}@vantageai.internal>`,
           'Content-Type: text/plain; charset="UTF-8"',
           '',
           defaultBody
@@ -607,7 +632,7 @@ Email: fordmj@gmail.com`;
           const draftData = await draftResp.json();
           draftCreatedInGoogle = true;
           googleDraftId = draftData.id;
-          console.log(`[Gmail Draft Created] Draft ID: ${googleDraftId} for lead: ${leadId}`);
+          console.log(`[Gmail Draft Created] Draft ID: ${googleDraftId} for lead: ${leadId} (Thread: ${messageThreadId})`);
         } else {
           const errText = await draftResp.text();
           console.warn('[Gmail Draft API Warning]:', errText);
@@ -617,29 +642,31 @@ Email: fordmj@gmail.com`;
       }
     }
 
-    // Persist draft message in Firestore lead conversation thread
+    // Persist draft message in Firestore lead conversation thread with thread metadata
     await saveLeadMessageToFirestore(
       leadId,
       author,
       'lo',
-      `[AI Automated Gmail Draft Created]: "${defaultBody.slice(0, 160)}..."`,
+      `[AI Automated Direct Reply Draft (Thread #${messageThreadId} -> #${targetCommentId})]: "${defaultBody.slice(0, 160)}..."`,
       'Gmail Draft Pipeline',
       location,
       'email'
     );
 
     // Instant iPhone Push & Carrier SMS Alert to Mike's Phone (5417292097@vtext.com)
-    const iphonePushSmsAlert = `✉️ [AI GMAIL DRAFT READY]
-Lead: ${author} (${location})
+    const iphonePushSmsAlert = `✉️ [AI GMAIL DRAFT READY • Thread #${messageThreadId}]
+Lead: ${author} (${location}) [Direct Comment: #${targetCommentId}]
 Program: ${matchedProgram}
 👉 1-Click Open & Review Draft: ${webComposeUrl}
 👉 Or Reply via SMS: ${iphoneSmsQuickUrl}`;
 
-    console.log(`[iPhone Push Alert Dispatched] AI Gmail Draft ready for Mike Ford -> ${author} (${location})`);
+    console.log(`[iPhone Push Alert Dispatched] AI Gmail Draft ready for Mike Ford -> ${author} (${location}) [Thread: ${messageThreadId}]`);
 
     return res.json({
       success: true,
       leadId,
+      messageThreadId,
+      targetCommentId,
       subject,
       body: defaultBody,
       webComposeUrl,
@@ -649,8 +676,8 @@ Program: ${matchedProgram}
       iphonePushSmsAlert,
       iphonePushSent: true,
       message: draftCreatedInGoogle 
-        ? `Draft created in Gmail account (ID: ${googleDraftId}) & push alert dispatched to iPhone.`
-        : `Pre-filled Gmail web compose URL generated & instant push alert dispatched to iPhone.`
+        ? `Draft created in Gmail account (ID: ${googleDraftId}, Thread: ${messageThreadId}) & push alert dispatched to iPhone.`
+        : `Pre-filled Gmail web compose URL generated (Thread: ${messageThreadId}) & instant push alert dispatched to iPhone.`
     });
   } catch (err: any) {
     return res.status(500).json({ success: false, error: err.message });
