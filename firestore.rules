@@ -48,5 +48,17 @@ service cloud.firestore {
     match /lead_notification_settings/{settingId} {
       allow read, write: if true;
     }
+
+    match /fifty_state_sweep_runs/{runId} {
+      allow read, write: if true;
+    }
+
+    match /fifty_state_cost_governor/{configId} {
+      allow read, write: if true;
+    }
+
+    match /fifty_state_cached_listings/{zpid} {
+      allow read, write: if true;
+    }
   }
 }

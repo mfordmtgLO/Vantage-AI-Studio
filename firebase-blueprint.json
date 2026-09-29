@@ -317,6 +317,18 @@
     "/lead_notification_settings/{settingId}": {
       "schema": "LeadNotificationSettings",
       "description": "Saved intelligent priority push notification parameters for Active Two-Way lead responses."
+    },
+    "/fifty_state_sweep_runs/{runId}": {
+      "schema": "FiftyStateSweepRun",
+      "description": "Historical audit and execution logs of 50-state daily lead and property sweeps."
+    },
+    "/fifty_state_cost_governor/{configId}": {
+      "schema": "FiftyStateCostGovernorConfig",
+      "description": "Mike Ford master admin cost governor, $50 monthly budget limits, and token metrics."
+    },
+    "/fifty_state_cached_listings/{zpid}": {
+      "schema": "FiftyStateCachedListing",
+      "description": "Deduplicated property listing hashes and 2-1 buydown strategy tags across 50 states."
     }
   }
 }

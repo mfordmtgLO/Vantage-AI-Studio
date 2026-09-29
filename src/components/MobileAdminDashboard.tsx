@@ -4,7 +4,7 @@ import {
   Trash2, Bell, Sparkles, Smartphone, Mail, ChevronRight, Search, 
   Filter, CheckSquare, RefreshCw, Eye, Building2, ExternalLink,
   Copy, Check, Briefcase, Package, Layers, Sliders, Brain, Users,
-  Share2, LogOut, Globe, KeyRound, Link2, Target
+  Share2, LogOut, Globe, KeyRound, Link2, Target, Zap, Cpu
 } from 'lucide-react';
 import { useAccountPathway } from '../context/AccountPathwayContext';
 import { IndustryCareerTemplateSelector } from './IndustryCareerTemplateSelector';
@@ -14,6 +14,9 @@ import { IndustrySpecialtyBrainStudio } from './IndustrySpecialtyBrainStudio';
 import { ProfileCardsAdminPortal } from './ProfileCardsAdminPortal';
 import { LeadDiscoveryStudio } from './LeadDiscoveryStudio';
 import { SmartOutreachTemplatesSection } from './SmartOutreachTemplatesSection';
+import { FiftyStateSweepDashboard } from './FiftyStateSweepDashboard';
+import { CronJobExecutionStatusIndicator } from './CronJobExecutionStatusIndicator';
+import { ApiUsageMetricsStudio } from './ApiUsageMetricsStudio';
 import { GitHubCloudRunSyncStatusCard } from './GitHubCloudRunSyncStatusCard';
 import { IndustryCareerTemplate } from '../data/industryCareerTemplates';
 
@@ -33,7 +36,8 @@ export const MobileAdminDashboard: React.FC<{
   onOpenPublicWebsite?: () => void;
   onLogout?: () => void;
 }> = ({ onOpenDesktopView, onOpenPluginVault, onOpenShareLinksModal, onOpenPublicWebsite, onLogout }) => {
-  const [activeTab, setActiveTab] = useState<'notes' | 'customers' | 'profile-cards' | 'quick-sms' | 'workspace' | 'morph-suite' | 'commercial-releases' | 'settings' | 'cicd-status' | 'lead-discovery' | 'smart-templates'>('notes');
+  const [activeTab, setActiveTab] = useState<'notes' | 'customers' | 'profile-cards' | 'quick-sms' | 'workspace' | 'morph-suite' | 'commercial-releases' | 'settings' | 'cicd-status' | 'lead-discovery' | 'smart-templates' | 'fifty-state-sweep' | 'api-metrics'>('notes');
+  const [cronAlertCount, setCronAlertCount] = useState<number>(0);
   const [brainSubView, setBrainSubView] = useState<'morph' | 'train'>('morph');
   const [activeTemplate, setActiveTemplate] = useState<IndustryCareerTemplate | null>(null);
   const [copiedUrlType, setCopiedUrlType] = useState<string | null>(null);
@@ -290,6 +294,16 @@ export const MobileAdminDashboard: React.FC<{
             <span className="ml-1 px-1.5 py-0.2 rounded-full bg-rose-500 text-white font-extrabold text-[9px] animate-pulse">2 New</span>
           </button>
           <button
+            onClick={() => setActiveTab('fifty-state-sweep')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 shrink-0 relative ${
+              activeTab === 'fifty-state-sweep' ? 'bg-gradient-to-r from-cyan-400 to-indigo-500 text-slate-950 font-black shadow-sm' : 'bg-slate-800/70 text-slate-400'
+            }`}
+          >
+            <Zap className="w-3.5 h-3.5 text-cyan-300 animate-pulse" />
+            <span>⚡ 50-State &amp; 10k Processor</span>
+            <span className="ml-1 px-1.5 py-0.2 rounded-full bg-emerald-500/30 text-emerald-300 font-extrabold text-[9px]">&lt;$50/mo</span>
+          </button>
+          <button
             onClick={() => setActiveTab('smart-templates')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 shrink-0 relative ${
               activeTab === 'smart-templates' ? 'bg-gradient-to-r from-amber-400 to-emerald-400 text-slate-950 font-black shadow-sm' : 'bg-slate-800/70 text-slate-400'
@@ -298,6 +312,16 @@ export const MobileAdminDashboard: React.FC<{
             <Sparkles className="w-3.5 h-3.5 text-amber-300" />
             <span>📋 Smart Outreach Templates</span>
             <span className="ml-1 px-1.5 py-0.2 rounded-full bg-emerald-500/30 text-emerald-300 font-extrabold text-[9px]">100% APR</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('api-metrics')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 shrink-0 relative ${
+              activeTab === 'api-metrics' ? 'bg-gradient-to-r from-indigo-600 to-cyan-500 text-white font-black shadow-sm' : 'bg-slate-800/70 text-slate-400'
+            }`}
+          >
+            <Cpu className="w-3.5 h-3.5 text-cyan-300" />
+            <span>📊 API Usage &amp; Quotas</span>
+            <span className="ml-1 px-1.5 py-0.2 rounded-full bg-emerald-500/30 text-emerald-300 font-extrabold text-[9px]">$4.85 / $50</span>
           </button>
           <button
             onClick={() => setActiveTab('cicd-status')}
@@ -310,12 +334,17 @@ export const MobileAdminDashboard: React.FC<{
           </button>
           <button
             onClick={() => setActiveTab('settings')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 shrink-0 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 shrink-0 relative ${
               activeTab === 'settings' ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-800/70 text-slate-400'
             }`}
           >
             <Bell className="w-3.5 h-3.5" />
-            Alerts
+            <span>Alerts</span>
+            {cronAlertCount > 0 && (
+              <span className="ml-1 px-1.5 py-0.2 rounded-full bg-rose-500 text-white font-extrabold text-[9px] animate-pulse">
+                {cronAlertCount} Alert{cronAlertCount > 1 ? 's' : ''}
+              </span>
+            )}
           </button>
         </div>
 
@@ -349,6 +378,9 @@ export const MobileAdminDashboard: React.FC<{
 
       {/* Main Content Area */}
       <main className="flex-1 p-4 pb-24 overflow-y-auto space-y-4">
+        {/* Daily Lead Discovery & Zillow Scrape Cron Job Visual Status Indicator with Alerts Notification */}
+        <CronJobExecutionStatusIndicator onAlertCountChange={count => setCronAlertCount(count)} />
+
         {/* Compact Persistent Status Bar for Cloud Run & Git Sync */}
         {activeTab !== 'cicd-status' && (
           <GitHubCloudRunSyncStatusCard compact={true} />
@@ -939,6 +971,22 @@ export const MobileAdminDashboard: React.FC<{
           </div>
         )}
 
+        {/* Tab 8.5: 50-State Daily Sweep & 10k Processor (Admin Mobile) */}
+        {activeTab === 'fifty-state-sweep' && (
+          <div className="p-2 sm:p-4 max-w-full overflow-x-hidden">
+            <FiftyStateSweepDashboard
+              onOpenGmailDraft={(subject, body) => {
+                const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                window.open(mailtoUrl, '_blank');
+              }}
+              onSendSms={(phone, text) => {
+                const smsUrl = `sms:${phone}?body=${encodeURIComponent(text)}`;
+                window.open(smsUrl, '_blank');
+              }}
+            />
+          </div>
+        )}
+
         {/* Tab 9: Smart Outreach Templates (100% APR Compliant) */}
         {activeTab === 'smart-templates' && (
           <div className="p-2 sm:p-4 max-w-full overflow-x-hidden">
@@ -948,6 +996,13 @@ export const MobileAdminDashboard: React.FC<{
                 window.open(mailtoUrl, '_blank');
               }}
             />
+          </div>
+        )}
+
+        {/* Tab 10: API Usage Metrics & Token Consumption Studio */}
+        {activeTab === 'api-metrics' && (
+          <div className="p-2 sm:p-4 max-w-full overflow-x-hidden">
+            <ApiUsageMetricsStudio />
           </div>
         )}
       </main>

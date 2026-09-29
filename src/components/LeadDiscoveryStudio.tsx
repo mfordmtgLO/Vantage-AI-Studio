@@ -98,6 +98,8 @@ import {
 import { NationwideProgramMatrixModal } from './NationwideProgramMatrixModal';
 import { CensusTractLeadDensityHeatmap } from './CensusTractLeadDensityHeatmap';
 import { SmartOutreachTemplatesSection } from './SmartOutreachTemplatesSection';
+import { FiftyStateSweepDashboard } from './FiftyStateSweepDashboard';
+import { CronJobExecutionStatusIndicator } from './CronJobExecutionStatusIndicator';
 
 export type LeadCrmStatus = 'new_discovery_scrape' | 'active_two_way' | 'dormant_7_days' | 'archived_discovery';
 export type TwoWayOutreachMode = 'both' | 'sms_only' | 'gmail_only';
@@ -347,6 +349,7 @@ export const LeadDiscoveryStudio: React.FC = () => {
   const [twoWayOutreachMode, setTwoWayOutreachMode] = useState<TwoWayOutreachMode>('both');
   const [showOutreachQueueDeck, setShowOutreachQueueDeck] = useState<boolean>(false);
   const [showSmartTemplatesDeck, setShowSmartTemplatesDeck] = useState<boolean>(false);
+  const [showFiftyStateSweepDeck, setShowFiftyStateSweepDeck] = useState<boolean>(false);
   const [pendingQueueCount, setPendingQueueCount] = useState<number>(() => {
     try {
       return LeadOutreachCronService.getPendingMessages().filter(m => m.status === 'pending_approval').length;
@@ -2342,6 +2345,22 @@ Email: fordmj@gmail.com`;
             </button>
 
             <button
+              onClick={() => setShowFiftyStateSweepDeck(prev => !prev)}
+              className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-xs shadow-xl transition cursor-pointer border relative ${
+                showFiftyStateSweepDeck
+                  ? 'bg-gradient-to-r from-cyan-400 to-indigo-500 text-slate-950 border-cyan-300 ring-2 ring-indigo-400/50 shadow-indigo-500/20'
+                  : 'bg-gradient-to-r from-cyan-600 via-indigo-700 to-purple-700 hover:from-cyan-500 hover:to-indigo-600 text-white border-cyan-400/40'
+              }`}
+              title="Open 50-State Daily Sweep & 10,000 Listing Processor (Mike Ford Centralized Master Key Architecture)"
+            >
+              <Zap className="w-4 h-4 text-cyan-300 animate-pulse" />
+              <span>⚡ 50-State Daily Sweep &amp; 10k Processor</span>
+              <span className="px-1.5 py-0.2 rounded-full bg-emerald-400 text-slate-950 text-[9px] font-black">
+                &lt;$50/mo Cap
+              </span>
+            </button>
+
+            <button
               onClick={() => setShowBooleanModal(true)}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-teal-300 font-extrabold text-xs shadow-lg transition cursor-pointer border border-teal-500/40 relative"
               title={`Configure Boolean Search Query (AND, OR, NOT) & Exclusions (Active: ${booleanConfig.enabled ? booleanConfig.activePresetId : 'Off'})`}
@@ -2538,6 +2557,45 @@ Email: fordmj@gmail.com`;
           </div>
         )}
       </div>
+
+      {/* Visual Status Indicator: Daily Lead Discovery & Zillow Scrape Cron Job Trackers */}
+      <CronJobExecutionStatusIndicator />
+
+      {/* 50-State Daily Sweep & 10,000 Listing Processor (Mike Ford Centralized Backend) */}
+      {showFiftyStateSweepDeck && (
+        <div className="animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center justify-between bg-slate-900 border-x border-t border-slate-800 px-4 py-2.5 rounded-t-2xl">
+            <div className="flex items-center gap-2">
+              <Zap className="w-4 h-4 text-cyan-400" />
+              <span className="text-xs font-bold text-white uppercase tracking-wider">
+                50-State Automated Hybrid 2nd Brain Swarm &amp; Cost Governor
+              </span>
+              <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-bold border border-emerald-500/30">
+                &lt;$50.00/mo Hard Cap Active
+              </span>
+            </div>
+            <button
+              onClick={() => setShowFiftyStateSweepDeck(false)}
+              className="text-xs px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition cursor-pointer"
+            >
+              ✕ Close Deck
+            </button>
+          </div>
+          <div className="p-4 sm:p-6 bg-slate-900/90 border-x border-b border-slate-800 rounded-b-2xl">
+            <FiftyStateSweepDashboard
+              onClose={() => setShowFiftyStateSweepDeck(false)}
+              onOpenGmailDraft={(subject, body) => {
+                const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                window.open(mailtoUrl, '_blank');
+              }}
+              onSendSms={(phone, text) => {
+                const smsUrl = `sms:${phone}?body=${encodeURIComponent(text)}`;
+                window.open(smsUrl, '_blank');
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Smart Outreach Templates Section (2-1 Buydowns & Seller Credits) */}
       {showSmartTemplatesDeck && (
