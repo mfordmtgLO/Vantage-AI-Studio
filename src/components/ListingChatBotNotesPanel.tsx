@@ -514,7 +514,7 @@ Thank you!`;
     { label: '🏞️ Lakeview 100% DPA (660+ Min)', text: 'Can I use Lakeview 100% Zero-Down on this home?' },
     { label: '🌲 OHCS Flex FirstHome (620+ Min)', text: 'What is my grant eligibility with OHCS Flex Lending?' },
     { label: '🌾 USDA 0% Down Zone (680+ Min)', text: 'Is this home inside an eligible USDA Rural Zone?' },
-    { label: '🏛️ Stack CRA $5k Grant', text: 'Can I stack a $5,000 CRA grant with DPA assistance?' },
+    { label: '⚡ USDA 0% + 2-1 Buydown Stack', text: 'Can I stack zero-down USDA RD or low-down programs with a 2-1 rate buydown funded by seller credits?' },
     { label: '💰 Cash Needed at Close', text: 'How much cash do I need at closing for this property?' },
     { label: '🔑 HomeReady 3% Down', text: 'Check Fannie Mae HomeReady eligibility and PMI savings' }
   ];

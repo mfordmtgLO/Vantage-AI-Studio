@@ -11,7 +11,7 @@ export type MortgageProductCategory =
   | 'State HFA'
   | 'Government 0-Down'
   | 'Conventional Specialty'
-  | 'Portfolio CRA Grant'
+  | '2-1 Buydown & Stacked Benefit'
   | 'Tax Credit / MCC';
 
 export type DpaAssistanceType = 

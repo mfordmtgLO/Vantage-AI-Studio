@@ -1127,7 +1127,7 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
   const [requestTargetArea, setRequestTargetArea] = useState('');
   const [requestBuyerEmail, setRequestBuyerEmail] = useState('');
   const [requestBuyerName, setRequestBuyerName] = useState('');
-  const [requestProgram, setRequestProgram] = useState<'USDA 100%' | 'LMI CRA Grant' | 'HomeReady 3%' | 'Lakeview National DPA' | 'OHCS Flex Lending FirstHome' | 'Any Low/No Down'>('Any Low/No Down');
+  const [requestProgram, setRequestProgram] = useState<'USDA 100%' | '2-1 Rate Buydown Stack' | 'HomeReady 3%' | 'Lakeview National DPA' | 'OHCS Flex Lending FirstHome' | 'Any Low/No Down'>('Any Low/No Down');
   const [areaRequestSuccess, setAreaRequestSuccess] = useState<string | null>(null);
 
   // Mobile PWA Install Helper
@@ -1879,7 +1879,7 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                 { id: 'usda', label: '🌾 USDA 100% RD Rural' },
                 { id: 'homeready', label: '🔑 HomeReady 3% Down' },
                 { id: 'nhf_fallback', label: '🇺🇸 NHF FHA 0% Fallback' },
-                { id: 'lmi_cra', label: '🏛️ LMI $5k CRA Grant' },
+                { id: 'lmi_cra', label: '⚡ 2-1 Buydown Stack' },
                 { id: 'price_drops', label: '🔥 Price Drops' },
                 { id: 'prequalified', label: '✅ Prequalified Only' }
               ].map((tab) => (
@@ -4621,7 +4621,7 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                     <option value="Lakeview National DPA">Lakeview National 100% DPA / Community Land Trust</option>
                     <option value="OHCS Flex Lending FirstHome">OHCS Flex Lending FirstHome (3.5%–5% Cash Assistance)</option>
                     <option value="USDA 100%">USDA Rural Development (100% 0-Down Financing)</option>
-                    <option value="LMI CRA Grant">LMI Census Tract CRA Grants ($5,000–$10,000)</option>
+                    <option value="2-1 Rate Buydown Stack">Seller-Funded 2-1 Rate Buydown Stack (Zero/Low Down)</option>
                     <option value="HomeReady 3%">Fannie Mae HomeReady (3% Down Payment)</option>
                   </select>
                 </div>

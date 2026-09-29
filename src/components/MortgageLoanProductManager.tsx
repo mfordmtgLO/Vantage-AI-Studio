@@ -747,7 +747,7 @@ export const MortgageLoanProductManager: React.FC<MortgageLoanProductManagerProp
                 { id: 'State HFA', label: 'State HFA' },
                 { id: 'Government 0-Down', label: 'Gov 0-Down' },
                 { id: 'Conventional Specialty', label: 'Conv 97%' },
-                { id: 'Portfolio CRA Grant', label: 'CRA Grants' }
+                { id: '2-1 Buydown & Stacked Benefit', label: '2-1 Buydowns' }
               ].map((cat) => (
                 <button
                   key={cat.id}
@@ -1206,7 +1206,7 @@ export const MortgageLoanProductManager: React.FC<MortgageLoanProductManagerProp
                     <option value="State HFA">State HFA</option>
                     <option value="Government 0-Down">Government 0-Down</option>
                     <option value="Conventional Specialty">Conventional Specialty</option>
-                    <option value="Portfolio CRA Grant">Portfolio CRA Grant</option>
+                    <option value="2-1 Buydown & Stacked Benefit">2-1 Buydown & Stacked Benefit</option>
                   </select>
                 </div>
 

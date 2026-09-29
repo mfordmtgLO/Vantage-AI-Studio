@@ -13,6 +13,7 @@ import { CommercialVersionReleaseStudio } from './CommercialVersionReleaseStudio
 import { IndustrySpecialtyBrainStudio } from './IndustrySpecialtyBrainStudio';
 import { ProfileCardsAdminPortal } from './ProfileCardsAdminPortal';
 import { LeadDiscoveryStudio } from './LeadDiscoveryStudio';
+import { SmartOutreachTemplatesSection } from './SmartOutreachTemplatesSection';
 import { GitHubCloudRunSyncStatusCard } from './GitHubCloudRunSyncStatusCard';
 import { IndustryCareerTemplate } from '../data/industryCareerTemplates';
 
@@ -32,7 +33,7 @@ export const MobileAdminDashboard: React.FC<{
   onOpenPublicWebsite?: () => void;
   onLogout?: () => void;
 }> = ({ onOpenDesktopView, onOpenPluginVault, onOpenShareLinksModal, onOpenPublicWebsite, onLogout }) => {
-  const [activeTab, setActiveTab] = useState<'notes' | 'customers' | 'profile-cards' | 'quick-sms' | 'workspace' | 'morph-suite' | 'commercial-releases' | 'settings' | 'cicd-status' | 'lead-discovery'>('notes');
+  const [activeTab, setActiveTab] = useState<'notes' | 'customers' | 'profile-cards' | 'quick-sms' | 'workspace' | 'morph-suite' | 'commercial-releases' | 'settings' | 'cicd-status' | 'lead-discovery' | 'smart-templates'>('notes');
   const [brainSubView, setBrainSubView] = useState<'morph' | 'train'>('morph');
   const [activeTemplate, setActiveTemplate] = useState<IndustryCareerTemplate | null>(null);
   const [copiedUrlType, setCopiedUrlType] = useState<string | null>(null);
@@ -287,6 +288,16 @@ export const MobileAdminDashboard: React.FC<{
             <Target className="w-3.5 h-3.5 text-emerald-400" />
             <span>🎯 Oregon Lead Discovery</span>
             <span className="ml-1 px-1.5 py-0.2 rounded-full bg-rose-500 text-white font-extrabold text-[9px] animate-pulse">2 New</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('smart-templates')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 shrink-0 relative ${
+              activeTab === 'smart-templates' ? 'bg-gradient-to-r from-amber-400 to-emerald-400 text-slate-950 font-black shadow-sm' : 'bg-slate-800/70 text-slate-400'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span>📋 Smart Outreach Templates</span>
+            <span className="ml-1 px-1.5 py-0.2 rounded-full bg-emerald-500/30 text-emerald-300 font-extrabold text-[9px]">100% APR</span>
           </button>
           <button
             onClick={() => setActiveTab('cicd-status')}
@@ -925,6 +936,18 @@ export const MobileAdminDashboard: React.FC<{
         {activeTab === 'lead-discovery' && (
           <div className="p-2 sm:p-4 max-w-full overflow-x-hidden">
             <LeadDiscoveryStudio />
+          </div>
+        )}
+
+        {/* Tab 9: Smart Outreach Templates (100% APR Compliant) */}
+        {activeTab === 'smart-templates' && (
+          <div className="p-2 sm:p-4 max-w-full overflow-x-hidden">
+            <SmartOutreachTemplatesSection
+              onOpenGmailDraft={(subject, body) => {
+                const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                window.open(mailtoUrl, '_blank');
+              }}
+            />
           </div>
         )}
       </main>

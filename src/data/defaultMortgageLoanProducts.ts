@@ -169,28 +169,28 @@ export const DEFAULT_MORTGAGE_LOAN_PRODUCTS: MortgageLoanProduct[] = [
     isFeaturedSpecialtyProduct: true
   },
   {
-    id: 'lmi_cra_community_grant',
-    name: 'CRA LMI $10,000 Non-Repayable Bank Grant',
-    agencyOrSponsor: 'Portfolio CRA Partner Banks',
-    category: 'Portfolio CRA Grant',
-    maxLtvPercent: 97,
+    id: 'rate_buydown_stack_strategy',
+    name: 'Seller-Funded 2-1 Rate Buydown Stack (Zero-Down / Low-Down)',
+    agencyOrSponsor: 'Conventional / FHA / USDA Approved Buydown Suite',
+    category: '2-1 Buydown & Stacked Benefit',
+    maxLtvPercent: 100,
     maxDpaAssistancePercent: 3.0,
-    maxDpaCapUsd: 10000,
-    dpaType: 'Forgivable Grant',
+    maxDpaCapUsd: 18000,
+    dpaType: 'Closing Cost Subsidy',
     minCreditScore: 620,
-    maxAmiPercentage: 80,
+    maxAmiPercentage: 160,
     eligibleStates: ['ALL'],
     isTargetedAreaBonusEligible: true,
     isEligibleActive: true,
-    description: 'Direct lender CRA non-repayable grant up to $10,000 for purchasing homes located in Low-to-Moderate Income (LMI) or majority-minority census tracts.',
+    description: 'Stackable seller concession or lender credit financing a 2% lower rate in year 1 and 1% lower in year 2, stackable on USDA 100% Zero Down or conventional/FHA down payment programs.',
     underwritingGuidelines: [
-      'No repayment required ever (true grant)',
-      'Must be located in qualified LMI census tract OR borrower income <= 80% AMI',
-      'Can be stacked with Lakeview or OHCS programs where permitted'
+      'Allows stacking benefits like USDA RD 100% zero down payment + 2-1 temporary rate buydown',
+      'Stackable with Lakeview National DPA, OHCS FirstHome, or HomeReady 3%',
+      'Requires seller-paid concessions or seller credits per agency guidelines (3% to 6% allowable limits)'
     ],
     requiredDocumentation: [
-      'FFIEC Census Tract Geocoding Verification',
-      'Lender CRA Grant Attestation'
+      'Seller Concession Addendum to Purchase Contract',
+      'Buydown Agreement & Escrow Subsidy Schedule'
     ],
     isFeaturedSpecialtyProduct: true
   },

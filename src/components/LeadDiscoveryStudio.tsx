@@ -44,7 +44,9 @@ import {
   Activity,
   Sliders,
   Bell,
-  RefreshCw
+  RefreshCw,
+  AlertTriangle,
+  Flame
 } from 'lucide-react';
 import { executeCircadianJob, CircadianExecutionLog } from '../services/cronScheduler';
 import { getCommunicationSettings } from '../utils/communicationSettingsStorage';
@@ -86,6 +88,16 @@ import {
   PeerLoanOfficersService,
   PeerLoanOfficer
 } from '../services/peerLoanOfficersService';
+import { BooleanQueryBuilderModal } from './BooleanQueryBuilderModal';
+import {
+  LeadBooleanScrapeService,
+  BooleanScrapeConfig,
+  YieldMonitorConfig,
+  YieldEvaluationResult
+} from '../services/leadBooleanScrapeService';
+import { NationwideProgramMatrixModal } from './NationwideProgramMatrixModal';
+import { CensusTractLeadDensityHeatmap } from './CensusTractLeadDensityHeatmap';
+import { SmartOutreachTemplatesSection } from './SmartOutreachTemplatesSection';
 
 export type LeadCrmStatus = 'new_discovery_scrape' | 'active_two_way' | 'dormant_7_days' | 'archived_discovery';
 export type TwoWayOutreachMode = 'both' | 'sms_only' | 'gmail_only';
@@ -334,6 +346,7 @@ export const LeadDiscoveryStudio: React.FC = () => {
   const [archiveFeedbackMsg, setArchiveFeedbackMsg] = useState<string>('');
   const [twoWayOutreachMode, setTwoWayOutreachMode] = useState<TwoWayOutreachMode>('both');
   const [showOutreachQueueDeck, setShowOutreachQueueDeck] = useState<boolean>(false);
+  const [showSmartTemplatesDeck, setShowSmartTemplatesDeck] = useState<boolean>(false);
   const [pendingQueueCount, setPendingQueueCount] = useState<number>(() => {
     try {
       return LeadOutreachCronService.getPendingMessages().filter(m => m.status === 'pending_approval').length;
@@ -389,16 +402,134 @@ export const LeadDiscoveryStudio: React.FC = () => {
   const [showRawResults, setShowRawResults] = useState(false);
   const [selectedSweepState, setSelectedSweepState] = useState<string>('OR');
   const [selectedSweepCounty, setSelectedSweepCounty] = useState<string>('all_8_counties');
+  const [searchRadiusMiles, setSearchRadiusMiles] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('vantage_scrape_search_radius');
+      return saved ? parseInt(saved, 10) : 250;
+    } catch {
+      return 250;
+    }
+  });
+
+  const getSearchRadiusScope = (miles: number): { label: string; mode: string; badge: string; icon: string; description: string } => {
+    if (miles <= 25) {
+      return {
+        label: 'Local City / Township',
+        mode: 'local',
+        badge: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
+        icon: '📍',
+        description: 'Single city core & closest neighborhood threads'
+      };
+    }
+    if (miles <= 45) {
+      return {
+        label: 'County Core',
+        mode: 'county',
+        badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+        icon: '🏛️',
+        description: 'Target county boundary & primary cities'
+      };
+    }
+    if (miles <= 85) {
+      return {
+        label: 'Metro Hub & Suburbs',
+        mode: 'metro',
+        badge: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+        icon: '🏙️',
+        description: 'Metro anchor city + commute corridor towns'
+      };
+    }
+    if (miles <= 160) {
+      return {
+        label: 'Multi-County Regional Corridor',
+        mode: 'regional',
+        badge: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+        icon: '🗺️',
+        description: 'Multi-county regional market cluster (e.g. Willamette Valley, Central OR)'
+      };
+    }
+    return {
+      label: 'State-Wide (All Counties)',
+      mode: 'statewide',
+      badge: 'bg-gradient-to-r from-emerald-500/25 to-teal-500/25 text-emerald-300 border-emerald-500/40',
+      icon: '🌲',
+      description: 'Comprehensive statewide search across all 36 counties & housing forums'
+    };
+  };
+
+  const [isStateWideMode, setIsStateWideMode] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('vantage_scrape_statewide_mode');
+      return saved !== null ? saved === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
+
+  const handleRadiusChange = (miles: number) => {
+    setSearchRadiusMiles(miles);
+    try {
+      localStorage.setItem('vantage_scrape_search_radius', String(miles));
+    } catch {}
+
+    if (miles >= 200) {
+      setIsStateWideMode(true);
+      try {
+        localStorage.setItem('vantage_scrape_statewide_mode', 'true');
+      } catch {}
+      const counties = getCountiesByState(selectedSweepState);
+      const allOption = counties.find(c => c.id.includes('all')) || counties[0];
+      if (allOption) {
+        setSelectedSweepCounty(allOption.id);
+      }
+    } else {
+      setIsStateWideMode(false);
+      try {
+        localStorage.setItem('vantage_scrape_statewide_mode', 'false');
+      } catch {}
+      if (selectedSweepCounty.includes('all')) {
+        const counties = getCountiesByState(selectedSweepState);
+        const firstSingle = counties.find(c => !c.id.includes('all')) || counties[0];
+        if (firstSingle) {
+          setSelectedSweepCounty(firstSingle.id);
+        }
+      }
+    }
+  };
+
+  const handleToggleStateWideMode = (enabled: boolean) => {
+    setIsStateWideMode(enabled);
+    try {
+      localStorage.setItem('vantage_scrape_statewide_mode', String(enabled));
+    } catch {}
+    if (enabled) {
+      handleRadiusChange(250);
+    } else {
+      handleRadiusChange(35);
+    }
+  };
 
   const handleStateChange = (stateCode: string) => {
     setSelectedSweepState(stateCode);
     const counties = getCountiesByState(stateCode);
     if (counties.length > 0) {
-      setSelectedSweepCounty(counties[0].id);
+      if (isStateWideMode) {
+        const allOption = counties.find(c => c.id.includes('all')) || counties[0];
+        setSelectedSweepCounty(allOption.id);
+      } else {
+        const firstSingle = counties.find(c => !c.id.includes('all')) || counties[0];
+        setSelectedSweepCounty(firstSingle ? firstSingle.id : counties[0].id);
+      }
     }
   };
 
   const [sweepMode, setSweepMode] = useState<'hybrid' | 'gemini_only' | 'deepseek_only'>('hybrid');
+  const [booleanConfig, setBooleanConfig] = useState<BooleanScrapeConfig>(() => LeadBooleanScrapeService.getBooleanConfig());
+  const [yieldMonitorConfig, setYieldMonitorConfig] = useState<YieldMonitorConfig>(() => LeadBooleanScrapeService.getYieldMonitorConfig());
+  const [showBooleanModal, setShowBooleanModal] = useState(false);
+  const [showNationwideMatrixModal, setShowNationwideMatrixModal] = useState(false);
+  const [showLeadDensityHeatmapModal, setShowLeadDensityHeatmapModal] = useState(false);
+  const [lowYieldAlert, setLowYieldAlert] = useState<YieldEvaluationResult | null>(null);
   const [threadReplyInputs, setThreadReplyInputs] = useState<Record<string, string>>({});
   const [selectedLeadForSmsHistory, setSelectedLeadForSmsHistory] = useState<LeadItem | null>(null);
   const [showTwilioModal, setShowTwilioModal] = useState(false);
@@ -1443,19 +1574,55 @@ Email: fordmj@gmail.com`;
   const handleRunManualSweep = async () => {
     setIsSweeping(true);
     try {
-      const res = await executeCircadianJob('job_oregon_homebuyer_lead_sweep');
+      const radiusScope = getSearchRadiusScope(searchRadiusMiles);
       const stateInfo = getStateDetails(selectedSweepState);
       const stateCounties = getCountiesByState(selectedSweepState);
       const matchedCountyObj = stateCounties.find(c => c.id === selectedSweepCounty) || stateCounties[0];
-      const targetName = `${matchedCountyObj.name} (${stateInfo.name})`;
+
+      const compiledBooleanExpr = LeadBooleanScrapeService.compileToBooleanExpression(booleanConfig);
+      const searchGroundingQuery = LeadBooleanScrapeService.compileToSearchGroundingQuery(
+        booleanConfig,
+        stateInfo.name,
+        matchedCountyObj.name,
+        searchRadiusMiles
+      );
+      
+      // Notify backend scraping agent with search radius scope & Boolean matrix
+      try {
+        await fetch('/api/lead-discovery/execute-scrape', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            stateCode: selectedSweepState,
+            countyId: selectedSweepCounty,
+            searchRadiusMiles,
+            searchRadiusScope: radiusScope.mode,
+            sweepMode,
+            booleanExpression: compiledBooleanExpr,
+            andTerms: booleanConfig.andTerms,
+            orTerms: booleanConfig.orTerms,
+            notTerms: booleanConfig.notTerms,
+            searchQueryGrounding: searchGroundingQuery
+          })
+        });
+      } catch (agentErr) {
+        console.warn('Backend scrape agent notice (continuing resilient sweep):', agentErr);
+      }
+
+      const res = await executeCircadianJob('job_oregon_homebuyer_lead_sweep');
+      const targetName = isStateWideMode || searchRadiusMiles >= 200
+        ? `🌟 State-Wide Multi-County Coverage (${stateInfo.name} • ${searchRadiusMiles}mi Radius)` 
+        : `${matchedCountyObj.name} (${stateInfo.name} • ${searchRadiusMiles}mi Radius)`;
       const modeLabel = sweepMode === 'hybrid' ? 'Hybrid Auto-Balanced' : sweepMode === 'gemini_only' ? 'Gemini-Only Grounding' : 'DeepSeek-Only Swarm';
       if (res.log) {
-        res.log.summary = `[${modeLabel}] Target Sweep [${stateInfo.name} - ${targetName}] (DPA Engine: ${stateInfo.dpaProgram}): ${res.log.summary}`;
+        res.log.summary = `[${modeLabel}] ${isStateWideMode || searchRadiusMiles >= 200 ? '🌲 Statewide Sweep' : 'Target Sweep'} [${stateInfo.name} - ${targetName}] (Radius: ${searchRadiusMiles}mi • ${radiusScope.label}) (DPA Engine: ${stateInfo.dpaProgram}): ${res.log.summary}`;
       }
       setSweepLog(res.log);
       
       let newlyDiscoveredBatch: LeadItem[];
-      if (selectedSweepState === 'OR' && selectedSweepCounty === 'lane') {
+      if (isStateWideMode || searchRadiusMiles >= 200 || selectedSweepCounty.includes('all')) {
+        newlyDiscoveredBatch = generateLocalizedLeadsForSweep(selectedSweepState, selectedSweepCounty, true);
+      } else if (selectedSweepState === 'OR' && selectedSweepCounty === 'lane') {
         newlyDiscoveredBatch = [
         {
           id: `lead_lane_1_${Date.now()}`,
@@ -1641,7 +1808,41 @@ Email: fordmj@gmail.com`;
         newlyDiscoveredBatch = generateLocalizedLeadsForSweep(selectedSweepState, selectedSweepCounty);
       }
 
-      setLeads(prev => [...newlyDiscoveredBatch, ...prev]);
+      // Filter and evaluate leads against active Boolean Operator matrix
+      const evaluatedBatch: LeadItem[] = newlyDiscoveredBatch.map(lead => {
+        const evalResult = LeadBooleanScrapeService.evaluateLeadMatch(lead, booleanConfig);
+        if (!evalResult.matches) {
+          return {
+            ...lead,
+            isFilteredOut: true,
+            filterReason: evalResult.reason
+          };
+        }
+        return lead;
+      });
+
+      const qualifyingCount = evaluatedBatch.filter(l => !l.isFilteredOut).length;
+
+      // Monitor Result Count & evaluate for Low-Yield Geographic Expansion recommendation
+      if (yieldMonitorConfig.enabled) {
+        const yieldEval = LeadBooleanScrapeService.evaluateYield(
+          qualifyingCount,
+          yieldMonitorConfig.minLeadYieldThreshold,
+          searchRadiusMiles,
+          isStateWideMode,
+          stateInfo.name,
+          matchedCountyObj.name
+        );
+        if (yieldEval.isLowYield) {
+          setLowYieldAlert(yieldEval);
+        } else {
+          setLowYieldAlert(null);
+        }
+      } else {
+        setLowYieldAlert(null);
+      }
+
+      setLeads(prev => [...evaluatedBatch, ...prev]);
 
       // =========================================================================
       // AUTO-RELAY DISPATCH: Automatically Forward High-Intent Leads to Phone
@@ -2021,45 +2222,149 @@ Email: fordmj@gmail.com`;
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            {/* 50-State Dropdown & Cascading Submenu County Selector */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 bg-slate-950/90 p-2 rounded-2xl border border-indigo-500/40 shadow-inner">
-              {/* Step 1: 50-State Selector */}
-              <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-900 rounded-xl border border-slate-700">
-                <Globe className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">State:</span>
-                <select
-                  value={selectedSweepState}
-                  onChange={(e) => handleStateChange(e.target.value)}
-                  className="bg-transparent text-xs text-white font-black focus:outline-none cursor-pointer pr-1"
-                  title="Choose any US State"
+            {/* 50-State Dropdown & Cascading Submenu County Selector with State-Wide Toggle & Search Radius Slider */}
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2.5 bg-slate-950/90 p-2.5 rounded-2xl border border-indigo-500/40 shadow-inner w-full xl:w-auto">
+              {/* Row 1: State & County Selectors + State-Wide Button */}
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Step 1: 50-State Selector */}
+                <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-900 rounded-xl border border-slate-700">
+                  <Globe className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">State:</span>
+                  <select
+                    value={selectedSweepState}
+                    onChange={(e) => handleStateChange(e.target.value)}
+                    className="bg-transparent text-xs text-white font-black focus:outline-none cursor-pointer pr-1"
+                    title="Choose any US State"
+                  >
+                    {US_STATES.map((st) => (
+                      <option key={st.code} value={st.code} className="bg-slate-900 text-white font-bold">
+                        {st.code} - {st.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Step 2: State-Wide Scope Toggle Button */}
+                <button
+                  type="button"
+                  onClick={() => handleToggleStateWideMode(!isStateWideMode)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer border ${
+                    isStateWideMode
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-emerald-400 shadow-md ring-1 ring-emerald-400/50'
+                      : 'bg-slate-900 text-slate-400 hover:text-slate-200 border-slate-700'
+                  }`}
+                  title={isStateWideMode ? 'State-Wide Mode ACTIVE: Broadening search beyond fixed county limits across the entire state' : 'Click to enable State-Wide search scope across all counties'}
                 >
-                  {US_STATES.map((st) => (
-                    <option key={st.code} value={st.code} className="bg-slate-900 text-white font-bold">
-                      {st.code} - {st.name}
-                    </option>
-                  ))}
-                </select>
+                  <span>🌲</span>
+                  <span className="text-[11px] font-extrabold">State-Wide Mode</span>
+                  <span className={`w-2 h-2 rounded-full ${isStateWideMode ? 'bg-emerald-300 animate-pulse' : 'bg-slate-500'}`} />
+                </button>
+
+                {/* Step 3: Submenu County Selector (Populated based on State) */}
+                <div className={`flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-900 rounded-xl border transition ${isStateWideMode ? 'border-indigo-500/30 opacity-80' : 'border-emerald-500/40'}`}>
+                  <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span className="text-[10px] font-extrabold text-emerald-300 uppercase tracking-wider">County:</span>
+                  <select
+                    value={selectedSweepCounty}
+                    onChange={(e) => {
+                      setSelectedSweepCounty(e.target.value);
+                      if (e.target.value.includes('all')) {
+                        setIsStateWideMode(true);
+                      } else {
+                        setIsStateWideMode(false);
+                      }
+                    }}
+                    className="bg-transparent text-xs text-emerald-300 font-extrabold focus:outline-none cursor-pointer max-w-[210px] truncate"
+                    title={`Select a county in ${activeStateObj.name}`}
+                  >
+                    {stateCountiesList.map((c) => (
+                      <option key={c.id} value={c.id} className="bg-slate-900 text-white">
+                        {c.name} {c.majorCities ? `(${c.majorCities})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              {/* Step 2: Submenu County Selector (Populated based on State) */}
-              <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-900 rounded-xl border border-emerald-500/40">
-                <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span className="text-[10px] font-extrabold text-emerald-300 uppercase tracking-wider">County:</span>
-                <select
-                  value={selectedSweepCounty}
-                  onChange={(e) => setSelectedSweepCounty(e.target.value)}
-                  className="bg-transparent text-xs text-emerald-300 font-extrabold focus:outline-none cursor-pointer max-w-[210px] truncate"
-                  title={`Select a county in ${activeStateObj.name}`}
-                >
-                  {stateCountiesList.map((c) => (
-                    <option key={c.id} value={c.id} className="bg-slate-900 text-white">
-                      {c.name} {c.majorCities ? `(${c.majorCities})` : ''}
-                    </option>
-                  ))}
-                </select>
+              {/* Step 4: Geographic Search Radius Slider UI Component */}
+              <div className="flex items-center gap-2.5 px-3 py-1.5 bg-slate-900/90 rounded-xl border border-indigo-500/30">
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-sm">{getSearchRadiusScope(searchRadiusMiles).icon}</span>
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-extrabold text-indigo-300 uppercase tracking-wider">Search Radius:</span>
+                    <span className="text-xs font-black text-white font-mono leading-none">
+                      {searchRadiusMiles} <span className="text-[10px] font-semibold text-slate-400">mi</span>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 grow min-w-[140px] max-w-[220px]">
+                  <input
+                    type="range"
+                    min="15"
+                    max="300"
+                    step="5"
+                    value={searchRadiusMiles}
+                    onChange={(e) => handleRadiusChange(parseInt(e.target.value, 10))}
+                    className="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-400 focus:outline-none"
+                    title={`Adjust search radius: ${searchRadiusMiles} miles (${getSearchRadiusScope(searchRadiusMiles).label})`}
+                  />
+                </div>
+
+                <span className={`px-2 py-0.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider border shrink-0 whitespace-nowrap ${getSearchRadiusScope(searchRadiusMiles).badge}`}>
+                  {getSearchRadiusScope(searchRadiusMiles).label}
+                </span>
               </div>
             </div>
 
+            <button
+              onClick={() => setShowLeadDensityHeatmapModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 via-purple-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white font-black text-xs shadow-xl transition cursor-pointer border border-pink-400/50 relative group"
+              title="Open Interactive Census Tract Lead Density Heatmap & LMI Hotspot Campaign Launcher"
+            >
+              <Flame className="w-4 h-4 text-amber-300 animate-bounce" />
+              <span>🗺️ LMI Lead Density Heatmap</span>
+              <span className="px-1.5 py-0.2 rounded-full bg-rose-400 text-slate-950 text-[9px] font-black animate-pulse">
+                Hotspots
+              </span>
+            </button>
+
+            <button
+              onClick={() => setShowNationwideMatrixModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-600 hover:from-blue-600 hover:to-purple-500 text-white font-black text-xs shadow-xl transition cursor-pointer border border-cyan-400/40 relative"
+              title="View 50-State Mortgage & DPA Matrix (Lakeview National 100%, USDA RD Zero-Down, FHA NHF DPA, State Bonds & LMI Census Tract Overlays)"
+            >
+              <Globe className="w-4 h-4 text-cyan-300" />
+              <span>🏛️ 50-State DPA &amp; Census Matrix</span>
+              <span className="px-1.5 py-0.2 rounded-full bg-emerald-400 text-slate-950 text-[9px] font-black">
+                50 States
+              </span>
+            </button>
+
+            <button
+              onClick={() => setShowBooleanModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-teal-300 font-extrabold text-xs shadow-lg transition cursor-pointer border border-teal-500/40 relative"
+              title={`Configure Boolean Search Query (AND, OR, NOT) & Exclusions (Active: ${booleanConfig.enabled ? booleanConfig.activePresetId : 'Off'})`}
+            >
+              <SlidersHorizontal className="w-4 h-4 text-teal-400" />
+              <span>🔀 Boolean &amp; Exclusions</span>
+              <span className={`w-2 h-2 rounded-full ${booleanConfig.enabled ? 'bg-teal-400 animate-pulse' : 'bg-slate-500'}`} />
+            </button>
+            <button
+              onClick={() => setShowSmartTemplatesDeck(prev => !prev)}
+              className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-xs shadow-xl transition cursor-pointer border relative ${
+                showSmartTemplatesDeck
+                  ? 'bg-gradient-to-r from-amber-400 to-emerald-400 text-slate-950 border-amber-300 ring-2 ring-emerald-400/50 shadow-emerald-500/20'
+                  : 'bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 text-white border-emerald-400/40'
+              }`}
+              title="Open Pre-Written 100% APR-Compliant Smart Outreach Templates for 2-1 Buydowns & Seller Credits"
+            >
+              <Sparkles className="w-4 h-4 text-amber-300" />
+              <span>📋 Smart Outreach Templates</span>
+              <span className="px-1.5 py-0.2 rounded-full bg-amber-400 text-slate-950 text-[9px] font-black">
+                100% APR Safe
+              </span>
+            </button>
             <button
               onClick={() => setShowOutreachQueueDeck(prev => !prev)}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-emerald-500 hover:from-indigo-500 hover:to-emerald-400 text-white font-black text-xs shadow-xl transition cursor-pointer border border-indigo-400/40 relative"
@@ -2183,7 +2488,83 @@ Email: fordmj@gmail.com`;
             </span>
           </div>
         )}
+
+        {/* Scrape Result Count Monitor & Intelligent Low-Yield Radius Expansion Advisor */}
+        {lowYieldAlert && lowYieldAlert.isLowYield && (
+          <div className="mt-4 rounded-2xl bg-gradient-to-r from-amber-950/90 via-slate-900 to-amber-950/90 border-2 border-amber-500/70 p-4 sm:p-5 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4">
+            <div className="flex items-start gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-amber-500/20 border border-amber-500/50 flex items-center justify-center shrink-0 mt-0.5">
+                <AlertTriangle className="w-6 h-6 text-amber-400 animate-bounce" />
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-extrabold text-[10px] uppercase tracking-wider border border-amber-500/40">
+                    Low Result Count Warning
+                  </span>
+                  <span className="text-white font-black text-sm">
+                    {lowYieldAlert.headline}
+                  </span>
+                </div>
+                <p className="text-slate-300 text-xs mt-1 leading-relaxed max-w-3xl">
+                  {lowYieldAlert.suggestionMessage}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5 self-end md:self-center shrink-0">
+              <button
+                type="button"
+                onClick={() => setLowYieldAlert(null)}
+                className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 text-xs font-bold transition cursor-pointer"
+              >
+                Dismiss
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const newRadius = lowYieldAlert.recommendedRadius;
+                  handleRadiusChange(newRadius);
+                  setLowYieldAlert(null);
+                  setTimeout(() => {
+                    handleRunManualSweep();
+                  }, 250);
+                }}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-400 hover:to-emerald-400 text-slate-950 font-black text-xs transition shadow-lg flex items-center gap-2 cursor-pointer"
+              >
+                <Zap className="w-4 h-4 text-slate-950" />
+                <span>🚀 Broaden to {lowYieldAlert.suggestedScopeLabel} &amp; Re-Sweep</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Smart Outreach Templates Section (2-1 Buydowns & Seller Credits) */}
+      {showSmartTemplatesDeck && (
+        <div className="animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center justify-between p-3.5 bg-slate-950 border border-slate-800 rounded-t-2xl">
+            <span className="text-xs font-bold text-slate-300 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span>Smart Outreach Templates Deck (100% APR &amp; TILA Compliant)</span>
+            </span>
+            <button
+              onClick={() => setShowSmartTemplatesDeck(false)}
+              className="text-xs px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition cursor-pointer"
+            >
+              ✕ Close Deck
+            </button>
+          </div>
+          <div className="p-4 sm:p-6 bg-slate-900/90 border-x border-b border-slate-800 rounded-b-2xl">
+            <SmartOutreachTemplatesSection
+              defaultCity={selectedSweepCounty !== 'all_8_counties' ? `${selectedSweepCounty}, ${selectedSweepState}` : `${selectedSweepState} Market`}
+              onOpenGmailDraft={(subject, body) => {
+                const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                window.open(mailtoUrl, '_blank');
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Visual Pending Outbound Messages Queue & Lead Scrape Cron Scheduler Deck */}
       {showOutreachQueueDeck && (
@@ -2535,9 +2916,11 @@ Email: fordmj@gmail.com`;
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400 bg-emerald-950/40 px-3 py-1 rounded-xl border border-emerald-500/30">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Active: {activeStateObj.name} ({stateCountiesList.find(c => c.id === selectedSweepCounty)?.name || 'All Counties'})</span>
+          <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400 bg-emerald-950/40 px-3 py-1.5 rounded-xl border border-emerald-500/30">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            <span className="truncate">
+              Active Scope: <strong className="text-white">{activeStateObj.name}</strong> • {isStateWideMode ? '🌲 Statewide Multi-County (All Counties)' : (stateCountiesList.find(c => c.id === selectedSweepCounty)?.name || 'Target County')}
+            </span>
           </div>
         </div>
 
@@ -5623,6 +6006,59 @@ Email: fordmj@gmail.com`;
         onPartnerSaved={(updated) => {
           setPeerDirectory(updated);
           setAllSyncedPeersList(PeerLoanOfficersService.getAllPeerLoanOfficers());
+        }}
+      />
+
+      {/* Boolean Query Matrix & Keyword Exclusion Modal */}
+      <BooleanQueryBuilderModal
+        isOpen={showBooleanModal}
+        onClose={() => setShowBooleanModal(false)}
+        config={booleanConfig}
+        onSaveConfig={(newConfig) => setBooleanConfig(newConfig)}
+        yieldConfig={yieldMonitorConfig}
+        onSaveYieldConfig={(newYieldConfig) => setYieldMonitorConfig(newYieldConfig)}
+        stateCode={selectedSweepState}
+        stateName={activeStateObj.name}
+        countyName={stateCountiesList.find(c => c.id === selectedSweepCounty)?.name || 'Target Area'}
+        searchRadiusMiles={searchRadiusMiles}
+      />
+
+      {/* 50-State & Nationwide Mortgage Program, State HFA / Bond & LMI Census Matrix Modal */}
+      <NationwideProgramMatrixModal
+        isOpen={showNationwideMatrixModal}
+        onClose={() => setShowNationwideMatrixModal(false)}
+        selectedStateCode={selectedSweepState}
+        onSelectState={(st) => handleStateChange(st)}
+        onApplyBooleanPreset={(andT, orT, notT) => {
+          const updated = {
+            ...booleanConfig,
+            enabled: true,
+            andTerms: andT,
+            orTerms: orT,
+            notTerms: notT
+          };
+          setBooleanConfig(updated);
+          LeadBooleanScrapeService.saveBooleanConfig(updated);
+        }}
+      />
+
+      {/* Census Tract Lead Density & LMI Hotspot Heatmap Modal */}
+      <CensusTractLeadDensityHeatmap
+        isOpen={showLeadDensityHeatmapModal}
+        onClose={() => setShowLeadDensityHeatmapModal(false)}
+        initialStateCode={selectedSweepState}
+        onLaunchTargetedCampaign={(campaignQuery) => {
+          const updated = {
+            ...booleanConfig,
+            enabled: true,
+            andTerms: campaignQuery.andTerms,
+            orTerms: campaignQuery.orTerms,
+            notTerms: campaignQuery.notTerms
+          };
+          setBooleanConfig(updated);
+          LeadBooleanScrapeService.saveBooleanConfig(updated);
+          // Trigger instant manual sweep with new campaign
+          handleRunManualSweep();
         }}
       />
     </div>

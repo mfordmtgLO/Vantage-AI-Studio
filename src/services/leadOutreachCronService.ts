@@ -171,11 +171,11 @@ Hi Sarah,
 
 I came across your question on BiggerPockets regarding 2-1 interest rate buydowns and seller concessions for first-time buyers in Beaverton/Hillsboro.
 
-With 26 years specializing in Oregon mortgage financing, 2-1 temporary rate buydowns are one of our top strategies right now. We structure the contract so the seller pays closing concession points that lower your effective note rate by 2.0% in year one and 1.0% in year two, dropping your initial monthly payment by $350–$550/mo.
+With 26 years specializing in Oregon mortgage financing, 2-1 temporary rate buydowns are one of our top strategies right now. We structure the contract so the seller funds concession credits that lower your effective interest rate during your first two years, giving you substantial monthly cash flow breathing room while you settle into your new home.
 
 Furthermore, family gift funds are 100% permitted for your primary down payment and closing reserves with conventional and FHA guidelines.
 
-Would you like me to send over a 1-page side-by-side payment comparison for Washington County inventory?
+Would you like me to map out a 1-page seller-concession buydown strategy tailored to your target price range in Washington County?
 
 Warm regards,
 Mike Ford | Oregon Mortgage Advisor

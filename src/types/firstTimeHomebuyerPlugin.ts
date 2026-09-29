@@ -123,7 +123,7 @@ export interface AreaListingRequestPayload {
   targetCityOrZip: string;
   targetState: string;
   maxTargetMonthlyPayment: number;
-  preferredDownPaymentProgram: 'USDA 100%' | 'LMI CRA Grant' | 'HomeReady 3%' | 'Lakeview National DPA' | 'OHCS Flex Lending FirstHome' | 'Any Low/No Down';
+  preferredDownPaymentProgram: 'USDA 100%' | '2-1 Rate Buydown Stack' | 'HomeReady 3%' | 'Lakeview National DPA' | 'OHCS Flex Lending FirstHome' | 'Any Low/No Down';
   buyerGrossMonthlyIncome: number;
   submittedAt: string;
   status: 'Pending Admin Review' | 'RentCast Pull Scheduled' | 'Synced To Map';

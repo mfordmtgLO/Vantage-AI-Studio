@@ -301,13 +301,302 @@ export function getStateDetails(stateCode: string): { code: string; name: string
 }
 
 /**
- * Helper to generate synthetic high-intent leads tailored to any selected State and County
+ * Helper to generate synthetic high-intent leads tailored to any selected State, County, or Statewide sweep
  */
-export function generateLocalizedLeadsForSweep(stateCode: string, countyId: string): any[] {
+export function generateLocalizedLeadsForSweep(stateCode: string, countyId: string, isStateWide: boolean = false): any[] {
   const st = getStateDetails(stateCode);
   const counties = getCountiesByState(stateCode);
+  const isAllOrStatewide = isStateWide || countyId.includes('all') || countyId.startsWith('all_');
+
+  if (isAllOrStatewide) {
+    const validCounties = counties.filter(c => !c.id.includes('all'));
+    const now = Date.now();
+
+    // Specific Oregon Multi-County Fanout (Lane, Multnomah, Washington, Clackamas, Deschutes, Marion, Jackson, Benton, Linn, Douglas, Coos, Yamhill)
+    if (stateCode === 'OR') {
+      const oregonMultiCountyTemplates = [
+        {
+          county: 'Lane County',
+          city: 'Eugene',
+          sourceType: 'forum',
+          platform: 'Reddit (r/Eugene & r/FirstTimeHomeBuyer)',
+          title: 'Eugene/Springfield starter homes vs Lane County DPA & 620 credit minimums',
+          author: 'u/EugeneHomeSeeker_26',
+          snippet: 'Tired of paying $2,100 in rent near South Eugene. Heard there are Lane County IDA matching grants paired with 3.5% down FHA loans. Any Oregon loan officers familiar with Eugene limits?',
+          intentScore: 98,
+          sentiment: 'Urgent',
+          matched: 'Lane County IDA & FHA 3.5% First-Time Buyer'
+        },
+        {
+          county: 'Deschutes County',
+          city: 'Bend',
+          sourceType: 'chat_board',
+          platform: 'Bend Outdoor Recreation & Housing Guild',
+          title: 'Bend housing prices vs Deschutes County employer assistance grants & zero down',
+          author: 'u/BendOutdoorBuyer',
+          snippet: 'Struggle to compete with cash buyers in Bend. Heard about local employer housing assistance paired with OHCS Flex Lending. Any LOs specialized in this?',
+          intentScore: 97,
+          sentiment: 'Urgent',
+          matched: 'OHCS Flex Lending & Employer Grant'
+        },
+        {
+          county: 'Multnomah County',
+          city: 'Portland',
+          sourceType: 'forum',
+          platform: 'Reddit (r/Portland)',
+          title: 'First-time home buyer in Portland with $65k salary - Is zero down or OHCS DPA realistic right now?',
+          author: 'u/PDX_Renter_99',
+          snippet: 'Looking to stop paying $2,100 in rent in inner SE Portland. I heard about Oregon Housing and Community Services (OHCS) down payment assistance and Lakeview zero-down programs. Anyone successfully used these with under 700 credit?',
+          intentScore: 96,
+          sentiment: 'Urgent',
+          matched: 'OHCS Flex Lending & DPA / Lakeview Zero-Down'
+        },
+        {
+          county: 'Washington County',
+          city: 'Beaverton',
+          sourceType: 'chat_board',
+          platform: 'BiggerPockets Oregon Board',
+          title: 'Beaverton / Hillsboro tech workers looking for 2-1 buydowns or seller concessions',
+          author: 'SarahM_Hillsboro',
+          snippet: 'Interest rates feel brutal for our first home purchase. Sellers are starting to offer price concessions and 2-1 rate buydowns in Washington County. Can someone explain how gift funds work for closing costs?',
+          intentScore: 95,
+          sentiment: 'Positive',
+          matched: '2-1 Rate Buydowns & Seller Concessions'
+        },
+        {
+          county: 'Marion County',
+          city: 'Salem',
+          sourceType: 'blog',
+          platform: 'Pacific Northwest Real Estate Blog',
+          title: 'Comment on: "Rural Development (USDA RD) Zero-Down Loans in Marion & Clackamas County"',
+          author: 'DaveK_Salem',
+          snippet: 'We want to buy near Woodburn or Silverton. Does the USDA zero-down loan apply to modular homes or just traditional single family? Trying to avoid PMI while renting an overpriced apartment.',
+          intentScore: 94,
+          sentiment: 'Urgent',
+          matched: 'USDA Rural Development 0% Down'
+        },
+        {
+          county: 'Clackamas County',
+          city: 'Lake Oswego',
+          sourceType: 'forum',
+          platform: 'Public Facebook Group (Oregon First-Time Homebuyers)',
+          title: 'Lake Oswego & Oregon City buyers inquiring about Clackamas County DPA grants',
+          author: 'Sarah Jenkins (FB Member)',
+          snippet: 'Looking for a lender who understands Clackamas County down payment assistance programs and how they stack with state OHCS funds for teachers.',
+          intentScore: 96,
+          sentiment: 'Urgent',
+          matched: 'Clackamas County DPA & OHCS Stack'
+        },
+        {
+          county: 'Jackson County',
+          city: 'Medford',
+          sourceType: 'chat_board',
+          platform: 'Oregon Housing Discord (#rogue-valley)',
+          title: 'Medford & Ashland starter home search - can we combine USDA zero-down with seller paid closing costs?',
+          author: 'u/MedfordFirstTime',
+          snippet: 'We found a great 3-bed in Jackson County listed at $340k. Sellers are motivated. Wondering if USDA loan rules allow seller concessions to cover closing costs entirely.',
+          intentScore: 93,
+          sentiment: 'Positive',
+          matched: 'USDA Rural Development & Seller Concessions'
+        },
+        {
+          county: 'Benton County',
+          city: 'Corvallis',
+          sourceType: 'blog',
+          platform: 'PNW Real Estate Investor & Buyer Blog',
+          title: 'Corvallis & Albany tech workers looking to stop renting and buy near OSU campus',
+          author: 'u/CorvallisTechBuyer',
+          snippet: 'Tired of paying $2,300 in rent near Corvallis (Benton County). Looking into conventional 3% down options and whether gift funds from parents count towards reserves.',
+          intentScore: 92,
+          sentiment: 'Neutral',
+          matched: 'Conventional 3% Down & Gift Funds'
+        },
+        {
+          county: 'Linn County',
+          city: 'Albany',
+          sourceType: 'forum',
+          platform: 'Reddit (r/AlbanyOR)',
+          title: 'Albany / Lebanon first-time buyer with 630 credit score looking for zero-down options',
+          author: 'u/LinnCountyBuyer',
+          snippet: 'Looking for a single-family home in Lebanon or Albany. Can we use Lakeview zero-down or OHCS Flex Lending with a 630 credit score? Rent is climbing to $1,950.',
+          intentScore: 95,
+          sentiment: 'Urgent',
+          matched: 'OHCS Flex Lending & 620+ Credit Tier'
+        },
+        {
+          county: 'Douglas County',
+          city: 'Roseburg',
+          sourceType: 'chat_board',
+          platform: 'Douglas County Homebuyer Community Forum',
+          title: 'Roseburg & Sutherlin USDA 100% rural development loan eligibility question',
+          author: 'u/RoseburgDreamer',
+          snippet: 'Looking at rural properties near Sutherlin and Winston. Does USDA 100% financing have income limits for a family of 4 in Douglas County? Ready to schedule pre-approval.',
+          intentScore: 91,
+          sentiment: 'Positive',
+          matched: 'USDA 100% Zero-Down Rural Financing'
+        },
+        {
+          county: 'Coos County',
+          city: 'Coos Bay',
+          sourceType: 'blog',
+          platform: 'Pacific Northwest Real Estate Podcast Notes',
+          title: 'Coos Bay & Bandon coastal relocation and USDA zero-down rural housing tracts',
+          author: 'Podcast Listener #4482',
+          snippet: 'Heard episode on South Coast Oregon housing. Wondering if Bandon and Coos Bay qualify for USDA rural zero-down loans for self-employed remote workers.',
+          intentScore: 92,
+          sentiment: 'Positive',
+          matched: 'USDA Rural Zero-Down & Self-Employed W2'
+        },
+        {
+          county: 'Yamhill County',
+          city: 'McMinnville',
+          sourceType: 'forum',
+          platform: 'Reddit (r/YamhillCounty)',
+          title: 'McMinnville & Newberg wine country first-time buyers looking for DPA grants',
+          author: 'u/WineCountryBuyer',
+          snippet: 'Moving to McMinnville to be closer to family. Looking for an experienced Oregon loan officer who can structure a 3% down loan with down payment assistance.',
+          intentScore: 94,
+          sentiment: 'Urgent',
+          matched: 'OHCS Rate Advantage & 3% Down'
+        }
+      ];
+
+      return oregonMultiCountyTemplates.map((item, idx) => ({
+        id: `lead_or_sweep_${idx + 1}_${now}`,
+        sourceType: item.sourceType as any,
+        platform: item.platform,
+        title: item.title,
+        authorOrUser: item.author,
+        snippet: item.snippet,
+        intentScore: item.intentScore,
+        sentimentScore: item.sentiment as any,
+        location: `${item.city}, OR (${item.county})`,
+        matchedProgram: item.matched,
+        discoveredAt: idx === 0 ? 'Just now' : `${(idx + 1) * 3} mins ago`,
+        url: `https://reddit.com/r/Oregon/comments/lead_${idx + 101}`,
+        status: 'new',
+        timestamp: now - (idx * 1500)
+      }));
+    }
+
+    // Generic Multi-Region Statewide Batch for any other US State
+    const statewideTemplates = [
+      {
+        county: validCounties[0] || { name: 'Metro County', majorCities: `${st.name} Metro` },
+        sourceType: 'forum',
+        platform: `Reddit (r/${st.name.replace(/\s+/g, '')} & r/FirstTimeHomeBuyer)`,
+        title: `Tired of paying $2,400 rent - how do ${st.dpaProgram} grants work with 3.5% FHA?`,
+        author: `u/${st.code}RenterToOwner`,
+        snippet: `Lease is ending in 60 days. We have steady W-2 income ($85k) but only $7k in savings. Looking for an experienced local LO who can verify if we qualify for ${st.dpaProgram} to cover the down payment without draining reserves.`,
+        intentScore: 98,
+        sentiment: 'Urgent',
+        matched: `${st.dpaProgram} & FHA 3.5% Down`
+      },
+      {
+        county: validCounties[1] || { name: 'Lakeview Metro', majorCities: `${st.name} Suburbs` },
+        sourceType: 'forum',
+        platform: `Reddit (r/${st.name.replace(/\s+/g, '')}Housing)`,
+        title: `Lakeview National 100% Zero-Down loan eligibility in ${st.name} with 660 credit`,
+        author: `u/${st.code}ZeroDownSeeker`,
+        snippet: `Want to buy a $425,000 single family home. Our combined household income is $95k (well under 140% county AMI). Can we use Lakeview National 100% financing to avoid paying any down payment out of pocket?`,
+        intentScore: 97,
+        sentiment: 'Urgent',
+        matched: `Lakeview National 100% Zero-Down (140% AMI Cap)`
+      },
+      {
+        county: validCounties[2] || { name: 'Valley County', majorCities: `${st.name} Valley` },
+        sourceType: 'chat_board',
+        platform: `${st.name} Regional Homebuyer Guild & Discord`,
+        title: `0% down USDA Rural Development vs Conventional 3% - DTI limits question`,
+        author: `u/${st.code}RuralDreamer`,
+        snippet: `Looking at homes on the outskirts. Our realtor mentioned USDA offers 100% zero-down financing with no monthly PMI if the house is in an eligible census tract. Does USDA allow a 48% DTI if we have a 680 credit score?`,
+        intentScore: 96,
+        sentiment: 'Urgent',
+        matched: `USDA 100% Rural Zero-Down & ${st.name} DPA Stack`
+      },
+      {
+        county: validCounties[3] || { name: 'Central Region', majorCities: `${st.name} Central` },
+        sourceType: 'blog',
+        platform: `${st.name} Real Estate & Loan Forum`,
+        title: `Stop renting with 620 credit score: FHA NHF 5% DPA Grant roadmap`,
+        author: `u/${st.code}CreditBuilder`,
+        snippet: `My score just bumped to 635 after paying down credit cards. Rent just went up another $180. Want to know if National Homebuyers Fund (NHF) 5% DPA is available in ${st.name} with no first-time buyer restriction.`,
+        intentScore: 95,
+        sentiment: 'Positive',
+        matched: `FHA NHF 5% DPA Grant (620+ FICO)`
+      },
+      {
+        county: validCounties[4] || { name: 'LMI District', majorCities: `${st.name} Urban Core` },
+        sourceType: 'chat_board',
+        platform: `${st.name} Community First-Time Buyer Board`,
+        title: `Zero Down Payment USDA / Lakeview + 2-1 Rate Buydown Stacking Strategy`,
+        author: `u/${st.code}ZeroDownBuydown`,
+        snippet: `Found a starter home listed at $340k. Our loan officer mentioned we can stack zero down payment financing with a seller-funded 2-1 temporary rate buydown so we pay $0 down and get substantial payment relief for the first two years!`,
+        intentScore: 97,
+        sentiment: 'Urgent',
+        matched: `Zero-Down + 2-1 Rate Buydown Stack`
+      },
+      {
+        county: validCounties[5] || { name: 'South Region', majorCities: `${st.name} South` },
+        sourceType: 'chat_board',
+        platform: `First-Time Buyer Discussion Board (#relocation-${st.code.toLowerCase()})`,
+        title: `Can we combine seller concessions for closing costs with zero-down financing?`,
+        author: `u/${st.code}FamilyRelo`,
+        snippet: `Moving our family to ${st.name}. Found a great 3-bed home and the seller is open to giving 3% in concessions. Can we combine this with state housing DPA so our total out-of-pocket cash is basically $0? Need an official loan officer pre-approval.`,
+        intentScore: 95,
+        sentiment: 'Urgent',
+        matched: `Zero-Down Financing & Seller Concessions`
+      },
+      {
+        county: validCounties[0] || { name: 'East Region', majorCities: `${st.name} East` },
+        sourceType: 'forum',
+        platform: `Reddit (r/${(validCounties[0]?.name || 'Local').replace(/\s+/g, '')})`,
+        title: `Self-employed 1099 & W2 co-borrower qualifying for first starter home under conforming limit`,
+        author: `u/${st.code}SelfEmployedBuyer`,
+        snippet: `I run an LLC with 2 years of solid tax returns and my partner is full-time W2. We want to stop paying rent to private landlords and buy our first property. Looking for a loan officer who actually understands self-employment write-offs and Lakeview / ${st.name} DPA.`,
+        intentScore: 93,
+        sentiment: 'Positive',
+        matched: `Conventional HomeReady & 1099/W2 Blend`
+      },
+      {
+        county: validCounties[1] || { name: 'West Region', majorCities: `${st.name} West` },
+        sourceType: 'blog',
+        platform: `${st.name} Housing Transition Community Blog`,
+        title: `Gift funds from parents paired with ${st.dpaProgram} & Lakeview rules`,
+        author: `u/${st.code}FirstHome2026`,
+        snippet: `My parents are willing to gift $5,000 towards our home purchase reserves. Can this be stacked with state grant programs for our earnest money deposit? Ready to apply for pre-approval this week.`,
+        intentScore: 97,
+        sentiment: 'Urgent',
+        matched: `${st.dpaProgram} & Family Gift Reserves`
+      }
+    ];
+
+    return statewideTemplates.map((item, idx) => {
+      const countyName = item.county.name.replace('🌟 ', '').replace('🌲 ', '');
+      const cityName = item.county.majorCities ? item.county.majorCities.split(',')[0].trim() : `${st.name} City`;
+
+      return {
+        id: `lead_${stateCode.toLowerCase()}_statewide_${idx + 1}_${now}`,
+        sourceType: item.sourceType,
+        platform: item.platform,
+        title: item.title,
+        authorOrUser: item.author,
+        snippet: item.snippet,
+        intentScore: item.intentScore,
+        sentimentScore: item.sentiment,
+        location: `${cityName}, ${st.code} (${countyName})`,
+        matchedProgram: item.matched,
+        discoveredAt: idx === 0 ? 'Just now' : `${(idx + 1) * 2} mins ago`,
+        url: `https://discussion.${st.code.toLowerCase()}housing.org/thread/${idx + 101}`,
+        status: 'new',
+        timestamp: now - (idx * 2000)
+      };
+    });
+  }
+
+  // Single county focus
   const selectedCounty = counties.find(c => c.id === countyId) || counties[0];
-  const countyLabel = selectedCounty.name.replace('🌟 ', '');
+  const countyLabel = selectedCounty.name.replace('🌟 ', '').replace('🌲 ', '');
   const cities = selectedCounty.majorCities ? selectedCounty.majorCities.split(',')[0].trim() : `${st.name} City`;
 
   return [
