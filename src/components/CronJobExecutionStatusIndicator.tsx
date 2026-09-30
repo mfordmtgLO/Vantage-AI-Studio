@@ -250,12 +250,12 @@ export const CronJobExecutionStatusIndicator: React.FC<CronJobExecutionStatusInd
     const time = zillowConfig.timePst || '6:00 AM';
     const freq = zillowConfig.frequency === 'daily'
       ? 'Daily'
-      : zillowConfig.frequency === 'weekdays'
-      ? 'Weekdays'
       : zillowConfig.frequency === 'every_other_day'
       ? 'Every Other Day'
       : zillowConfig.frequency === 'weekly'
       ? 'Weekly'
+      : zillowConfig.frequency === 'monthly'
+      ? 'Monthly'
       : 'Scheduled';
     return `${time} PST (${freq})`;
   };

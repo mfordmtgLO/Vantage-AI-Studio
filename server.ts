@@ -333,7 +333,8 @@ app.post("/api/lead-discovery/dispatch-high-intent-alert", async (req, res) => {
       carrier = 'verizon',
       gatewayAddress,
       userGoogleToken,
-      pathway = 'google_apps' // 'google_apps' (Free standard Google Account) | 'workspace' (Enterprise OAuth)
+      pathway = 'google_apps', // 'google_apps' (Free standard Google Account) | 'workspace' (Enterprise OAuth)
+      isPriorityResponse = false
     } = req.body;
 
     const carrierDomains: Record<string, string> = {
@@ -362,18 +363,33 @@ app.post("/api/lead-discovery/dispatch-high-intent-alert", async (req, res) => {
             sender: 'renter',
             authorName: author,
             text: snippet,
-            timestamp: 'Initial Forum Scrape Post',
+            timestamp: isPriorityResponse ? 'Priority Inbound 2-Way Reply' : 'Initial Forum Scrape Post',
             channel: platform
           }
         ]
       };
+    } else {
+      // Append subsequent inbound reply from lead
+      activeScrapeLeadThreads[leadId].messages.push({
+        sender: 'renter',
+        authorName: author,
+        text: snippet,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        channel: platform
+      });
+      activeScrapeLeadThreads[leadId].lastMessageAt = new Date().toISOString();
     }
 
-    // Persist initial scraped comment to Firestore
+    // Persist inbound comment to Firestore
     await saveLeadMessageToFirestore(leadId, author, 'renter', snippet, platform, location, 'sms');
 
     // Format outbound SMS payload delivered to Mike Ford's iPhone
-    const smsAlertText = `🔥 [VANTAGE LEAD ALERT • ${intentScore}% Intent]
+    const smsAlertText = isPriorityResponse
+      ? `⚡ [PRIORITY ACTIVE 2-WAY LEAD REPLY • ${author}] (${location})
+"${snippet}"
+Program: ${matchedProgram}
+👉 Reply directly to this text on your iPhone to respond remotely away from computer!`
+      : `🔥 [VANTAGE LEAD ALERT • ${intentScore}% Intent]
 Author: ${author} on ${platform} (${location})
 "${snippet}"
 Matched Program: ${matchedProgram}

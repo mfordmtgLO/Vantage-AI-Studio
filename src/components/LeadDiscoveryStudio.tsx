@@ -78,6 +78,7 @@ import {
   calculateLeadDormantDays
 } from '../services/leadAutoArchiveService';
 import { ActiveTwoWayNotificationModal } from './ActiveTwoWayNotificationModal';
+import { PriorityTwoWayTaskCenter, PriorityTwoWayTask } from './PriorityTwoWayTaskCenter';
 import {
   ActiveTwoWayNotificationService,
   ActiveTwoWayNotificationConfig,
@@ -395,6 +396,66 @@ export const LeadDiscoveryStudio: React.FC = () => {
       setIsSyncingPeerCards(false);
     }
   };
+  const DEFAULT_PRIORITY_2WAY_TASKS: PriorityTwoWayTask[] = [
+    {
+      id: 'task_bend_buyer_1',
+      leadId: 'lead_sweep_5',
+      author: 'u/BendOutdoorBuyer',
+      location: 'Bend, OR (Deschutes County)',
+      matchedProgram: 'OHCS Flex Lending & Employer DPA Grant',
+      replyText: 'Thanks for the quick reply Mike! Can we jump on a 10-minute numbers review this afternoon? Rent just went up $250.',
+      platform: 'Reddit (r/Bend & Local Housing Forum)',
+      timestamp: '2m ago',
+      receivedAt: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+      priority: 'urgent',
+      status: 'awaiting_lo_reply',
+      smsForwardedToIphone: true,
+      targetMobileNumber: '+1 (541) 729-2097',
+      messageThreadId: 'th_bend_outdoor_88'
+    },
+    {
+      id: 'task_eugene_timer_2',
+      leadId: 'lead_sweep_2',
+      author: 'u/EugeneFirstTimer',
+      location: 'Eugene, OR (Lane County)',
+      matchedProgram: 'USDA Zero-Down & Oregon Bond Advantage',
+      replyText: "Got the GeoMap property listings link! The starter home in our market looks perfect. Can we pair USDA with seller concessions?",
+      platform: 'Reddit (r/Eugene)',
+      timestamp: '14m ago',
+      receivedAt: new Date(Date.now() - 14 * 60 * 1000).toISOString(),
+      priority: 'high',
+      status: 'awaiting_lo_reply',
+      smsForwardedToIphone: true,
+      targetMobileNumber: '+1 (541) 729-2097',
+      messageThreadId: 'th_eugene_buyer_12'
+    },
+    {
+      id: 'task_portland_downsize_3',
+      leadId: 'lead_sweep_1',
+      author: 'u/PortlandDownsizing',
+      location: 'Portland, OR (Multnomah County)',
+      matchedProgram: '2-1 Buydown & Conventional Flex',
+      replyText: "Hi Mike! Just received your text and checked out the rate review. We're ready to review loan options and schedule our pre-approval call today!",
+      platform: 'Reddit (r/Portland)',
+      timestamp: '32m ago',
+      receivedAt: new Date(Date.now() - 32 * 60 * 1000).toISOString(),
+      priority: 'high',
+      status: 'handled',
+      smsForwardedToIphone: true,
+      targetMobileNumber: '+1 (541) 729-2097',
+      messageThreadId: 'th_portland_pdx_44'
+    }
+  ];
+
+  const [priorityTwoWayTasks, setPriorityTwoWayTasks] = useState<PriorityTwoWayTask[]>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('vantage_priority_two_way_tasks_v1');
+        if (saved) return JSON.parse(saved);
+      }
+    } catch {}
+    return DEFAULT_PRIORITY_2WAY_TASKS;
+  });
   const [activeTwoWayPriorityAlert, setActiveTwoWayPriorityAlert] = useState<{
     leadId: string;
     author: string;
@@ -809,21 +870,125 @@ export const LeadDiscoveryStudio: React.FC = () => {
   };
 
   const handleDispatchPriorityActiveTwoWayAlert = async (payload: ActiveTwoWayResponsePayload) => {
-    // 1. Dispatch distinct priority push (Hardware vibration, audio chime, lock screen push)
-    await ActiveTwoWayNotificationService.dispatchPriorityResponsePush(payload, activeTwoWayNotifConfig);
+    // 1. Dispatch text message alert to Mike's iPhone (Zero dashboard audio ping or popups)
+    await ActiveTwoWayNotificationService.dispatchPriorityResponsePush(payload, {
+      ...activeTwoWayNotifConfig,
+      soundEnabled: false // Silenced dashboard mode
+    });
 
-    // 2. Set distinct high-priority floating alert banner (separate from standard Gmail draft notification)
-    setActiveTwoWayPriorityAlert({
+    // 2. Stage into prioritized two-way communication task queue (Zero disruptive popups)
+    const newTask: PriorityTwoWayTask = {
+      id: `task_${Date.now()}_${payload.leadId}`,
       leadId: payload.leadId,
       author: payload.author,
-      text: payload.replyText,
       location: payload.location,
       matchedProgram: payload.matchedProgram,
-      time: 'Just now'
+      replyText: payload.replyText,
+      platform: payload.platform || 'Active 2-Way Lead Discussion',
+      timestamp: 'Just now',
+      receivedAt: new Date().toISOString(),
+      priority: 'urgent',
+      status: 'awaiting_lo_reply',
+      smsForwardedToIphone: true,
+      targetMobileNumber: activeTwoWayNotifConfig.targetMobileNumber || '+1 (541) 729-2097',
+      messageThreadId: payload.messageThreadId
+    };
+
+    setPriorityTwoWayTasks(prev => {
+      const filtered = prev.filter(t => t.leadId !== payload.leadId);
+      const updated = [newTask, ...filtered];
+      try {
+        localStorage.setItem('vantage_priority_two_way_tasks_v1', JSON.stringify(updated));
+      } catch {}
+      return updated;
     });
 
     // 3. Mark CRM state to active_two_way
     handleUpdateLeadCrmStatus(payload.leadId, 'active_two_way');
+  };
+
+  const handleMarkTaskHandled = (taskId: string) => {
+    setPriorityTwoWayTasks(prev => {
+      const updated = prev.map(t => {
+        if (t.id === taskId) {
+          const nextStatus = t.status === 'awaiting_lo_reply' ? ('handled' as const) : ('awaiting_lo_reply' as const);
+          return { ...t, status: nextStatus };
+        }
+        return t;
+      });
+      try {
+        localStorage.setItem('vantage_priority_two_way_tasks_v1', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
+  const handleOpenReplyModalForTask = (task: PriorityTwoWayTask) => {
+    const lead = leads.find(l => l.id === task.leadId);
+    if (lead) {
+      setSelectedLeadForReply(lead);
+    } else {
+      const fallbackLead: LeadItem = {
+        id: task.leadId,
+        authorOrUser: task.author,
+        title: `2-Way Discussion with ${task.author}`,
+        snippet: task.replyText,
+        location: task.location || 'Oregon',
+        matchedProgram: task.matchedProgram || 'Housing Financing Review',
+        platform: task.platform || 'Discussion Forum',
+        intentScore: 98,
+        sentimentScore: 'Urgent',
+        discoveredAt: 'Just now',
+        url: '#',
+        timestamp: Date.now(),
+        status: 'active_two_way',
+        sourceType: 'forum',
+        isFilteredOut: false
+      };
+      setSelectedLeadForReply(fallbackLead);
+    }
+  };
+
+  const handleOpenGmailDraftForTask = (task: PriorityTwoWayTask) => {
+    const lead = leads.find(l => l.id === task.leadId);
+    const draftText = `Hi ${task.author}!
+
+Following up on your message regarding ${task.matchedProgram || 'financing options'} in ${task.location || 'Oregon'}:
+"${task.replyText}"
+
+As an Oregon Mortgage Loan Officer with 26 years of experience, we can run a quick, zero-pressure 10-minute numbers review to see your exact purchasing power and down payment grant options.
+
+Best regards,
+
+Mike Ford
+Mortgage Loan Officer | 26 Years Oregon Lending Experience
+Direct Cell / Text: (541) 729-2097
+Email: fordmj@gmail.com`;
+
+    if (lead) {
+      handleOpenGmailDraft(lead, draftText);
+    } else {
+      const composeUrl = `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(`Re: Discussion with ${task.author}`)}&body=${encodeURIComponent(draftText)}`;
+      window.open(composeUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const handleSimulateTaskInboundReply = () => {
+    const demoReplies = [
+      `Thanks for the quick reply Mike! Can we jump on a 10-minute numbers review this afternoon? Rent just went up $250.`,
+      `Hi Mike! Just received your text regarding the 2-1 temporary buydown. Can we pair USDA with seller concessions in Deschutes County?`,
+      `We'd love to review our pre-approval numbers this week. Tired of renting and want to see how much OHCS grant we qualify for.`
+    ];
+    const pickedReply = demoReplies[Math.floor(Math.random() * demoReplies.length)];
+    handleDispatchPriorityActiveTwoWayAlert({
+      leadId: 'lead_sweep_5',
+      author: 'u/BendOutdoorBuyer',
+      location: 'Bend, OR (Deschutes County)',
+      matchedProgram: 'OHCS Flex Lending & Employer DPA Grant',
+      replyText: pickedReply,
+      platform: 'Reddit (r/Bend & Housing Guild)',
+      messageThreadId: 'th_bend_outdoor_88'
+    });
   };
 
   const synthesizeReengagementContent = (lead: LeadItem, strategy: 'dpa_grant_boost' | 'geomap_inventory' | 'rate_update' | 'payment_review') => {
@@ -2755,6 +2920,20 @@ Email: fordmj@gmail.com`;
         </div>
       )}
 
+      {/* Priority Two-Way Communication Task Center (Zero-Popup Layout, Silent Dashboard Mode) */}
+      <div id="priority-two-way-task-center" className="animate-in fade-in duration-300">
+        <PriorityTwoWayTaskCenter
+          tasks={priorityTwoWayTasks}
+          leads={leads}
+          targetMobileNumber={activeTwoWayNotifConfig.targetMobileNumber || '+1 (541) 729-2097'}
+          onOpenReplyModal={handleOpenReplyModalForTask}
+          onOpenGmailDraft={handleOpenGmailDraftForTask}
+          onMarkTaskHandled={handleMarkTaskHandled}
+          onSimulateInboundReply={handleSimulateTaskInboundReply}
+          onOpenNotificationConfig={() => setShowActiveTwoWayNotifModal(true)}
+        />
+      </div>
+
       {/* Visual Pipeline Progress Summary Chart */}
       {(() => {
         const countNew = leads.filter(l => l.status === 'new').length;
@@ -3051,14 +3230,23 @@ Email: fordmj@gmail.com`;
               <span>🌟 New Scrapes ({newScrapeCount})</span>
             </button>
             <button
-              onClick={() => setActiveFilter('active_two_way')}
+              onClick={() => {
+                setActiveFilter('active_two_way');
+                const el = document.getElementById('priority-two-way-task-center');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
                 activeFilter === 'active_two_way'
-                  ? 'bg-indigo-500 text-white shadow-md font-extrabold'
+                  ? 'bg-indigo-500 text-white shadow-md font-extrabold ring-1 ring-indigo-300'
                   : 'bg-indigo-950/40 text-indigo-300 hover:bg-indigo-900/50 border border-indigo-500/30'
               }`}
             >
               <span>💬 Active Two-Way ({activeTwoWayCount})</span>
+              {priorityTwoWayTasks.filter(t => t.status === 'awaiting_lo_reply').length > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full bg-amber-400 text-slate-950 font-black text-[10px] animate-pulse">
+                  {priorityTwoWayTasks.filter(t => t.status === 'awaiting_lo_reply').length} urgent
+                </span>
+              )}
             </button>
             <button
               onClick={() => setActiveFilter('dormant_7_days')}
@@ -4457,160 +4645,14 @@ Email: fordmj@gmail.com`;
         </div>
       )}
 
-      {/* Floating High-Priority 'Active Two-Way' Mobile Push Notification (Completely separate from standard Gmail draft notification) */}
-      {activeTwoWayPriorityAlert && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-auto sm:right-6 z-[60] w-[94vw] sm:max-w-md rounded-2xl bg-gradient-to-b from-slate-900 via-slate-900 to-amber-950/50 border-2 border-amber-500 p-4 shadow-2xl shadow-amber-500/20 space-y-3 animate-in slide-in-from-top-4">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-2">
-              <Zap className="w-4 h-4 text-amber-400 animate-pulse" />
-              <span>⚡ PRIORITY ACTIVE 2-WAY LEAD RESPONSE</span>
-            </span>
-            <button
-              type="button"
-              onClick={() => setActiveTwoWayPriorityAlert(null)}
-              className="text-slate-400 hover:text-white text-xs font-bold cursor-pointer p-1"
-            >
-              ✕
-            </button>
-          </div>
-          <div className="text-xs text-white space-y-1.5 bg-slate-950/80 p-3 rounded-xl border border-amber-500/30">
-            <div className="flex items-center justify-between">
-              <span className="font-black text-amber-300 text-sm">{activeTwoWayPriorityAlert.author}</span>
-              <span className="text-[10px] text-emerald-400 font-mono font-bold bg-emerald-950/80 px-2 py-0.5 rounded-full border border-emerald-500/40">
-                ● Active Two-Way Lead
-              </span>
-            </div>
-            {activeTwoWayPriorityAlert.location && (
-              <div className="text-[11px] text-slate-300 font-semibold flex items-center gap-1">
-                <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
-                <span>{activeTwoWayPriorityAlert.location}</span>
-                {activeTwoWayPriorityAlert.matchedProgram && (
-                  <span className="text-indigo-300 font-medium truncate">• {activeTwoWayPriorityAlert.matchedProgram}</span>
-                )}
-              </div>
-            )}
-            <p className="italic text-slate-100 text-xs leading-relaxed pt-1 border-t border-slate-800">
-              &ldquo;{activeTwoWayPriorityAlert.text}&rdquo;
-            </p>
-          </div>
-          <div className="flex items-center justify-between gap-2 pt-1">
-            <div className="flex flex-wrap items-center gap-2">
-              {(() => {
-                const lead = leads.find(l => l.id === activeTwoWayPriorityAlert.leadId);
-                const threadMeta = lead ? getOrRegisterMessageThread(lead.id, lead.authorOrUser, lead.platform, lead.targetCommentId) : null;
-                const cleanPhone = (activeTwoWayNotifConfig.targetMobileNumber || '5417292097').replace(/[^0-9]/g, '');
-                const smsText = `Hi ${activeTwoWayPriorityAlert.author}! Just got your message regarding ${activeTwoWayPriorityAlert.matchedProgram || 'financing options'} in ${activeTwoWayPriorityAlert.location || 'Oregon'}. Let's review your exact numbers today!${threadMeta ? `\n\n[Thread #${threadMeta.messageThreadId}]` : ''}`;
-                const smsUrl = `sms:+1${cleanPhone}?body=${encodeURIComponent(smsText)}`;
-                return (
-                  <a
-                    href={smsUrl}
-                    onClick={() => setActiveTwoWayPriorityAlert(null)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-400 hover:to-emerald-400 text-slate-950 font-black text-xs transition cursor-pointer shadow-md"
-                  >
-                    <Smartphone className="w-3.5 h-3.5" />
-                    <span>📱 1-Tap Apple Messages</span>
-                  </a>
-                );
-              })()}
-              <button
-                type="button"
-                onClick={() => {
-                  const lead = leads.find(l => l.id === activeTwoWayPriorityAlert.leadId);
-                  if (lead) {
-                    setSelectedLeadForReply(lead);
-                  }
-                  setActiveTwoWayPriorityAlert(null);
-                }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-extrabold text-xs transition cursor-pointer border border-amber-500/40"
-              >
-                <MessageSquare className="w-3.5 h-3.5" />
-                <span>Open 2-Way Reply</span>
-              </button>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTwoWayPriorityAlert(null);
-                setShowActiveTwoWayNotifModal(true);
-              }}
-              className="text-[11px] text-slate-400 hover:text-amber-300 transition flex items-center gap-1 cursor-pointer shrink-0"
-              title="Notification Settings"
-            >
-              <Sliders className="w-3 h-3" />
-              <span>Config</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Floating Cell Phone SMS / Push Notification Simulation Banner */}
-      {cellSmsNotification && (
-        <div className="fixed top-6 right-6 z-50 max-w-sm rounded-2xl bg-slate-900 border-2 border-emerald-500 p-4 shadow-2xl space-y-3 animate-in slide-in-from-top-4">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-              <span>📱 iPhone Push Alert • Quick Action</span>
-            </span>
-            <button
-              onClick={() => setCellSmsNotification(null)}
-              className="text-slate-400 hover:text-white text-xs font-bold cursor-pointer"
-            >
-              ✕
-            </button>
-          </div>
-          <div className="text-xs text-white space-y-1">
-            <div className="font-bold text-emerald-300">New Lead Outreach Ready: {cellSmsNotification.author}</div>
-            <p className="italic text-slate-200 text-[11px] leading-relaxed">&ldquo;{cellSmsNotification.text}&rdquo;</p>
-          </div>
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => {
-                  if (cellSmsNotification) {
-                    const lead = leads.find(l => l.id === cellSmsNotification.leadId);
-                    if (lead) {
-                      handleOpenGmailDraft(lead);
-                    } else {
-                      const composeUrl = `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(`Re: Outreach for ${cellSmsNotification.author}`)}`;
-                      window.open(composeUrl, '_blank', 'noopener,noreferrer');
-                    }
-                  }
-                }}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-[11px] transition cursor-pointer shadow"
-                title="1-Click Open Pre-Filled Gmail Draft in New Tab"
-              >
-                <Mail className="w-3 h-3" />
-                <span>✉️ Open Gmail Draft</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  if (cellSmsNotification) {
-                    setCellSmsReplyModalOpen(true);
-                    setCellSmsReplyText(`Hi ${cellSmsNotification.author}! As an Oregon LO with 26 years of experience, let's connect on your loan scenario.`);
-                  }
-                }}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-extrabold text-[11px] transition cursor-pointer shadow"
-              >
-                <Send className="w-3 h-3" />
-                <span>📱 Quick SMS</span>
-              </button>
-            </div>
-            <span className="text-[10px] text-slate-400 font-mono">Sync Active</span>
-          </div>
-        </div>
-      )}
-
       {/* Mobile-Responsive Cell SMS Quick Reply Modal */}
-      {cellSmsReplyModalOpen && cellSmsNotification && (
+      {cellSmsReplyModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-md rounded-2xl bg-slate-900 border border-emerald-500 p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div>
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">📱 Cell SMS Quick Reply</span>
-                <h4 className="text-white font-bold text-sm">Responding to {cellSmsNotification.author}</h4>
+                <h4 className="text-white font-bold text-sm">Responding to {cellSmsNotification?.author || 'Active Lead'}</h4>
               </div>
               <button
                 onClick={() => setCellSmsReplyModalOpen(false)}
@@ -4622,7 +4664,7 @@ Email: fordmj@gmail.com`;
 
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 space-y-1">
               <span className="font-semibold text-emerald-400">Incoming Prospect SMS:</span>
-              <p className="italic">&ldquo;{cellSmsNotification.text}&rdquo;</p>
+              <p className="italic">&ldquo;{cellSmsNotification?.text || 'Ready to review numbers'}&rdquo;</p>
             </div>
 
             <div className="space-y-1.5">

@@ -275,10 +275,10 @@ export const ActiveTwoWayNotificationModal: React.FC<ActiveTwoWayNotificationMod
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-bold text-amber-300 flex items-center gap-1.5">
                     <Zap className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Priority Active Two-Way Response</span>
+                    <span>Priority Active Two-Way Response (Silent Dashboard)</span>
                   </span>
                   <span className="text-[10px] bg-amber-400 text-slate-950 font-black px-2 py-0.5 rounded uppercase tracking-wider">
-                    Urgent Inbound
+                    Zero-Popup Mode
                   </span>
                 </div>
                 <div className="p-2.5 rounded-xl bg-slate-900/90 border border-amber-500/40 font-mono text-[11px] text-amber-200 space-y-0.5">
@@ -288,7 +288,7 @@ export const ActiveTwoWayNotificationModal: React.FC<ActiveTwoWayNotificationMod
                   <div className="text-[10px] text-amber-300 truncate">&ldquo;Thanks Mike! Can we jump on a call today?&rdquo;</div>
                 </div>
                 <p className="text-[11px] text-amber-300/80">
-                  High-priority push with audio chime, haptic vibration, sticky banner, and 1-tap SMS reply link.
+                  Zero popups and silent in dashboard. Instantly forwards every initial reply and subsequent reply as a text message to Mike's iPhone (+1 541-729-2097) for remote two-way response.
                 </p>
               </div>
             </div>

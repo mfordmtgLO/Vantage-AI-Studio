@@ -49,15 +49,15 @@ export const DEFAULT_ACTIVE_2WAY_NOTIF_CONFIG: ActiveTwoWayNotificationConfig = 
   id: 'active_two_way_alerts',
   enabled: true,
   priorityLevel: 'urgent',
-  soundEnabled: true,
-  audioChime: 'urgent_chime',
-  vibratePatternEnabled: true,
-  vibratePattern: [300, 100, 300, 100, 300], // Urgent double-pulse pattern
-  carrierSmsRelayEnabled: true,
+  soundEnabled: false, // Dashboard silent mode: no ping sounds (per user directive)
+  audioChime: 'subtle_ping',
+  vibratePatternEnabled: false, // Suppress vibration in desktop dashboard
+  vibratePattern: [300, 100, 300, 100, 300],
+  carrierSmsRelayEnabled: true, // Always send text message to iPhone for remote two-way response
   targetMobileNumber: '+1 (541) 729-2097',
   separateFromGmailDrafts: true, // Guarantees isolation from Gmail draft notifications
   customPrefix: '⚡ [PRIORITY ACTIVE 2-WAY RESPONSE]',
-  requireImmediateAck: true,
+  requireImmediateAck: false, // No disruptive modal blocking dashboard
   notifyOnForumComment: true,
   totalAlertsDelivered: 0
 };
@@ -136,7 +136,14 @@ export class ActiveTwoWayNotificationService {
         localStorage.setItem(STORAGE_ACTIVE_2WAY_NOTIF_KEY, JSON.stringify(DEFAULT_ACTIVE_2WAY_NOTIF_CONFIG));
         return DEFAULT_ACTIVE_2WAY_NOTIF_CONFIG;
       }
-      return { ...DEFAULT_ACTIVE_2WAY_NOTIF_CONFIG, ...JSON.parse(raw) };
+      const parsed = JSON.parse(raw);
+      // Explicitly enforce soundEnabled: false and requireImmediateAck: false per user request
+      return { 
+        ...DEFAULT_ACTIVE_2WAY_NOTIF_CONFIG, 
+        ...parsed,
+        soundEnabled: false, // Dashboard silent mode (no pings)
+        requireImmediateAck: false // No blocking modal popups
+      };
     } catch {
       return DEFAULT_ACTIVE_2WAY_NOTIF_CONFIG;
     }

@@ -66,6 +66,7 @@ import {
   getLocalCircadianJobs 
 } from '../services/cronScheduler';
 import { ZillowSweepConfigModal } from './ZillowSweepConfigModal';
+import { PriorityTwoWayTaskCenter, PriorityTwoWayTask } from './PriorityTwoWayTaskCenter';
 import { LeadItem } from './LeadDiscoveryStudio';
 import {
   getOrRegisterMessageThread,
@@ -87,7 +88,16 @@ export const LeadOutreachQueueAndSchedulerDeck: React.FC<LeadOutreachQueueAndSch
   onLeadConversationMessageSent,
   onRequestClose
 }) => {
-  const [activeTab, setActiveTab] = useState<'queue' | 'scheduler' | 'history'>('queue');
+  const [activeTab, setActiveTab] = useState<'queue' | 'two_way' | 'scheduler' | 'history'>('queue');
+  const [deckTasks, setDeckTasks] = useState<PriorityTwoWayTask[]>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('vantage_priority_two_way_tasks_v1');
+        if (saved) return JSON.parse(saved);
+      }
+    } catch {}
+    return [];
+  });
   const [messages, setMessages] = useState<PendingOutboundMessage[]>([]);
   const [cronConfig, setCronConfig] = useState<LeadScrapeOutreachCronConfig>(LeadOutreachCronService.getCronConfig());
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'flagged'>('all');
@@ -655,6 +665,24 @@ export const LeadOutreachQueueAndSchedulerDeck: React.FC<LeadOutreachQueueAndSch
 
           <button
             type="button"
+            onClick={() => setActiveTab('two_way')}
+            className={`pb-3 px-4 text-xs font-black transition cursor-pointer flex items-center gap-2 border-b-2 relative ${
+              activeTab === 'two_way'
+                ? 'border-amber-400 text-amber-300'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span>💬 Two-Way Communication Tasks</span>
+            {deckTasks.filter(t => t.status === 'awaiting_lo_reply').length > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-slate-950 animate-pulse">
+                {deckTasks.filter(t => t.status === 'awaiting_lo_reply').length}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveTab('scheduler')}
             className={`pb-3 px-4 text-xs font-black transition cursor-pointer flex items-center gap-2 border-b-2 ${
               activeTab === 'scheduler'
@@ -683,6 +711,37 @@ export const LeadOutreachQueueAndSchedulerDeck: React.FC<LeadOutreachQueueAndSch
 
       {/* Main Content Area */}
       <div className="p-4 md:p-6 space-y-6">
+        {activeTab === 'two_way' && (
+          <div className="space-y-4">
+            <PriorityTwoWayTaskCenter
+              tasks={deckTasks}
+              leads={leads}
+              onOpenReplyModal={(task) => {
+                const lead = leads.find(l => l.id === task.leadId);
+                if (lead) onOpenGmailDraft(lead);
+              }}
+              onOpenGmailDraft={(task) => {
+                const lead = leads.find(l => l.id === task.leadId);
+                if (lead) onOpenGmailDraft(lead);
+              }}
+              onMarkTaskHandled={(taskId) => {
+                setDeckTasks(prev => {
+                  const updated = prev.map(t => {
+                    if (t.id === taskId) {
+                      const next = t.status === 'awaiting_lo_reply' ? ('handled' as const) : ('awaiting_lo_reply' as const);
+                      return { ...t, status: next };
+                    }
+                    return t;
+                  });
+                  try {
+                    localStorage.setItem('vantage_priority_two_way_tasks_v1', JSON.stringify(updated));
+                  } catch {}
+                  return updated;
+                });
+              }}
+            />
+          </div>
+        )}
         {/* ========================================================================= */}
         {/* TAB 1: VISUAL PENDING OUTBOUND QUEUE                                     */}
         {/* ========================================================================= */}
@@ -1608,7 +1667,7 @@ export const LeadOutreachQueueAndSchedulerDeck: React.FC<LeadOutreachQueueAndSch
                     {/* Run Now Button */}
                     <button
                       type="button"
-                      onClick={handleExecuteImmediateSweep}
+                      onClick={handleTriggerScrapeNow}
                       disabled={isExecutingSweep}
                       className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black shadow transition cursor-pointer disabled:opacity-50"
                     >
