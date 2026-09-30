@@ -330,6 +330,8 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
   const [isOhcsProgramActive, setIsOhcsProgramActive] = useState<boolean>(true);
   const [isUsdaProgramActive, setIsUsdaProgramActive] = useState<boolean>(true);
   const [isNhfProgramActive, setIsNhfProgramActive] = useState<boolean>(true);
+  const [isFannie97ProgramActive, setIsFannie97ProgramActive] = useState<boolean>(true);
+  const [isHomeReadyProgramActive, setIsHomeReadyProgramActive] = useState<boolean>(true);
   const [loHouseholdSize, setLoHouseholdSize] = useState<number>(1);
   const [usdaHouseholdCount, setUsdaHouseholdCount] = useState<number>(1);
   const [isVeteranBorrower, setIsVeteranBorrower] = useState<boolean>(false);
@@ -542,6 +544,12 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
   // USDA RD Rural Development Eligibility Boundary Layer State
   const [showUsdaRdLayer, setShowUsdaRdLayer] = useState<boolean>(true);
   const [showUsdaBoundaryModal, setShowUsdaBoundaryModal] = useState<boolean>(false);
+
+  // Additional Program GeoMap Layer Overlay States
+  const [showLakeviewLayer, setShowLakeviewLayer] = useState<boolean>(true);
+  const [showNhfLayer, setShowNhfLayer] = useState<boolean>(true);
+  const [showFannie97Layer, setShowFannie97Layer] = useState<boolean>(true);
+  const [showHomeReadyLayer, setShowHomeReadyLayer] = useState<boolean>(true);
 
   // Auto-select and scroll front and center if opened with specific listing param
   useEffect(() => {
@@ -1461,6 +1469,52 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
     };
   }, [properties, curatedPropertyIds, allBorrowersCombinedAnnualIncome, borrowerCreditScore, isNhfProgramActive]);
 
+  // Real-time Fannie Mae Standard 97% LTV Curation Statistics
+  const curatedFannie97Stats = useMemo(() => {
+    const curatedListings = properties.filter((p) => curatedPropertyIds.includes(p.id));
+    let eligibleCount = 0;
+
+    curatedListings.forEach((prop) => {
+      const isEligible = isFannie97ProgramActive && borrowerCreditScore >= 620;
+      if (isEligible) {
+        eligibleCount++;
+      }
+    });
+
+    return {
+      totalCurated: curatedListings.length,
+      eligibleCount,
+      isProgramActive: isFannie97ProgramActive
+    };
+  }, [properties, curatedPropertyIds, borrowerCreditScore, isFannie97ProgramActive]);
+
+  // Real-time Fannie Mae HomeReady Curation Statistics
+  const curatedHomeReadyStats = useMemo(() => {
+    const curatedListings = properties.filter((p) => curatedPropertyIds.includes(p.id));
+    let eligibleCount = 0;
+    let incomeBustedCount = 0;
+
+    curatedListings.forEach((prop) => {
+      const countyData = resolveOregonCountyFannieMaeAmi(prop.county || prop.fipsGeoId || prop.city || prop.formattedAddress);
+      const limit80Percent = countyData.ami80CapUsd;
+      const isIncomeWithin = allBorrowersCombinedAnnualIncome <= limit80Percent;
+      
+      const isEligible = isHomeReadyProgramActive && borrowerCreditScore >= 620 && isIncomeWithin;
+      if (isEligible) {
+        eligibleCount++;
+      } else if (!isIncomeWithin) {
+        incomeBustedCount++;
+      }
+    });
+
+    return {
+      totalCurated: curatedListings.length,
+      eligibleCount,
+      incomeBustedCount,
+      isProgramActive: isHomeReadyProgramActive
+    };
+  }, [properties, curatedPropertyIds, allBorrowersCombinedAnnualIncome, borrowerCreditScore, isHomeReadyProgramActive]);
+
   // Auto-rotate effect if enabled by client (dynamically throttled under Battery Saver)
   useEffect(() => {
     if (!autoRotate || filteredProperties.length <= 1) return;
@@ -1934,7 +1988,63 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                   }`}
                 >
                   <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>🌾 USDA RD Boundaries (Shaded Ineligible): {showUsdaRdLayer ? 'ACTIVE' : 'OFF'}</span>
+                  <span>🌾 USDA RD: {showUsdaRdLayer ? 'ON' : 'OFF'}</span>
+                </button>
+
+                {/* Lakeview 100% DPA Layer Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setShowLakeviewLayer(!showLakeviewLayer)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer shadow-sm ${
+                    showLakeviewLayer
+                      ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white ring-2 ring-cyan-400'
+                      : 'bg-stone-800 text-stone-400 border border-stone-700'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>🏞️ Lakeview DPA: {showLakeviewLayer ? 'ON' : 'OFF'}</span>
+                </button>
+
+                {/* FHA NHF DPA Layer Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setShowNhfLayer(!showNhfLayer)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer shadow-sm ${
+                    showNhfLayer
+                      ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white ring-2 ring-indigo-400'
+                      : 'bg-stone-800 text-stone-400 border border-stone-700'
+                  }`}
+                >
+                  <Globe className="w-3.5 h-3.5" />
+                  <span>🇺🇸 NHF DPA: {showNhfLayer ? 'ON' : 'OFF'}</span>
+                </button>
+
+                {/* Fannie Mae 97% LTV Layer Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setShowFannie97Layer(!showFannie97Layer)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer shadow-sm ${
+                    showFannie97Layer
+                      ? 'bg-gradient-to-r from-pink-500 to-rose-600 text-white ring-2 ring-pink-400'
+                      : 'bg-stone-800 text-stone-400 border border-stone-700'
+                  }`}
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>🔑 Fannie 97%: {showFannie97Layer ? 'ON' : 'OFF'}</span>
+                </button>
+
+                {/* Fannie Mae HomeReady Layer Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setShowHomeReadyLayer(!showHomeReadyLayer)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer shadow-sm ${
+                    showHomeReadyLayer
+                      ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white ring-2 ring-purple-400'
+                      : 'bg-stone-800 text-stone-400 border border-stone-700'
+                  }`}
+                >
+                  <Key className="w-3.5 h-3.5" />
+                  <span>🔑 HomeReady 3%: {showHomeReadyLayer ? 'ON' : 'OFF'}</span>
                 </button>
 
                 {showOhcsLmiLayer && (
@@ -2064,6 +2174,50 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
               </div>
             )}
 
+            {/* Lakeview National 140% AMI Conforming Shading Overlay */}
+            {showLakeviewLayer && (
+              <div
+                className="absolute inset-x-12 top-6 bottom-6 opacity-20 bg-cyan-950/30 border-2 border-dotted border-cyan-500/50 rounded-3xl pointer-events-none flex items-end justify-start p-2"
+              >
+                <span className="bg-stone-950/95 text-cyan-300 text-[8.5px] font-mono uppercase px-2 py-0.5 rounded border border-cyan-500/40 shadow-md">
+                  🏞️ Lakeview Conforming Zone Active (All 36 Counties Conforming limits)
+                </span>
+              </div>
+            )}
+
+            {/* National Homebuyers Fund FHA Shading Overlay */}
+            {showNhfLayer && (
+              <div
+                className="absolute inset-x-16 top-10 bottom-10 opacity-20 bg-indigo-950/30 border border-dashed border-indigo-500/40 rounded-3xl pointer-events-none flex items-end justify-center p-2"
+              >
+                <span className="bg-stone-950/95 text-indigo-300 text-[8.5px] font-mono uppercase px-2 py-0.5 rounded border border-indigo-500/30 shadow-md">
+                  🇺🇸 NHF FHA DPA Overlay Active (HUD county purchase caps validated)
+                </span>
+              </div>
+            )}
+
+            {/* Fannie Mae Standard 97% LTV Shading Overlay */}
+            {showFannie97Layer && (
+              <div
+                className="absolute inset-x-20 top-8 bottom-8 opacity-15 bg-rose-950/20 border border-dotted border-rose-500/30 rounded-3xl pointer-events-none flex items-start justify-start p-2"
+              >
+                <span className="bg-stone-950/95 text-rose-300 text-[8.5px] font-mono uppercase px-2 py-0.5 rounded border border-rose-500/20 shadow-md">
+                  🔑 Fannie Mae Standard 97% LTV Layer (First-Time Buyer rule)
+                </span>
+              </div>
+            )}
+
+            {/* Fannie Mae HomeReady 3% Down Shading Overlay */}
+            {showHomeReadyLayer && (
+              <div
+                className="absolute inset-x-24 top-14 bottom-14 opacity-15 bg-purple-950/20 border-2 border-dotted border-purple-500/30 rounded-3xl pointer-events-none flex items-start justify-end p-2"
+              >
+                <span className="bg-stone-950/95 text-purple-300 text-[8.5px] font-mono uppercase px-2 py-0.5 rounded border border-purple-500/20 shadow-md">
+                  🔑 HomeReady 3% Down Layer Active (Strict 80% AMI county limits)
+                </span>
+              </div>
+            )}
+
             <div className="relative z-10 flex justify-between items-start">
               <span className="px-2.5 py-1 bg-stone-900/90 text-stone-300 text-[10px] font-mono rounded-lg border border-stone-800 flex items-center gap-1.5">
                 <MapPin className="w-3 h-3 text-emerald-400" /> GeoSphere Spatial Layer (Oregon GIS • LMI &amp; USDA Boundaries)
@@ -2122,9 +2276,9 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                     </span>
 
                     {/* Program Badges */}
-                    <div className="flex flex-col items-center gap-0.5 mt-0.5">
+                    <div className="flex flex-col items-center gap-0.5 mt-0.5 max-w-[120px] overflow-hidden">
                       {showOhcsLmiLayer && lmiCat && (
-                        <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-full border shadow-xs ${
+                        <span className={`text-[8.5px] font-black px-1.5 py-0.2 rounded-full border shadow-xs ${
                           lmiCat === 'Low'
                             ? 'bg-rose-950 text-rose-300 border-rose-500/80 animate-pulse'
                             : 'bg-amber-950 text-amber-300 border-amber-500/80'
@@ -2134,12 +2288,36 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                       )}
 
                       {showUsdaRdLayer && (
-                        <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-full border shadow-xs ${
+                        <span className={`text-[8.5px] font-black px-1.5 py-0.2 rounded-full border shadow-xs ${
                           isUsdaEligible
                             ? 'bg-emerald-950 text-emerald-300 border-emerald-500/80 ring-1 ring-emerald-500/40'
                             : 'bg-stone-950 text-stone-400 border-stone-800'
                         }`}>
                           {isUsdaEligible ? '🌾 USDA 100%' : '🚫 Ineligible'}
+                        </span>
+                      )}
+
+                      {showLakeviewLayer && prop.specialPrograms?.lakeviewNationalDpaEligible && (
+                        <span className="text-[8.5px] font-black px-1.5 py-0.2 rounded-full border shadow-xs bg-cyan-950 text-cyan-300 border-cyan-500/80">
+                          🏞️ Lakeview 100%
+                        </span>
+                      )}
+
+                      {showNhfLayer && (
+                        <span className="text-[8.5px] font-black px-1.5 py-0.2 rounded-full border shadow-xs bg-indigo-950 text-indigo-300 border-indigo-500/80">
+                          🇺🇸 NHF DPA
+                        </span>
+                      )}
+
+                      {showFannie97Layer && (
+                        <span className="text-[8.5px] font-black px-1.5 py-0.2 rounded-full border shadow-xs bg-rose-950 text-rose-300 border-rose-500/80">
+                          🔑 Fannie 97%
+                        </span>
+                      )}
+
+                      {showHomeReadyLayer && prop.specialPrograms?.fnmaHomeReady3Percent && (
+                        <span className="text-[8.5px] font-black px-1.5 py-0.2 rounded-full border shadow-xs bg-purple-950 text-purple-300 border-purple-500/80">
+                          🔑 HomeReady 3%
                         </span>
                       )}
                     </div>
@@ -2148,9 +2326,13 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
               })}
             </div>
 
-            <div className="relative z-10 flex justify-between items-center text-[10px] text-stone-400 font-mono">
-              <span>OHCS LMI Layer: {showOhcsLmiLayer ? 'ACTIVE (214 Tracts)' : 'Off'}</span>
-              <span>USDA RD Boundary Layer: {showUsdaRdLayer ? 'ACTIVE (Shaded Metro Core)' : 'Off'}</span>
+            <div className="relative z-10 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 text-[9px] text-stone-400 font-mono border-t border-stone-900/60 pt-2 shrink-0">
+              <span className="truncate">OHCS LMI: {showOhcsLmiLayer ? '🟢 ON' : '⚫ OFF'}</span>
+              <span className="truncate">USDA RD: {showUsdaRdLayer ? '🟢 ON' : '⚫ OFF'}</span>
+              <span className="truncate">Lakeview: {showLakeviewLayer ? '🟢 ON' : '⚫ OFF'}</span>
+              <span className="truncate">NHF DPA: {showNhfLayer ? '🟢 ON' : '⚫ OFF'}</span>
+              <span className="truncate">Fannie 97%: {showFannie97Layer ? '🟢 ON' : '⚫ OFF'}</span>
+              <span className="truncate">HomeReady: {showHomeReadyLayer ? '🟢 ON' : '⚫ OFF'}</span>
             </div>
           </div>
         </>
@@ -2644,6 +2826,82 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                       {isNhfProgramActive
                         ? `Up to 5% DPA. NO FTHB rule. Max 140% AMI. FHA Purchase Caps: $560k–$744k (HUD updates annually 1/1).`
                         : `⚠️ Filter OFF: NHF criteria & FHA purchase caps bypassed.`}
+                    </p>
+                  </div>
+
+                  {/* Fannie Mae Standard 97% LTV Status Box */}
+                  <div className={`p-2.5 rounded-lg border space-y-1.5 transition ${
+                    isFannie97ProgramActive
+                      ? 'bg-rose-950/40 border-rose-800/60'
+                      : 'bg-stone-950/80 border-stone-800/60 opacity-80'
+                  }`}>
+                    <div className="flex items-center justify-between font-bold gap-2">
+                      <span className="text-rose-300 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3 h-3 text-rose-400 shrink-0" />
+                        <span className="truncate">Fannie Standard 97%</span>
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setIsFannie97ProgramActive(!isFannie97ProgramActive)}
+                          className={`px-1.5 py-0.5 rounded-full text-[8.5px] font-mono font-black transition border flex items-center gap-1 cursor-pointer ${
+                            isFannie97ProgramActive
+                              ? 'bg-rose-400 text-stone-950 border-rose-300 shadow-xs'
+                              : 'bg-stone-800 text-stone-400 border-stone-700 hover:text-stone-200'
+                          }`}
+                          title="Toggle Fannie Mae Standard 97% LTV filter on/off"
+                        >
+                          <span>{isFannie97ProgramActive ? 'ON' : 'OFF'}</span>
+                        </button>
+                        {isFannie97ProgramActive && (
+                          <span className="px-1.5 py-0.2 rounded bg-rose-900 text-rose-200 border border-rose-500/40 font-mono font-bold text-[8.5px]">
+                            {curatedFannie97Stats.eligibleCount}/{curatedFannie97Stats.totalCurated} Pass
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-[8.5px] text-stone-300 leading-snug">
+                      {isFannie97ProgramActive
+                        ? `3% Down Conventional. Requires 1st-Time Homebuyer flag. NO income cap. Conforming limits strictly apply.`
+                        : `⚠️ Filter OFF: Fannie Standard 97% criteria bypassed.`}
+                    </p>
+                  </div>
+
+                  {/* Fannie Mae HomeReady Status Box */}
+                  <div className={`p-2.5 rounded-lg border space-y-1.5 transition ${
+                    isHomeReadyProgramActive
+                      ? 'bg-purple-950/40 border-purple-800/60'
+                      : 'bg-stone-950/80 border-stone-800/60 opacity-80'
+                  }`}>
+                    <div className="flex items-center justify-between font-bold gap-2">
+                      <span className="text-purple-300 flex items-center gap-1.5">
+                        <Key className="w-3 h-3 text-purple-400 shrink-0" />
+                        <span className="truncate">Fannie HomeReady</span>
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setIsHomeReadyProgramActive(!isHomeReadyProgramActive)}
+                          className={`px-1.5 py-0.5 rounded-full text-[8.5px] font-mono font-black transition border flex items-center gap-1 cursor-pointer ${
+                            isHomeReadyProgramActive
+                              ? 'bg-purple-400 text-stone-950 border-purple-300 shadow-xs'
+                              : 'bg-stone-800 text-stone-400 border-stone-700 hover:text-stone-200'
+                          }`}
+                          title="Toggle Fannie Mae HomeReady filter on/off"
+                        >
+                          <span>{isHomeReadyProgramActive ? 'ON' : 'OFF'}</span>
+                        </button>
+                        {isHomeReadyProgramActive && (
+                          <span className="px-1.5 py-0.2 rounded bg-purple-900 text-purple-200 border border-purple-500/40 font-mono font-bold text-[8.5px]">
+                            {curatedHomeReadyStats.eligibleCount}/{curatedHomeReadyStats.totalCurated} Pass
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-[8.5px] text-stone-300 leading-snug">
+                      {isHomeReadyProgramActive
+                        ? `3% Down with reduced PMI. Strictly capped at 80% County AMI (waived in low-income tracts).`
+                        : `⚠️ Filter OFF: HomeReady income & PMI rules bypassed.`}
                     </p>
                   </div>
                 </div>

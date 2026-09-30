@@ -51,6 +51,7 @@ export interface PropertyDownPaymentEligibility {
   usdaIncomeQualified?: boolean;
   usdaIneligibilityReason?: string;
   qualifiesFannieMaeHomeReady: boolean;
+  qualifiesFannieMae97Ltv: boolean;
   qualifiesNhfFallbackDpa: boolean;
   nhfCountyName?: string;
   nhfMaxPurchasePriceCapUsd?: number;
@@ -78,6 +79,11 @@ export interface ComprehensiveDpaPrescreenReport {
     isEligible: boolean;
     requiredDownPaymentUsd: number;
     reducedPmiSavingsUsdPerMonth: number;
+    disqualificationReasons: string[];
+  };
+  fannie97Option?: {
+    isEligible: boolean;
+    requiredDownPaymentUsd: number;
     disqualificationReasons: string[];
   };
   universalNhfFallbackOption: {
@@ -222,6 +228,35 @@ export class MortgageLoanEligibilityService {
   }
 
   /**
+   * Pre-screens borrower for Fannie Mae Standard 97% LTV Conventional Program (First-Time Buyer, No Income Cap)
+   */
+  public prescreenFannieMae97Ltv(buyerInput: BuyerEligibilityCheckInput, propertyPrice: number = 400000) {
+    const disqualificationReasons: string[] = [];
+
+    if (!this.isProductActive('fnma_standard_97_ltv')) {
+      disqualificationReasons.push('Fannie Mae Standard 97% LTV program is disabled in configuration manager');
+    }
+
+    if (buyerInput.creditScore < 620) {
+      disqualificationReasons.push(`FICO score (${buyerInput.creditScore}) is below 620 threshold`);
+    }
+
+    const isFthb = buyerInput.isFirstTimeHomebuyer ?? true;
+    if (!isFthb) {
+      disqualificationReasons.push('At least one borrower must be a first-time homebuyer for Fannie Mae Standard 97% LTV');
+    }
+
+    const isEligible = disqualificationReasons.length === 0;
+    const requiredDownPaymentUsd = propertyPrice * 0.03; // 3% conventional down payment
+
+    return {
+      isEligible,
+      requiredDownPaymentUsd: Math.round(requiredDownPaymentUsd),
+      disqualificationReasons
+    };
+  }
+
+  /**
    * Universal Fallback Pre-screen: National Homebuyer Fund (NHF) Down Payment Assistance
    * Official programs: https://www.nhfloan.org/programs.html
    */
@@ -272,6 +307,9 @@ export class MortgageLoanEligibilityService {
     // 3. Fannie Mae HomeReady evaluation
     const homeReadyResult = this.prescreenFannieMaeHomeReady(buyerInput, price);
 
+    // Fannie Mae Standard 97% LTV evaluation
+    const fannie97Result = this.prescreenFannieMae97Ltv(buyerInput, price);
+
     // 4. Universal Fallback NHF DPA evaluation
     const nhfFallbackResult = this.prescreenNationalHomebuyerFund(buyerInput, price);
 
@@ -295,6 +333,8 @@ export class MortgageLoanEligibilityService {
       summary = `Primary programs unavailable. Fallback to National Homebuyer Fund (NHF) FHA 0% Down DPA ($${nhfFallbackResult.estimatedGrantUsd.toLocaleString()} assistance).`;
     } else if (homeReadyResult.isEligible) {
       summary = `Qualified for Fannie Mae HomeReady 3% Down Conventional ($${homeReadyResult.requiredDownPaymentUsd.toLocaleString()} down) with reduced PMI.`;
+    } else if (fannie97Result.isEligible) {
+      summary = `Qualified for Fannie Mae Standard 97% LTV Conventional ($${fannie97Result.requiredDownPaymentUsd.toLocaleString()} down) for First-Time Buyers.`;
     }
 
     return {
@@ -312,6 +352,11 @@ export class MortgageLoanEligibilityService {
         requiredDownPaymentUsd: homeReadyResult.requiredDownPaymentUsd,
         reducedPmiSavingsUsdPerMonth: homeReadyResult.reducedPmiSavingsUsdPerMonth,
         disqualificationReasons: homeReadyResult.disqualificationReasons
+      },
+      fannie97Option: {
+        isEligible: fannie97Result.isEligible,
+        requiredDownPaymentUsd: fannie97Result.requiredDownPaymentUsd,
+        disqualificationReasons: fannie97Result.disqualificationReasons
       },
       universalNhfFallbackOption: nhfFallbackResult,
       stackedGrantBreakdownUsd: stackedGrantsUsd,
@@ -435,6 +480,7 @@ export class MortgageLoanEligibilityService {
       nhfEval.isEligible && isNhfActive
     );
     const qualifiesHomeReady = this.isProductActive('fnma_homeready_3pct');
+    const qualifiesFannieMae97Ltv = this.isProductActive('fnma_standard_97_ltv') && borrowerCreditScore >= 620;
 
     const qualifiesZeroDown = qualifiesLakeview || qualifiesOhcs || qualifiesUsda || qualifiesNhf;
 
@@ -464,6 +510,7 @@ export class MortgageLoanEligibilityService {
     if (qualifiesUsda) matchingProductNames.push('USDA 100% Rural Development');
     if (qualifiesNhf) matchingProductNames.push('NHF DPA (Up to 5% Assistance)');
     if (qualifiesHomeReady) matchingProductNames.push('Fannie Mae HomeReady 3% Down');
+    if (qualifiesFannieMae97Ltv) matchingProductNames.push('Fannie Mae Standard 97% LTV');
     if (special.lmiCraGrantEligible) matchingProductNames.push(`CRA $${(special.craGrantAmountUsd || 5000).toLocaleString()} Grant`);
 
     return {
@@ -489,6 +536,7 @@ export class MortgageLoanEligibilityService {
       usdaIncomeQualified: usdaEval.isWithinIncomeLimit,
       usdaIneligibilityReason: usdaEval.disqualificationReason,
       qualifiesFannieMaeHomeReady: qualifiesHomeReady,
+      qualifiesFannieMae97Ltv: qualifiesFannieMae97Ltv,
       qualifiesNhfFallbackDpa: qualifiesNhf,
       nhfCountyName: nhfEval.countyName,
       nhfMaxPurchasePriceCapUsd: nhfEval.fhaMaxPurchasePriceLimitUsd,
@@ -508,7 +556,7 @@ export class MortgageLoanEligibilityService {
    */
   public filterGeoMapPropertiesByDownPayment(
     properties: SyncedPropertyListing[],
-    filterType: 'all' | 'zero_down' | 'lakeview_national' | 'ohcs_flex' | 'usda_zone' | 'homeready' | 'nhf_fallback' | 'max_grant' | 'under_5k_down',
+    filterType: 'all' | 'zero_down' | 'lakeview_national' | 'ohcs_flex' | 'usda_zone' | 'homeready' | 'fannie97' | 'nhf_fallback' | 'max_grant' | 'under_5k_down',
     borrowerIncomeOrInput?: number | BuyerEligibilityCheckInput
   ): SyncedPropertyListing[] {
     return properties.filter((property) => {
@@ -525,6 +573,8 @@ export class MortgageLoanEligibilityService {
           return evalResult.qualifiesUsdaRuralZone;
         case 'homeready':
           return evalResult.qualifiesFannieMaeHomeReady;
+        case 'fannie97':
+          return evalResult.qualifiesFannieMae97Ltv;
         case 'nhf_fallback':
           return evalResult.qualifiesNhfFallbackDpa;
         case 'max_grant':

@@ -386,6 +386,33 @@ export const DEFAULT_MORTGAGE_LOAN_PRODUCTS: MortgageLoanProduct[] = [
     isFeaturedSpecialtyProduct: true
   },
   {
+    id: 'fnma_standard_97_ltv',
+    name: 'Fannie Mae Standard 97% LTV (First-Time Buyer)',
+    agencyOrSponsor: 'Fannie Mae',
+    category: 'Conventional Specialty',
+    maxLtvPercent: 97,
+    maxDpaAssistancePercent: 0,
+    dpaType: 'Closing Cost Subsidy',
+    minCreditScore: 620,
+    maxAmiPercentage: 0,
+    eligibleStates: ['ALL'],
+    isTargetedAreaBonusEligible: false,
+    isEligibleActive: true,
+    description: 'Low down payment standard conventional loan for first-time homebuyers with NO income limits. Fully available across all 36 Oregon counties.',
+    underwritingGuidelines: [
+      'At least one borrower must be a first-time homebuyer',
+      'No income limits - available to high earners',
+      'Provides 97% LTV financing (3% down payment requirement)',
+      'Follows conforming loan limits strictly ($832,750 for 1-Unit in OR)',
+      'Standard PMI coverage apply'
+    ],
+    requiredDocumentation: [
+      'Standard homebuyer education completion certificate',
+      'Desktop Underwriter (DU) Approve/Eligible'
+    ],
+    isFeaturedSpecialtyProduct: true
+  },
+  {
     id: 'fhlmc_homepossible_3pct',
     name: 'Freddie Mac Home Possible 3% Down',
     agencyOrSponsor: 'Freddie Mac',

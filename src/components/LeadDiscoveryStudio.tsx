@@ -5011,7 +5011,7 @@ Email: fordmj@gmail.com`;
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-emerald-400 font-bold">•</span>
-                        <span><strong>Multi-County NLP Sweep:</strong> Scanned Deschutes, Marion, Benton, Linn, Clackamas, Douglas, Lane, and Coos counties for USDA rural zero-down and OHCS DPA discussions.</span>
+                        <span><strong>Multi-County NLP Sweep:</strong> Scanned Deschutes, Marion, Benton, Linn, Clackamas, Douglas, Lane, and Coos counties for USDA Rural Zero-Down, FHA NHF DPA, Lakeview National Low/No Down, Fannie Mae Standard 97% LTV, and Fannie Mae HomeReady 3% Down program discussions.</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-emerald-400 font-bold">•</span>
@@ -5029,7 +5029,7 @@ Email: fordmj@gmail.com`;
                     <ul className="space-y-2 text-xs text-slate-300">
                       <li className="flex items-start gap-2">
                         <span className="text-purple-400 font-bold">•</span>
-                        <span><strong>Listing &amp; Property Audits:</strong> Ran automated swarms to verify price deltas and zero-down eligibility across active GeoMap inventory.</span>
+                        <span><strong>Listing &amp; Property Audits:</strong> Ran automated swarms to verify price deltas and zero-down or low-down eligibility (USDA, NHF DPA, Lakeview National, Fannie Mae Standard 97% LTV, and Fannie Mae HomeReady) across active GeoMap inventory.</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-purple-400 font-bold">•</span>
