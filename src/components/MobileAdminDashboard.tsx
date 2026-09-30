@@ -4,7 +4,7 @@ import {
   Trash2, Bell, Sparkles, Smartphone, Mail, ChevronRight, Search, 
   Filter, CheckSquare, RefreshCw, Eye, Building2, ExternalLink,
   Copy, Check, Briefcase, Package, Layers, Sliders, Brain, Users,
-  Share2, LogOut, Globe, KeyRound, Link2, Target, Zap, Cpu
+  Share2, LogOut, Globe, KeyRound, Link2, Target, Zap, Cpu, Home
 } from 'lucide-react';
 import { useAccountPathway } from '../context/AccountPathwayContext';
 import { IndustryCareerTemplateSelector } from './IndustryCareerTemplateSelector';
@@ -19,6 +19,8 @@ import { CronJobExecutionStatusIndicator } from './CronJobExecutionStatusIndicat
 import { ApiUsageMetricsStudio } from './ApiUsageMetricsStudio';
 import { GitHubCloudRunSyncStatusCard } from './GitHubCloudRunSyncStatusCard';
 import { CopySignatureButton } from './CopySignatureButton';
+import { RealEstateMortgageView } from './RealEstateMortgageView';
+import { GeomapDeveloperModeGate } from './GeomapDeveloperModeGate';
 import { IndustryCareerTemplate } from '../data/industryCareerTemplates';
 
 interface VisitorNote {
@@ -37,7 +39,7 @@ export const MobileAdminDashboard: React.FC<{
   onOpenPublicWebsite?: () => void;
   onLogout?: () => void;
 }> = ({ onOpenDesktopView, onOpenPluginVault, onOpenShareLinksModal, onOpenPublicWebsite, onLogout }) => {
-  const [activeTab, setActiveTab] = useState<'notes' | 'customers' | 'profile-cards' | 'quick-sms' | 'workspace' | 'morph-suite' | 'commercial-releases' | 'settings' | 'cicd-status' | 'lead-discovery' | 'smart-templates' | 'fifty-state-sweep' | 'api-metrics'>('notes');
+  const [activeTab, setActiveTab] = useState<'notes' | 'customers' | 'profile-cards' | 'quick-sms' | 'workspace' | 'morph-suite' | 'commercial-releases' | 'settings' | 'cicd-status' | 'lead-discovery' | 'smart-templates' | 'fifty-state-sweep' | 'api-metrics' | 'real-estate'>('notes');
   const [cronAlertCount, setCronAlertCount] = useState<number>(0);
   const [brainSubView, setBrainSubView] = useState<'morph' | 'train'>('morph');
   const [activeTemplate, setActiveTemplate] = useState<IndustryCareerTemplate | null>(null);
@@ -233,6 +235,15 @@ export const MobileAdminDashboard: React.FC<{
           >
             <MessageSquare className="w-3.5 h-3.5" />
             Live Visitor Notes ({notes.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('real-estate')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 shrink-0 ${
+              activeTab === 'real-estate' ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-800/70 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Home className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
+            <span>🏠 Real Estate GeoMap</span>
           </button>
           <button
             onClick={() => setActiveTab('customers')}
@@ -479,6 +490,17 @@ export const MobileAdminDashboard: React.FC<{
             </button>
           </div>
         </div>
+
+        {activeTab === 'real-estate' && (
+          <div className="p-1 sm:p-3 max-w-full overflow-x-hidden bg-slate-950">
+            <GeomapDeveloperModeGate onBackToPublic={() => setActiveTab('notes')}>
+              <RealEstateMortgageView
+                onOpenByokDrawer={() => setActiveTab('settings')}
+                onOpenShareLinksModal={onOpenShareLinksModal}
+              />
+            </GeomapDeveloperModeGate>
+          </div>
+        )}
 
         {activeTab === 'cicd-status' && (
           <GitHubCloudRunSyncStatusCard compact={false} />

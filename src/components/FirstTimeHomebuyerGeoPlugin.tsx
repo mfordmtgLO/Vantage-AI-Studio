@@ -551,6 +551,10 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
   const [showFannie97Layer, setShowFannie97Layer] = useState<boolean>(true);
   const [showHomeReadyLayer, setShowHomeReadyLayer] = useState<boolean>(true);
 
+  // Loan Programs overlay panel states
+  const [isLoanProgramsPanelOpen, setIsLoanProgramsPanelOpen] = useState<boolean>(false);
+  const [markerFilterMode, setMarkerFilterMode] = useState<'all' | 'any_active' | 'all_active'>('all');
+
   // Auto-select and scroll front and center if opened with specific listing param
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -1235,9 +1239,76 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
     isVeteranBorrower
   ]);
 
+  // Apply the selected programs' eligibility requirements dynamically to map markers
+  const dynamicallyFilteredListings = useMemo(() => {
+    let result = rawFilteredProperties;
+
+    if (markerFilterMode === 'any_active') {
+      result = result.filter(prop => {
+        const evalResult = mortgageEligibilityService.evaluatePropertyDownPayment(prop, {
+          grossAnnualIncome: allBorrowersCombinedAnnualIncome,
+          householdSize: Math.max(loHouseholdSize, usdaHouseholdCount),
+          creditScore: borrowerCreditScore,
+          isFirstTimeHomebuyer: true,
+          isVeteranBorrower: isVeteranBorrower,
+          propertyState: prop.state
+        } as any);
+
+        const qualifiesUsda = isUsdaProgramActive && evalResult.qualifiesUsdaRuralZone;
+        const qualifiesNhf = isNhfProgramActive && evalResult.qualifiesNhfFallbackDpa;
+        const qualifiesLakeview = isLakeviewProgramActive && evalResult.qualifiesLakeviewNational;
+        const qualifiesFannie97 = isFannie97ProgramActive && evalResult.qualifiesFannieMae97Ltv;
+        const qualifiesHomeReady = isHomeReadyProgramActive && evalResult.qualifiesFannieMaeHomeReady;
+
+        const anyActive = isUsdaProgramActive || isNhfProgramActive || isLakeviewProgramActive || isFannie97ProgramActive || isHomeReadyProgramActive;
+        if (!anyActive) return true;
+
+        return (
+          qualifiesUsda || qualifiesNhf || qualifiesLakeview || qualifiesFannie97 || qualifiesHomeReady
+        );
+      });
+    } else if (markerFilterMode === 'all_active') {
+      result = result.filter(prop => {
+        const evalResult = mortgageEligibilityService.evaluatePropertyDownPayment(prop, {
+          grossAnnualIncome: allBorrowersCombinedAnnualIncome,
+          householdSize: Math.max(loHouseholdSize, usdaHouseholdCount),
+          creditScore: borrowerCreditScore,
+          isFirstTimeHomebuyer: true,
+          isVeteranBorrower: isVeteranBorrower,
+          propertyState: prop.state
+        } as any);
+
+        const qualifiesUsda = !isUsdaProgramActive || evalResult.qualifiesUsdaRuralZone;
+        const qualifiesNhf = !isNhfProgramActive || evalResult.qualifiesNhfFallbackDpa;
+        const qualifiesLakeview = !isLakeviewProgramActive || evalResult.qualifiesLakeviewNational;
+        const qualifiesFannie97 = !isFannie97ProgramActive || evalResult.qualifiesFannieMae97Ltv;
+        const qualifiesHomeReady = !isHomeReadyProgramActive || evalResult.qualifiesFannieMaeHomeReady;
+
+        return (
+          qualifiesUsda && qualifiesNhf && qualifiesLakeview && qualifiesFannie97 && qualifiesHomeReady
+        );
+      });
+    }
+
+    return result;
+  }, [
+    rawFilteredProperties,
+    markerFilterMode,
+    isUsdaProgramActive,
+    isNhfProgramActive,
+    isLakeviewProgramActive,
+    isFannie97ProgramActive,
+    isHomeReadyProgramActive,
+    allBorrowersCombinedAnnualIncome,
+    loHouseholdSize,
+    usdaHouseholdCount,
+    borrowerCreditScore,
+    isVeteranBorrower
+  ]);
+
   // Highlight lead's top 3 favorited properties as ALWAYS FIRST in the carousel rotation, followed by default and curated!
   const filteredProperties = useMemo(() => {
-    let list = rawFilteredProperties;
+    let list = dynamicallyFilteredListings;
     if (showCuratedOnly) {
       list = list.filter(p => curatedPropertyIds.includes(p.id));
     }
@@ -1264,7 +1335,7 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
 
       return 0;
     });
-  }, [rawFilteredProperties, favoritePropertyIds, activeDefaultPropertyId, showCuratedOnly, curatedPropertyIds]);
+  }, [dynamicallyFilteredListings, favoritePropertyIds, activeDefaultPropertyId, showCuratedOnly, curatedPropertyIds]);
 
   // Desktop left-right arrow keystroke listener (loaded below filteredProperties to avoid early variable usage)
   useEffect(() => {
@@ -2217,6 +2288,171 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                 </span>
               </div>
             )}
+
+            {/* Fannie Mae HomeReady 3% Down Shading Overlay */}
+            {showHomeReadyLayer && (
+              <div
+                className="absolute inset-x-24 top-14 bottom-14 opacity-15 bg-purple-950/20 border-2 border-dotted border-purple-500/30 rounded-3xl pointer-events-none flex items-start justify-end p-2"
+              >
+                <span className="bg-stone-950/95 text-purple-300 text-[8.5px] font-mono uppercase px-2 py-0.5 rounded border border-purple-500/20 shadow-md">
+                  🔑 HomeReady 3% Down Layer Active (Strict 80% AMI county limits)
+                </span>
+              </div>
+            )}
+
+            {/* Absolute Loan Programs Floating Toggle Button & Panel Overlay */}
+            <div className="absolute top-4 right-4 z-30">
+              <button
+                type="button"
+                onClick={() => setIsLoanProgramsPanelOpen(!isLoanProgramsPanelOpen)}
+                className="px-2.5 py-1 bg-slate-900/95 hover:bg-slate-800 text-teal-300 border border-teal-500/50 rounded-lg text-[10px] font-bold transition flex items-center gap-1.5 shadow-lg shrink-0 cursor-pointer"
+              >
+                <Sliders className="w-3.5 h-3.5 text-teal-400 animate-pulse" />
+                <span>🏦 Loan Programs Panel</span>
+                <span className={`transition-transform duration-200 ${isLoanProgramsPanelOpen ? 'rotate-180' : ''}`}>
+                  ▼
+                </span>
+              </button>
+
+              {isLoanProgramsPanelOpen && (
+                <div className="absolute right-0 top-7 w-64 p-3.5 bg-slate-900/95 border border-teal-500/40 rounded-xl shadow-2xl space-y-3 backdrop-blur-md text-stone-200 animate-in fade-in zoom-in duration-150">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                    <span className="text-[10px] font-mono font-black uppercase text-teal-400">
+                      Active Products Filter
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsLoanProgramsPanelOpen(false)}
+                      className="text-stone-400 hover:text-white text-[9px] font-bold p-0.5 cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {/* Marker Filter Mode Selector */}
+                  <div className="space-y-1">
+                    <label className="text-[8.5px] font-mono text-stone-400 font-bold block text-left">
+                      Map Marker Filter Mode:
+                    </label>
+                    <select
+                      value={markerFilterMode}
+                      onChange={(e) => setMarkerFilterMode(e.target.value as any)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1 text-[10px] text-white focus:border-teal-500/60 focus:ring-1 focus:ring-teal-500/40"
+                    >
+                      <option value="all">Show All (No Program Requirements Filter)</option>
+                      <option value="any_active">Filter: Match ANY Active Program</option>
+                      <option value="all_active">Filter: Match ALL Active Programs</option>
+                    </select>
+                  </div>
+
+                  {/* Product Toggles List */}
+                  <div className="space-y-2 text-left">
+                    <span className="text-[8.5px] font-mono text-stone-400 font-bold block">
+                      Active Products Switches:
+                    </span>
+
+                    {/* USDA RD Toggle */}
+                    <div className="flex items-center justify-between text-[10px] bg-slate-950/60 p-1.5 rounded border border-slate-800/80">
+                      <span className="flex items-center gap-1 font-mono text-emerald-300">
+                        <span>🌾</span>
+                        <span>USDA RD (100% Down)</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setIsUsdaProgramActive(!isUsdaProgramActive)}
+                        className={`px-1.5 py-0.5 rounded text-[8.5px] font-mono font-black border transition cursor-pointer ${
+                          isUsdaProgramActive
+                            ? 'bg-emerald-500 text-stone-950 border-emerald-400'
+                            : 'bg-stone-800 text-stone-400 border-stone-700'
+                        }`}
+                      >
+                        {isUsdaProgramActive ? 'ON' : 'OFF'}
+                      </button>
+                    </div>
+
+                    {/* FHA NHF Toggle */}
+                    <div className="flex items-center justify-between text-[10px] bg-slate-950/60 p-1.5 rounded border border-slate-800/80">
+                      <span className="flex items-center gap-1 font-mono text-indigo-300">
+                        <span>🇺🇸</span>
+                        <span>FHA NHF (Up to 5%)</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setIsNhfProgramActive(!isNhfProgramActive)}
+                        className={`px-1.5 py-0.5 rounded text-[8.5px] font-mono font-black border transition cursor-pointer ${
+                          isNhfProgramActive
+                            ? 'bg-indigo-500 text-white border-indigo-400'
+                            : 'bg-stone-800 text-stone-400 border-stone-700'
+                        }`}
+                      >
+                        {isNhfProgramActive ? 'ON' : 'OFF'}
+                      </button>
+                    </div>
+
+                    {/* Lakeview Toggle */}
+                    <div className="flex items-center justify-between text-[10px] bg-slate-950/60 p-1.5 rounded border border-slate-800/80">
+                      <span className="flex items-center gap-1 font-mono text-cyan-300">
+                        <span>🏞️</span>
+                        <span>Lakeview DPA (100%)</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setIsLakeviewProgramActive(!isLakeviewProgramActive)}
+                        className={`px-1.5 py-0.5 rounded text-[8.5px] font-mono font-black border transition cursor-pointer ${
+                          isLakeviewProgramActive
+                            ? 'bg-cyan-500 text-stone-950 border-cyan-400'
+                            : 'bg-stone-800 text-stone-400 border-stone-700'
+                        }`}
+                      >
+                        {isLakeviewProgramActive ? 'ON' : 'OFF'}
+                      </button>
+                    </div>
+
+                    {/* Fannie Mae 97 Toggle */}
+                    <div className="flex items-center justify-between text-[10px] bg-slate-950/60 p-1.5 rounded border border-slate-800/80">
+                      <span className="flex items-center gap-1 font-mono text-rose-300">
+                        <span>🔑</span>
+                        <span>Fannie 97% LTV</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setIsFannie97ProgramActive(!isFannie97ProgramActive)}
+                        className={`px-1.5 py-0.5 rounded text-[8.5px] font-mono font-black border transition cursor-pointer ${
+                          isFannie97ProgramActive
+                            ? 'bg-rose-500 text-white border-rose-400'
+                            : 'bg-stone-800 text-stone-400 border-stone-700'
+                        }`}
+                      >
+                        {isFannie97ProgramActive ? 'ON' : 'OFF'}
+                      </button>
+                    </div>
+
+                    {/* Fannie Mae HomeReady Toggle */}
+                    <div className="flex items-center justify-between text-[10px] bg-slate-950/60 p-1.5 rounded border border-slate-800/80">
+                      <span className="flex items-center gap-1 font-mono text-purple-300">
+                        <span>🔑</span>
+                        <span>Fannie HomeReady</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setIsHomeReadyProgramActive(!isHomeReadyProgramActive)}
+                        className={`px-1.5 py-0.5 rounded text-[8.5px] font-mono font-black border transition cursor-pointer ${
+                          isHomeReadyProgramActive
+                            ? 'bg-purple-500 text-white border-purple-400'
+                            : 'bg-stone-800 text-stone-400 border-stone-700'
+                        }`}
+                      >
+                        {isHomeReadyProgramActive ? 'ON' : 'OFF'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="text-[8.5px] text-stone-400 font-mono text-center leading-normal pt-1.5 border-t border-slate-800/80">
+                    Marker Filter Mode dynamically filters all map pins according to requirements.
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div className="relative z-10 flex justify-between items-start">
               <span className="px-2.5 py-1 bg-stone-900/90 text-stone-300 text-[10px] font-mono rounded-lg border border-stone-800 flex items-center gap-1.5">
