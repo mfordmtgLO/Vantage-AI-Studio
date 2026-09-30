@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { WorkspaceTab } from './types';
-import { initAuth, googleSignIn, logout, checkRedirectSignIn } from './services/firebase';
+import { initAuth, googleSignIn, logout, checkRedirectSignIn, createDirectAdminUser, createGuestDeveloperUser } from './services/firebase';
 import { AuthCard } from './components/AuthCard';
 import { Navbar } from './components/Navbar';
 import { WorkspaceHub } from './components/WorkspaceHub';
@@ -373,9 +373,17 @@ export default function App() {
     let isMounted = true;
 
     async function initializeAuth() {
-      // Check if user previously logged in via guest mode or is opening a lead preview link
+      // Check if user is accessing via direct admin/developer parameter or previously authenticated
       try {
         const urlParams = new URLSearchParams(window.location.search);
+        const isAdminParam = 
+          urlParams.get('admin') === 'true' || 
+          urlParams.get('admin') === '1' ||
+          urlParams.get('direct') === '1' ||
+          urlParams.get('dev') === '1' ||
+          urlParams.get('developer') === '1' ||
+          urlParams.get('master_admin') === '1';
+
         const isLeadQuery = urlParams.get('lead') === '1' || 
           urlParams.get('lead_mode') === '1' || 
           urlParams.get('guest') === '1' ||
@@ -384,9 +392,17 @@ export default function App() {
           urlParams.get('propertyId') !== null ||
           urlParams.get('plugin') !== null;
 
+        if (isAdminParam || localStorage.getItem('vantage_auth_role') === 'admin') {
+          if (isMounted) {
+            setUser(createDirectAdminUser());
+            setNeedsAuth(false);
+          }
+          return;
+        }
+
         if (isLeadQuery || localStorage.getItem('vantage_guest_mode') === 'true') {
           if (isMounted) {
-            setUser(createGuestUser());
+            setUser(createGuestDeveloperUser());
             setNeedsAuth(false);
           }
           return;
@@ -456,9 +472,9 @@ export default function App() {
       if (err?.code === 'auth/unauthorized-domain' || (err?.message && err.message.includes('unauthorized-domain'))) {
         message = 'auth/unauthorized-domain';
       } else if (err?.code === 'auth/popup-timeout') {
-        message = 'Safari or your browser took too long to open the sign-in pop-up. Tap "Continue with Direct Sign-In" below to sign in directly.';
+        message = 'Safari or your browser took too long to open the sign-in pop-up. Tap "Direct Master Admin Sign-In" or "Continue with Direct Sign-In" below.';
       } else if (err?.code === 'auth/popup-blocked') {
-        message = 'Safari blocked the sign-in pop-up window. Tap "Continue with Direct Sign-In" below to sign in without pop-ups.';
+        message = 'Safari blocked the sign-in pop-up window. Tap "Direct Master Admin Sign-In" to sign in directly without pop-ups.';
       } else if (err?.code === 'auth/popup-closed-by-user') {
         message = 'The sign-in window was closed before completing. Please try again.';
       } else if (err?.code === 'auth/cancelled-popup-request') {
@@ -470,12 +486,23 @@ export default function App() {
     }
   };
 
+  const handleDirectAdminLogin = () => {
+    try {
+      localStorage.setItem('vantage_auth_role', 'admin');
+      localStorage.setItem('vantage_view_mode', 'dashboard');
+    } catch {}
+    setUser(createDirectAdminUser());
+    setNeedsAuth(false);
+    setViewMode('dashboard');
+    setAuthError(null);
+  };
+
   const handleGuestLogin = () => {
     try {
       localStorage.setItem('vantage_guest_mode', 'true');
       localStorage.setItem('vantage_view_mode', 'dashboard');
     } catch {}
-    setUser(createGuestUser());
+    setUser(createGuestDeveloperUser());
     setNeedsAuth(false);
     setViewMode('dashboard');
     setAuthError(null);
@@ -490,6 +517,7 @@ export default function App() {
   const handleLogout = async () => {
     try {
       localStorage.removeItem('vantage_guest_mode');
+      localStorage.removeItem('vantage_auth_role');
       localStorage.removeItem('vantage_view_mode');
     } catch {}
     await logout();
@@ -673,6 +701,7 @@ export default function App() {
       <ThemeProvider>
         <AuthCard
           onLogin={handleLogin}
+          onDirectAdminLogin={handleDirectAdminLogin}
           onGuestLogin={handleGuestLogin}
           onCancelLogin={handleCancelLogin}
           onBackToPublic={() => setViewMode('public')}
@@ -692,6 +721,7 @@ export default function App() {
           <PublicFacingWebsiteView
             onEnterGuestDemo={handleGuestLogin}
             onOpenSignIn={() => setViewMode('auth')}
+            onDirectAdminLogin={handleDirectAdminLogin}
             onOpenDashboard={() => {
               setViewMode('dashboard');
               try {

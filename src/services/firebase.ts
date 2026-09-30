@@ -110,9 +110,56 @@ export interface SignInOptions {
 }
 
 /**
+ * Creates a synthetic authenticated User object for Mike Ford (Master Admin)
+ * used for direct sign-in and local development bypass.
+ */
+export const createDirectAdminUser = (): User => ({
+  uid: 'admin_mike_ford_vantage',
+  displayName: 'Mike Ford',
+  email: 'fordmj@gmail.com',
+  photoURL: 'https://lh3.googleusercontent.com/a/ACg8ocISYp5s_placeholder',
+  emailVerified: true,
+  isAnonymous: false,
+  metadata: {},
+  providerData: [],
+  refreshToken: '',
+  tenantId: null,
+  delete: async () => {},
+  getIdToken: async () => 'mock_admin_token',
+  getIdTokenResult: async () => ({} as any),
+  reload: async () => {},
+  toJSON: () => ({}),
+  phoneNumber: '+15417292097',
+  providerId: 'google.com',
+} as unknown as User);
+
+/**
+ * Creates a synthetic authenticated User object for Developer/Guest mode.
+ */
+export const createGuestDeveloperUser = (): User => ({
+  uid: 'dev_guest_user_vantage',
+  displayName: 'Developer Guest',
+  email: 'developer@vantage.workspace',
+  photoURL: null,
+  emailVerified: true,
+  isAnonymous: true,
+  metadata: {},
+  providerData: [],
+  refreshToken: '',
+  tenantId: null,
+  delete: async () => {},
+  getIdToken: async () => 'mock_dev_token',
+  getIdTokenResult: async () => ({} as any),
+  reload: async () => {},
+  toJSON: () => ({}),
+  phoneNumber: null,
+  providerId: 'guest',
+} as unknown as User);
+
+/**
  * Handles signing in with Google.
  * On mobile/iOS Safari (outside an iframe), defaults to signInWithRedirect to avoid popup blockers and ITP hangs.
- * On desktop or inside an iframe, uses signInWithPopup with a 15-second safety timeout so it never hangs indefinitely.
+ * On desktop or inside an iframe, uses signInWithPopup with a 30-second safety timeout.
  */
 export const googleSignIn = async (
   options: SignInOptions = { method: 'auto' }
@@ -125,7 +172,6 @@ export const googleSignIn = async (
 
   if (shouldUseRedirect) {
     // Redirects current page directly to Google accounts authentication
-    // No pop-ups required, immune to Safari popup blocker and cross-window postMessage drops!
     try {
       await signInWithRedirect(auth, provider);
     } finally {
@@ -134,7 +180,7 @@ export const googleSignIn = async (
     return null;
   }
 
-  // Pop-up sign-in with safety 6-second timeout guard
+  // Pop-up sign-in with generous 30-second timeout guard
   try {
     const popupPromise = signInWithPopup(auth, provider);
     const timeoutPromise = new Promise<never>((_, reject) => {
@@ -144,7 +190,7 @@ export const googleSignIn = async (
         );
         err.code = 'auth/popup-timeout';
         reject(err);
-      }, 6000);
+      }, 30000);
     });
 
     const result = await Promise.race([popupPromise, timeoutPromise]);

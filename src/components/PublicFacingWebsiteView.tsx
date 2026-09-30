@@ -18,6 +18,7 @@ import { isMikeFordAdmin } from '../utils/adminAuth';
 interface PublicFacingWebsiteViewProps {
   onEnterGuestDemo: () => void;
   onOpenSignIn: () => void;
+  onDirectAdminLogin?: () => void;
   onOpenDashboard?: () => void;
   onLogout?: () => void;
   currentUser?: User | null;
@@ -27,6 +28,7 @@ interface PublicFacingWebsiteViewProps {
 export const PublicFacingWebsiteView: React.FC<PublicFacingWebsiteViewProps> = ({
   onEnterGuestDemo,
   onOpenSignIn,
+  onDirectAdminLogin,
   onOpenDashboard,
   onLogout,
   currentUser,
@@ -161,13 +163,25 @@ export const PublicFacingWebsiteView: React.FC<PublicFacingWebsiteViewProps> = (
                 </button>
               )
             ) : (
-              <button
-                onClick={onOpenSignIn}
-                className="px-3 py-2 bg-slate-800/90 hover:bg-slate-700 text-slate-200 hover:text-white font-semibold rounded-xl text-xs sm:text-sm border border-slate-700 transition flex items-center gap-1.5 cursor-pointer"
-              >
-                <LogIn className="w-4 h-4 text-slate-400" />
-                <span>Sign In</span>
-              </button>
+              <div className="flex items-center gap-2">
+                {onDirectAdminLogin && (
+                  <button
+                    onClick={onDirectAdminLogin}
+                    className="hidden md:flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-slate-950 font-black rounded-xl text-xs shadow-sm transition cursor-pointer"
+                    title="Direct Master Admin Access (Mike Ford)"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 text-slate-950" />
+                    <span>Admin Access</span>
+                  </button>
+                )}
+                <button
+                  onClick={onOpenSignIn}
+                  className="px-3 py-2 bg-slate-800/90 hover:bg-slate-700 text-slate-200 hover:text-white font-semibold rounded-xl text-xs sm:text-sm border border-slate-700 transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <LogIn className="w-4 h-4 text-slate-400" />
+                  <span>Sign In</span>
+                </button>
+              </div>
             )}
           </div>
         </div>

@@ -100,6 +100,8 @@ import { CensusTractLeadDensityHeatmap } from './CensusTractLeadDensityHeatmap';
 import { SmartOutreachTemplatesSection } from './SmartOutreachTemplatesSection';
 import { FiftyStateSweepDashboard } from './FiftyStateSweepDashboard';
 import { CronJobExecutionStatusIndicator } from './CronJobExecutionStatusIndicator';
+import { TwoWaySyncIntegrationGuideModal } from './TwoWaySyncIntegrationGuideModal';
+import { CopySignatureButton } from './CopySignatureButton';
 
 export type LeadCrmStatus = 'new_discovery_scrape' | 'active_two_way' | 'dormant_7_days' | 'archived_discovery';
 export type TwoWayOutreachMode = 'both' | 'sms_only' | 'gmail_only';
@@ -359,6 +361,7 @@ export const LeadDiscoveryStudio: React.FC = () => {
   });
 
   const [showOutreachHistoryModal, setShowOutreachHistoryModal] = useState(false);
+  const [showTwoWayGuideModal, setShowTwoWayGuideModal] = useState(false);
   const [showAutoArchiveModal, setShowAutoArchiveModal] = useState(false);
   const [autoArchiveConfig, setAutoArchiveConfig] = useState<AutoArchiveRuleConfig>(() => LeadAutoArchiveService.getRuleConfig());
   const [showActiveTwoWayNotifModal, setShowActiveTwoWayNotifModal] = useState(false);
@@ -2403,6 +2406,22 @@ Email: fordmj@gmail.com`;
             >
               <MessageSquare className="w-4 h-4" />
               <span>Outreach Tracker ({outreachHistory.length})</span>
+            </button>
+            <CopySignatureButton
+              currentState={selectedSweepState || 'OR'}
+              onStateChange={(st) => setSelectedSweepState(st)}
+              variant="toolbar"
+            />
+            <button
+              onClick={() => setShowTwoWayGuideModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 text-white font-extrabold text-xs shadow-lg transition cursor-pointer border border-emerald-400/40 relative"
+              title="Open Two-Way Comment Sync & Signature Attribution Integration Guide"
+            >
+              <BookOpen className="w-4 h-4 text-emerald-300" />
+              <span>📖 2-Way Sync Guide</span>
+              <span className="px-1.5 py-0.2 rounded-full bg-emerald-400 text-slate-950 text-[9px] font-black">
+                Signature
+              </span>
             </button>
             <button
               onClick={() => setShowAutoArchiveModal(true)}
@@ -6118,6 +6137,12 @@ Email: fordmj@gmail.com`;
           // Trigger instant manual sweep with new campaign
           handleRunManualSweep();
         }}
+      />
+
+      {/* Two-Way Comment Sync & Signature Attribution Integration Guide Modal */}
+      <TwoWaySyncIntegrationGuideModal
+        isOpen={showTwoWayGuideModal}
+        onClose={() => setShowTwoWayGuideModal(false)}
       />
     </div>
   );

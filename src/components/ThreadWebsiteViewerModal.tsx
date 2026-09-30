@@ -31,8 +31,11 @@ import {
   UserCheck,
   Building2,
   Award,
-  ChevronRight
+  ChevronRight,
+  BookOpen
 } from 'lucide-react';
+import { TwoWaySyncIntegrationGuideModal } from './TwoWaySyncIntegrationGuideModal';
+import { CopySignatureButton } from './CopySignatureButton';
 
 export interface ThreadMessageItem {
   sender: 'lo' | 'renter' | 'community';
@@ -73,6 +76,7 @@ export const ThreadWebsiteViewerModal: React.FC<ThreadWebsiteViewerModalProps> =
 }) => {
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showGuideModal, setShowGuideModal] = useState(false);
   const [newCommentText, setNewCommentText] = useState('');
   const [localComments, setLocalComments] = useState<ThreadMessageItem[]>([]);
   const [commentLiked, setCommentLiked] = useState<Record<number, boolean>>({});
@@ -174,8 +178,24 @@ export const ThreadWebsiteViewerModal: React.FC<ThreadWebsiteViewerModalProps> =
             </span>
           </div>
 
-          {/* Right: Actions (Copy URL, Close) */}
+          {/* Right: Actions (Integration Guide, Copy Signature, Copy URL, Close) */}
           <div className="flex items-center gap-1.5">
+            <CopySignatureButton
+              currentState="OR"
+              threadId={threadData?.messageThreadId}
+              variant="compact"
+            />
+
+            <button
+              type="button"
+              onClick={() => setShowGuideModal(true)}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 hover:text-white text-xs font-semibold transition cursor-pointer border border-indigo-500/40"
+              title="Open Two-Way Comment Sync & Signature Attribution Guide"
+            >
+              <BookOpen className="w-3 h-3 text-indigo-400" />
+              <span className="hidden sm:inline text-[11px]">Sync Guide</span>
+            </button>
+
             <button
               type="button"
               onClick={handleCopyUrl}
@@ -411,12 +431,19 @@ export const ThreadWebsiteViewerModal: React.FC<ThreadWebsiteViewerModalProps> =
 
                   {/* Post New Comment Form */}
                   <form onSubmit={handleAddComment} className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
-                    <div className="flex items-center justify-between text-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                       <span className="font-bold text-slate-300 flex items-center gap-1.5">
                         <UserCheck className="w-3.5 h-3.5 text-indigo-400" />
-                        <span>Leave a Reply as Mike Ford (Mortgage Loan Officer):</span>
+                        <span>Leave a Reply as Mike Ford (Senior Loan Officer):</span>
                       </span>
-                      <span className="text-[11px] text-slate-400">Connected to CRM Pipeline</span>
+                      <div className="flex items-center gap-2">
+                        <CopySignatureButton
+                          currentState="OR"
+                          threadId={threadData?.messageThreadId}
+                          variant="compact"
+                        />
+                        <span className="text-[11px] text-slate-400">Connected to CRM</span>
+                      </div>
                     </div>
 
                     <textarea
@@ -613,6 +640,13 @@ export const ThreadWebsiteViewerModal: React.FC<ThreadWebsiteViewerModalProps> =
         </div>
 
       </div>
+
+      {/* Two-Way Comment Sync & Attribution Integration Guide Modal */}
+      <TwoWaySyncIntegrationGuideModal
+        isOpen={showGuideModal}
+        onClose={() => setShowGuideModal(false)}
+        sampleThreadId={threadData.messageThreadId}
+      />
     </div>
   );
 };

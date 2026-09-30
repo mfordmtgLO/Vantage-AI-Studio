@@ -18,6 +18,7 @@ import { FiftyStateSweepDashboard } from './FiftyStateSweepDashboard';
 import { CronJobExecutionStatusIndicator } from './CronJobExecutionStatusIndicator';
 import { ApiUsageMetricsStudio } from './ApiUsageMetricsStudio';
 import { GitHubCloudRunSyncStatusCard } from './GitHubCloudRunSyncStatusCard';
+import { CopySignatureButton } from './CopySignatureButton';
 import { IndustryCareerTemplate } from '../data/industryCareerTemplates';
 
 interface VisitorNote {
@@ -132,8 +133,12 @@ export const MobileAdminDashboard: React.FC<{
             </div>
           </div>
 
-          {/* Right side controls: Desktop view + Logout permanently visible on screen! */}
+          {/* Right side controls: Copy Signature + Desktop view + Logout permanently visible on screen! */}
           <div className="flex items-center gap-1.5 shrink-0">
+            <CopySignatureButton
+              currentState="OR"
+              variant="compact"
+            />
             {onOpenDesktopView && (
               <button
                 onClick={onOpenDesktopView}
