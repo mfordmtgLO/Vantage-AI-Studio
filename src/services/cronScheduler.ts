@@ -347,3 +347,18 @@ export function toggleCircadianJobStatus(jobId: string): CircadianJob[] {
   saveLocalCircadianJobs(updated);
   return updated;
 }
+
+/**
+ * Update a Circadian Rhythm job's parameters (schedule, status, cadence, etc.).
+ */
+export function updateCircadianJob(jobId: string, updates: Partial<CircadianJob>): CircadianJob[] {
+  const jobs = getLocalCircadianJobs();
+  const updated = jobs.map(j => {
+    if (j.id === jobId) {
+      return { ...j, ...updates };
+    }
+    return j;
+  });
+  saveLocalCircadianJobs(updated);
+  return updated;
+}

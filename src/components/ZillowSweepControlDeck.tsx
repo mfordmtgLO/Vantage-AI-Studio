@@ -35,7 +35,9 @@ import {
   X,
   Coins,
   Database,
-  Gauge
+  Gauge,
+  Play,
+  Pause
 } from 'lucide-react';
 import { SyncedPropertyListing } from '../types/firstTimeHomebuyerPlugin';
 import { 
@@ -45,6 +47,7 @@ import {
   SwarmBatchConfig,
   SwarmCostMetrics
 } from '../services/zillowSwarmSweepService';
+import { updateCircadianJob } from '../services/cronScheduler';
 import { ZillowSweepConfigModal } from './ZillowSweepConfigModal';
 
 interface ZillowSweepControlDeckProps {
@@ -185,6 +188,22 @@ export const ZillowSweepControlDeck: React.FC<ZillowSweepControlDeckProps> = ({
     setIsDropdownOpen(false);
   };
 
+  const handleTogglePauseSweep = () => {
+    const isPaused = scheduleConfig.status === 'paused' || scheduleConfig.status === 'disabled';
+    const updated = isPaused 
+      ? zillowSwarmSweepService.resumeSchedule() 
+      : zillowSwarmSweepService.pauseSchedule();
+    setScheduleConfig(updated);
+    updateCircadianJob('job_daily_zillow_swarm_sweep', {
+      status: updated.status === 'active' ? 'active' : 'paused'
+    });
+    setSweepFeedback({
+      type: 'info',
+      message: updated.status === 'active' ? '✓ Zillow Swarm daily sweep resumed!' : '⏸️ Zillow Swarm daily sweep paused.'
+    });
+    setTimeout(() => setSweepFeedback(null), 5000);
+  };
+
   return (
     <div className="space-y-3">
       {/* Top Banner Toolbar */}
@@ -222,6 +241,44 @@ export const ZillowSweepControlDeck: React.FC<ZillowSweepControlDeckProps> = ({
         {/* Right: Actions (Settings Modal, Date Dropdown, Manual Sweep) */}
         <div className="flex items-center gap-2 flex-wrap w-full md:w-auto justify-start md:justify-end">
           
+          {/* Pause / Resume Button */}
+          <button
+            type="button"
+            onClick={handleTogglePauseSweep}
+            className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer border ${
+              scheduleConfig.status === 'paused' || scheduleConfig.status === 'disabled'
+                ? 'bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border-emerald-500/50'
+                : 'bg-amber-950/80 hover:bg-amber-900 text-amber-300 border-amber-500/50'
+            }`}
+            title={scheduleConfig.status === 'paused' ? "Resume automated daily swarm sweep" : "Pause automated daily swarm sweep"}
+          >
+            {scheduleConfig.status === 'paused' || scheduleConfig.status === 'disabled' ? (
+              <>
+                <Play className="w-3.5 h-3.5 fill-current" />
+                <span>Resume Sweep</span>
+              </>
+            ) : (
+              <>
+                <Pause className="w-3.5 h-3.5" />
+                <span>Pause Cron</span>
+              </>
+            )}
+          </button>
+
+          {/* Edit Schedule Button */}
+          <button
+            type="button"
+            onClick={() => {
+              setModalTab('schedule');
+              setShowConfigModal(true);
+            }}
+            className="px-3 py-1.5 rounded-xl bg-stone-950 hover:bg-stone-800 text-cyan-300 hover:text-white border border-stone-700 hover:border-cyan-500/40 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer"
+            title="Edit Zillow sweep execution time, cadence, and schedule"
+          >
+            <Clock className="w-3.5 h-3.5" />
+            <span>Edit Schedule</span>
+          </button>
+
           {/* Target Cities & Schedule Settings Button */}
           <button
             type="button"
@@ -233,7 +290,7 @@ export const ZillowSweepControlDeck: React.FC<ZillowSweepControlDeckProps> = ({
             title="Configure target cities lineup & customize automated cron schedule/cadence"
           >
             <Settings2 className="w-3.5 h-3.5 text-amber-400" />
-            <span>Target Cities & Schedule</span>
+            <span>Cities &amp; Batch</span>
             <span className="ml-0.5 px-1.5 py-0.2 rounded-md bg-amber-500/20 text-amber-300 text-[10px] font-bold font-mono">
               {activeCitiesCount}
             </span>
