@@ -357,11 +357,11 @@ export const NATIONWIDE_STATE_PROGRAMS: Record<string, StateMortgageProgramData>
     stateCode: 'OR',
     stateName: 'Oregon',
     agencyName: 'Oregon Housing and Community Services (OHCS)',
-    flagshipProgramName: 'OHCS Flex Lending FirstHome (4-5% DPA) & RateAdvantage',
-    maxDpaPercentOrAmount: '4.0% - 5.0% Cash Grant (Up to $29,250 Cap)',
+    flagshipProgramName: 'OHCS Flex Lending: Rate Advantage ($0 Cash / Max Rate Discount) vs FirstHome (4-5% DPA) & NextStep (No Cap)',
+    maxDpaPercentOrAmount: 'FirstHome: 4-5% ($29,250 Cap) | Rate Advantage: $0 Cash (Max Rate Discount) | NextStep: 4-5% (No Price Cap)',
     dpaType: 'Forgivable Grant',
     minFico: 620,
-    maxPurchasePriceCapUsd: 715000,
+    maxPurchasePriceCapUsd: 752036,
     maxIncomeCapPercentAmi: 115,
     medianHouseholdAmiUsd: 94000,
     isLakeviewNationalEligible: true,
@@ -370,8 +370,14 @@ export const NATIONWIDE_STATE_PROGRAMS: Record<string, StateMortgageProgramData>
     usdaRuralTractPercentage: 68,
     isNhfDpaEligible: true,
     lmiTractCountEstimate: 214,
-    highlightFeatures: ['4.0% standard or 5.0% DPA in LMI/Targeted Census Tracts or ≤80% AMI', 'RateAdvantage provides up to 50 bps discount below market', 'NextStep program open to repeat buyers up to $125k income', 'Stackable with CRA $10k grants and Lakeview 100% DPA'],
-    chatEngagementTemplate: 'Oregon first-time buyers can stop renting with OHCS Flex Lending 5% DPA ($29k cap) or Lakeview National 100% financing across all 36 Oregon counties with 620-660+ credit!'
+    highlightFeatures: [
+      'Rate Advantage: $0 cash assistance, maximum below-market interest rate discount to lower monthly payments',
+      'FirstHome: 4.0% standard or 5.0% cash DPA ($29,250 cap) for buyers needing upfront funds to close',
+      'Cash Advantage: 3.0% cash assistance for down payment and closing costs',
+      'NextStep Loophole: Zero purchase price limit! Open to repeat buyers with household income ≤ $125k',
+      'County Price Caps: $566,354 to $752,036 non-targeted, up to $919,155 targeted'
+    ],
+    chatEngagementTemplate: 'In Oregon, choose Rate Advantage if you have savings and want the lowest monthly payment, FirstHome for 4-5% upfront cash assistance, or NextStep if buying a home exceeding county price caps!'
   },
   PA: {
     stateCode: 'PA',

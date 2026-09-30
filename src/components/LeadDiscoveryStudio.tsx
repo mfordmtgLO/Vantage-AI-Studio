@@ -102,6 +102,7 @@ import { FiftyStateSweepDashboard } from './FiftyStateSweepDashboard';
 import { CronJobExecutionStatusIndicator } from './CronJobExecutionStatusIndicator';
 import { TwoWaySyncIntegrationGuideModal } from './TwoWaySyncIntegrationGuideModal';
 import { CopySignatureButton } from './CopySignatureButton';
+import { OregonProgramComparisonModal } from './OregonProgramComparisonModal';
 
 export type LeadCrmStatus = 'new_discovery_scrape' | 'active_two_way' | 'dormant_7_days' | 'archived_discovery';
 export type TwoWayOutreachMode = 'both' | 'sms_only' | 'gmail_only';
@@ -362,6 +363,7 @@ export const LeadDiscoveryStudio: React.FC = () => {
 
   const [showOutreachHistoryModal, setShowOutreachHistoryModal] = useState(false);
   const [showTwoWayGuideModal, setShowTwoWayGuideModal] = useState(false);
+  const [showOregonProgramMatrixModal, setShowOregonProgramMatrixModal] = useState(false);
   const [showAutoArchiveModal, setShowAutoArchiveModal] = useState(false);
   const [autoArchiveConfig, setAutoArchiveConfig] = useState<AutoArchiveRuleConfig>(() => LeadAutoArchiveService.getRuleConfig());
   const [showActiveTwoWayNotifModal, setShowActiveTwoWayNotifModal] = useState(false);
@@ -2412,6 +2414,17 @@ Email: fordmj@gmail.com`;
               onStateChange={(st) => setSelectedSweepState(st)}
               variant="toolbar"
             />
+            <button
+              onClick={() => setShowOregonProgramMatrixModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white font-extrabold text-xs shadow-lg transition cursor-pointer border border-emerald-400/40 relative"
+              title="Open OHCS Master Comparison Matrix: Rate Advantage ($0 Cash / Max Discount) vs FirstHome (4-5% DPA) vs NextStep (No Cap) across all 36 Oregon Counties"
+            >
+              <Sparkles className="w-4 h-4 text-emerald-300" />
+              <span>🌲 OHCS Matrix (Rate vs DPA vs NextStep)</span>
+              <span className="px-1.5 py-0.2 rounded-full bg-emerald-400 text-slate-950 text-[9px] font-black">
+                36 Counties
+              </span>
+            </button>
             <button
               onClick={() => setShowTwoWayGuideModal(true)}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 text-white font-extrabold text-xs shadow-lg transition cursor-pointer border border-emerald-400/40 relative"
@@ -6143,6 +6156,13 @@ Email: fordmj@gmail.com`;
       <TwoWaySyncIntegrationGuideModal
         isOpen={showTwoWayGuideModal}
         onClose={() => setShowTwoWayGuideModal(false)}
+      />
+
+      {/* Oregon Housing & Community Services (OHCS) Rate Advantage vs FirstHome vs NextStep Comparison Modal */}
+      <OregonProgramComparisonModal
+        isOpen={showOregonProgramMatrixModal}
+        onClose={() => setShowOregonProgramMatrixModal(false)}
+        initialCountyId={selectedSweepCounty !== 'all_8_counties' ? selectedSweepCounty : 'lane'}
       />
     </div>
   );

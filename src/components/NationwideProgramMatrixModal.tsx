@@ -217,6 +217,43 @@ export const NationwideProgramMatrixModal: React.FC<NationwideProgramMatrixModal
                 )}
               </div>
 
+              {activeState === 'OR' && (
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/80 via-slate-900 to-indigo-950/80 border-2 border-emerald-500/60 shadow-xl space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-emerald-400" />
+                      <h4 className="text-xs font-black text-white uppercase tracking-wider">
+                        Oregon OHCS Specialization: Rate Advantage vs. FirstHome DPA vs. NextStep
+                      </h4>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-mono font-bold">
+                      IRS Section 143 Compliant
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs">
+                    <div className="p-2.5 rounded-xl bg-slate-950/90 border border-emerald-500/40 space-y-1">
+                      <strong className="text-emerald-300 font-bold block">📉 Rate Advantage ($0 Cash)</strong>
+                      <p className="text-[11px] text-slate-300">
+                        <strong>$0 Cash Assistance.</strong> Maximum below-market 30-year fixed rate discount. Ideal for buyers with saved down payment wanting the lowest monthly payment.
+                      </p>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-slate-950/90 border border-indigo-500/40 space-y-1">
+                      <strong className="text-indigo-300 font-bold block">💵 FirstHome (4-5% DPA)</strong>
+                      <p className="text-[11px] text-slate-300">
+                        <strong>4% to 5% Cash DPA ($29,250 cap).</strong> Wipes out required cash to close. Ideal when upfront savings is the buyer's bottleneck.
+                      </p>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-slate-950/90 border border-amber-500/40 space-y-1">
+                      <strong className="text-amber-300 font-bold block">🚀 NextStep (NO Price Cap)</strong>
+                      <p className="text-[11px] text-slate-300">
+                        <strong>Zero Purchase Price Limit!</strong> Flat $125k income limit. Allows repeat buyers and homes exceeding county price caps.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {auditResult.programs.map((prog, idx) => (
                   <div

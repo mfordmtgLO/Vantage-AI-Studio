@@ -33,6 +33,8 @@ import {
   Layers,
   HelpCircle,
   MapPin,
+  User,
+  Users,
   X
 } from 'lucide-react';
 import {
@@ -40,6 +42,11 @@ import {
   PeerLoanOfficer,
   DEFAULT_PEER_LO_ROSTER
 } from '../services/peerLoanOfficersService';
+import {
+  LeadGenAgentsService,
+  LeadGenAgent,
+  DEFAULT_LEAD_GEN_AGENTS
+} from '../services/leadGenAgentsService';
 import { US_STATES, getStateDetails } from '../data/usStatesAndCounties';
 
 interface TwoWaySyncIntegrationGuideModalProps {
@@ -55,45 +62,28 @@ export const TwoWaySyncIntegrationGuideModal: React.FC<TwoWaySyncIntegrationGuid
 }) => {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'how-it-works' | 'signature-rules' | 'validator'>('how-it-works');
-  const [guideState, setGuideState] = useState<string>('OR');
+  const [selectedAgentId, setSelectedAgentId] = useState<string>(() => LeadGenAgentsService.getActiveAgentId());
   
+  const allAgents = React.useMemo(() => LeadGenAgentsService.getAllAgents(), [isOpen]);
+  const currentAgent: LeadGenAgent = React.useMemo(() => {
+    return allAgents.find(a => a.id === selectedAgentId) || LeadGenAgentsService.getAgentById('agent_mike_ford');
+  }, [allAgents, selectedAgentId]);
+
   // Interactive Signature Playground state
   const [testSignatureInput, setTestSignatureInput] = useState<string>(
     `Hi! As an Oregon lender with 26 years experience, you can definitely combine the OHCS Flex grant with USDA zero down.\n\n— Mike Ford (Senior Loan Officer)\nDirect / SMS: (541) 729-2097 | fordmj@gmail.com\n[Ref: #${sampleThreadId}]`
   );
 
-  // Dynamically resolved officer based on guideState
-  const currentOfficer: PeerLoanOfficer = React.useMemo(() => {
-    const dir = PeerLoanOfficersService.getDirectory();
-    if (dir[guideState]) return dir[guideState];
-    if (DEFAULT_PEER_LO_ROSTER[guideState]) return DEFAULT_PEER_LO_ROSTER[guideState];
-    return {
-      id: 'peer_or_mford',
-      name: 'Mike Ford',
-      nmlsNumber: '102938',
-      company: 'Churchill Mortgage',
-      title: 'Senior Mortgage Advisor / Team Lead',
-      email: 'fordmj@gmail.com',
-      phone: '(541) 729-2097',
-      licensedStates: ['OR', 'WA'],
-      defaultStates: ['OR'],
-      applicationUrl: 'https://cfmtg.com/mford/',
-      branchLocation: 'Eugene / Willamette Valley Branch, OR',
-      localDpaProgram: 'Oregon Housing and Community Services (OHCS) Flex 97 Grant'
-    };
-  }, [guideState]);
+  const isMikeFord = currentAgent.name.toLowerCase().includes('mike ford');
+  const canonicalSignatureLine = `— ${currentAgent.name} (${currentAgent.title})`;
 
-  const isMikeFord = currentOfficer.name.toLowerCase().includes('mike ford') || guideState === 'OR';
-  const officerTitle = isMikeFord ? 'Senior Loan Officer' : (currentOfficer.title || 'Senior Loan Officer');
-  const canonicalSignatureLine = `— ${currentOfficer.name} (${officerTitle})`;
+  const fullSigTemplate = React.useMemo(() => {
+    return LeadGenAgentsService.generateFullSignature(currentAgent, `[Ref: #${sampleThreadId}]`);
+  }, [currentAgent, sampleThreadId]);
 
-  const fullSigTemplate = isMikeFord
-    ? `— Mike Ford (Senior Loan Officer)\nSenior Mortgage Loan Officer | 26 Yrs Oregon Experience\nDirect / SMS: (541) 729-2097 | Email: fordmj@gmail.com\n[Ref: #${sampleThreadId}]`
-    : `— ${currentOfficer.name} (${officerTitle})\n${currentOfficer.company || 'Churchill Mortgage'}${currentOfficer.nmlsNumber ? ` | NMLS #${currentOfficer.nmlsNumber}` : ''} | ${getStateDetails(guideState)?.name || guideState} Specialist\nDirect / SMS: ${currentOfficer.phone} | Email: ${currentOfficer.email}\n[Ref: #${sampleThreadId}]`;
-
-  const compactSigTemplate = isMikeFord
-    ? `— Mike Ford (Senior Loan Officer) | Direct / SMS: (541) 729-2097`
-    : `— ${currentOfficer.name} (${officerTitle}) | Direct / SMS: ${currentOfficer.phone}`;
+  const compactSigTemplate = React.useMemo(() => {
+    return LeadGenAgentsService.generateCompactSignature(currentAgent);
+  }, [currentAgent]);
 
   if (!isOpen) return null;
 
@@ -104,10 +94,10 @@ export const TwoWaySyncIntegrationGuideModal: React.FC<TwoWaySyncIntegrationGuid
   };
 
   // Signature validation logic matching the scrape engine rules
-  const hasExactOfficerName = new RegExp(currentOfficer.name.replace(/[^a-zA-Z]/g, '\\s*'), 'i').test(testSignatureInput) || /mike\s+ford/i.test(testSignatureInput);
-  const hasOfficerTitle = /\(?senior\s+loan\s+officer\)?/i.test(testSignatureInput) || /loan\s+officer/i.test(testSignatureInput) || new RegExp(officerTitle.replace(/[^a-zA-Z]/g, '\\s*'), 'i').test(testSignatureInput);
+  const hasExactOfficerName = new RegExp(currentAgent.name.replace(/[^a-zA-Z]/g, '\\s*'), 'i').test(testSignatureInput) || /mike\s+ford/i.test(testSignatureInput);
+  const hasOfficerTitle = /\(?senior\s+loan\s+officer\)?/i.test(testSignatureInput) || /loan\s+officer/i.test(testSignatureInput) || new RegExp(currentAgent.title.replace(/[^a-zA-Z]/g, '\\s*'), 'i').test(testSignatureInput);
   const hasThreadRef = /\[?ref:\s*#?th_[a-z0-9_]+\]?/i.test(testSignatureInput);
-  const hasPhoneOrEmail = /541|729|2097|fordmj@gmail\.com/i.test(testSignatureInput) || (currentOfficer.phone && testSignatureInput.includes(currentOfficer.phone.replace(/[^0-9]/g, '').slice(-4)));
+  const hasPhoneOrEmail = /541|729|2097|fordmj@gmail\.com/i.test(testSignatureInput) || (currentAgent.phone && testSignatureInput.includes(currentAgent.phone.replace(/[^0-9]/g, '').slice(-4)));
   
   const isSignatureValid = hasExactOfficerName && hasOfficerTitle;
 
@@ -301,47 +291,55 @@ export const TwoWaySyncIntegrationGuideModal: React.FC<TwoWaySyncIntegrationGuid
           {/* TAB 2: SIGNATURE RULES & TEMPLATES */}
           {activeTab === 'signature-rules' && (
             <div className="space-y-6 animate-in fade-in duration-150">
-              {/* Target State & Loan Officer Switcher */}
-              <div className="p-4 rounded-2xl bg-slate-950 border border-emerald-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+              {/* Lead Generation Agent Selector Dropdown */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-950/80 via-slate-950 to-indigo-950/80 border border-indigo-500/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs shrink-0">
-                    <MapPin className="w-4 h-4" />
+                  <div className="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-xs shrink-0">
+                    <User className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 uppercase font-black tracking-wider block">
-                      Active State Loan Officer:
+                    <span className="text-[10px] text-indigo-300 uppercase font-black tracking-wider block">
+                      Active Lead Generation Agent:
                     </span>
                     <span className="text-xs font-black text-white">
-                      {isMikeFord ? 'Mike Ford (Senior Loan Officer)' : `${currentOfficer.name} (${currentOfficer.title || 'Senior Loan Officer'})`}
+                      {currentAgent.name} ({currentAgent.title})
                     </span>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <label htmlFor="guide-state-select" className="text-xs text-slate-400 whitespace-nowrap">Switch State:</label>
+                  <label htmlFor="guide-agent-select" className="text-xs text-slate-300 font-bold whitespace-nowrap">Switch Agent:</label>
                   <select
-                    id="guide-state-select"
-                    value={guideState}
+                    id="guide-agent-select"
+                    value={selectedAgentId}
                     onChange={(e) => {
-                      setGuideState(e.target.value);
+                      setSelectedAgentId(e.target.value);
+                      LeadGenAgentsService.setActiveAgentId(e.target.value);
                     }}
-                    className="bg-slate-900 border border-emerald-500/40 text-emerald-300 text-xs font-bold rounded-xl px-3 py-1.5 focus:outline-none focus:border-emerald-400 cursor-pointer"
+                    className="bg-slate-900 border border-indigo-500/50 text-indigo-200 text-xs font-bold rounded-xl px-3 py-1.5 focus:outline-none focus:border-emerald-400 cursor-pointer shadow-inner"
                   >
-                    <option value="OR">🌲 Oregon (OR) — Mike Ford</option>
-                    <option value="WA">🌲 Washington (WA) — Sarah Jenkins</option>
-                    <option value="ID">🥔 Idaho (ID) — Brad Callahan</option>
-                    <option value="CA">☀️ California (CA) — Elena Vasquez</option>
-                    <option value="NV">🎰 Nevada (NV) — Jason Mercer</option>
-                    <option value="AZ">🌵 Arizona (AZ) — Mark Reynolds</option>
-                    <option value="TX">🤠 Texas (TX) — Rachel Holloway</option>
-                    <option value="CO">🏔️ Colorado (CO) — Travis Dunbar</option>
-                    <option value="FL">🌴 Florida (FL) — David Sterling</option>
-                    <option value="UT">⛷️ Utah (UT) — Spencer Nielsen</option>
-                    {US_STATES.filter(s => !['OR','WA','ID','CA','NV','AZ','TX','CO','FL','UT'].includes(s.code)).map(s => (
-                      <option key={s.code} value={s.code}>
-                        {s.name} ({s.code})
+                    <optgroup label="👑 Master Team Lead">
+                      <option value="agent_mike_ford">
+                        ⭐ Mike Ford — Senior Loan Officer (Branch Lead, OR)
                       </option>
-                    ))}
+                    </optgroup>
+                    <optgroup label="🎯 Dedicated Lead Generation Specialists">
+                      <option value="agent_jessica_vance">🎯 Jessica Vance — Lead Generation Specialist (Buyer Intake, OR)</option>
+                      <option value="agent_marcus_brody">🌾 Marcus Brody — Rural Housing Outreach Director (USDA Zero-Down, OR)</option>
+                      <option value="agent_alex_rivera">💬 Alex Rivera — Homebuyer Concierge Specialist (Forums, OR)</option>
+                    </optgroup>
+                    <optgroup label="🌲 Regional State Loan Officers">
+                      <option value="agent_david_miller">🌲 David Miller — Senior Mortgage Specialist (Portland/Bend OR)</option>
+                      <option value="agent_sarah_jenkins">🌲 Sarah Jenkins — Senior Mortgage Specialist (Washington WA)</option>
+                      <option value="agent_brad_callahan">🥔 Brad Callahan — Senior VP of Lending (Idaho ID)</option>
+                      <option value="agent_elena_vasquez">☀️ Elena Vasquez — Executive Loan Consultant (California CA)</option>
+                      <option value="agent_jason_mercer">🎰 Jason Mercer — Senior Loan Officer (Nevada NV)</option>
+                      <option value="agent_rachel_holloway">🤠 Rachel Holloway — Senior Mortgage Director (Texas TX)</option>
+                      <option value="agent_travis_dunbar">🏔️ Travis Dunbar — Senior Loan Specialist (Colorado CO)</option>
+                      <option value="agent_david_sterling">🌴 David Sterling — Senior Lending Specialist (Florida FL)</option>
+                      <option value="agent_mark_reynolds">🌵 Mark Reynolds — Area Lending Manager (Arizona AZ)</option>
+                      <option value="agent_spencer_nielsen">⛷️ Spencer Nielsen — Senior Loan Officer (Utah UT)</option>
+                    </optgroup>
                   </select>
                 </div>
               </div>
@@ -372,7 +370,7 @@ export const TwoWaySyncIntegrationGuideModal: React.FC<TwoWaySyncIntegrationGuid
               {/* Ready-to-Use Signature Templates */}
               <div className="space-y-3">
                 <h4 className="text-xs font-black text-white uppercase tracking-wider">
-                  Copy-Ready Signature Templates for Live Online Posting ({guideState})
+                  Copy-Ready Signature Templates for Live Online Posting ({currentAgent.name})
                 </h4>
 
                 {/* Template 1: Full Professional Format */}
@@ -380,7 +378,7 @@ export const TwoWaySyncIntegrationGuideModal: React.FC<TwoWaySyncIntegrationGuid
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-white flex items-center gap-1.5">
                       <BookmarkCheck className="w-4 h-4 text-emerald-400" />
-                      <span>Template 1: Full Professional ({guideState} Forums &amp; Blogs)</span>
+                      <span>Template 1: Full Professional ({currentAgent.roleBadge})</span>
                     </span>
                     <button
                       onClick={() => handleCopy(fullSigTemplate, 'sig-full')}
@@ -403,7 +401,7 @@ export const TwoWaySyncIntegrationGuideModal: React.FC<TwoWaySyncIntegrationGuid
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-white flex items-center gap-1.5">
                       <BookmarkCheck className="w-4 h-4 text-indigo-400" />
-                      <span>Template 2: Compact Social (For Reddit &amp; Discord Boards)</span>
+                      <span>Template 2: Compact Social ({currentAgent.name})</span>
                     </span>
                     <button
                       onClick={() => handleCopy(compactSigTemplate, 'sig-compact')}

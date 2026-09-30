@@ -53,7 +53,7 @@ export const US_STATES: Array<{ code: string; name: string; dpaProgram: string }
   { code: 'ND', name: 'North Dakota', dpaProgram: 'NDHFA FirstHome & DCA Downpayment Assistance' },
   { code: 'OH', name: 'Ohio', dpaProgram: 'OHFA Your Choice! DPA & Ohio Heroes Grant' },
   { code: 'OK', name: 'Oklahoma', dpaProgram: 'OHFA Homebuyer Down Payment Assistance 3.5%' },
-  { code: 'OR', name: 'Oregon', dpaProgram: 'OHCS Flex Lending & Rate Advantage DPA' },
+  { code: 'OR', name: 'Oregon', dpaProgram: 'OHCS Flex Lending (FirstHome 4-5% DPA / Rate Advantage / NextStep)' },
   { code: 'PA', name: 'Pennsylvania', dpaProgram: 'PHFA Keystone Home Loan & K-FIT DPA Grant' },
   { code: 'RI', name: 'Rhode Island', dpaProgram: 'RIHousing FirstHomes & $17,500 Spring DPA' },
   { code: 'SC', name: 'South Carolina', dpaProgram: 'SC Housing Homebuyer Program & Forgivable DPA' },
