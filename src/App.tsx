@@ -207,6 +207,7 @@ export default function App() {
     } catch {}
     return 336;
   });
+  const [isResizingSidebar, setIsResizingSidebar] = useState<boolean>(false);
 
   useEffect(() => {
     try {
@@ -768,47 +769,8 @@ export default function App() {
       <BatterySaverProvider>
         <AccountPathwayProvider>
           <MemoryProvider>
-          <div className="min-h-screen max-w-[100vw] w-full overflow-x-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased transition-colors duration-200">
-            {/* Mobile PWA Add-to-Home-Screen Dynamic Header Banner */}
-            <MobileAddToHomeScreenBanner
-              currentPluginName={getCurrentPluginTitle()}
-              onOpenShareModal={() => setIsShareLinksModalOpen(true)}
-            />
-
-            <Navbar
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-              user={user}
-              onLogout={handleLogout}
-              onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
-              onOpenMobileAdmin={() => setIsMobileAdminMode(true)}
-              onOpenWizard={() => setIsWizardOpen(true)}
-              onOpenSalesAssistant={() => setIsSalesAssistantOpen(true)}
-              onOpenScaffolding={() => setIsScaffoldingOpen(true)}
-              onOpenLicenseStudio={() => setIsLicenseStudioOpen(true)}
-              onOpenPitchDeck={() => setIsPitchDeckOpen(true)}
-              onOpenByokDrawer={() => setIsByokDrawerOpen(true)}
-              onOpenByokChecklist={() => setIsByokChecklistOpen(true)}
-              onOpenShareLinksModal={() => setIsShareLinksModalOpen(true)}
-              onOpenPublicWebsite={() => {
-                setViewMode('public');
-                try {
-                  localStorage.setItem('vantage_view_mode', 'public');
-                  window.history.replaceState({}, document.title, window.location.pathname + '?view=public');
-                } catch {}
-              }}
-              onToggleLauncher={() => setIsLauncherOpen((prev) => !prev)}
-              isLauncherOpen={isLauncherOpen}
-              isSidebarPinned={isSidebarPinned}
-              onTogglePinSidebar={() => {
-                setIsSidebarPinned((prev) => {
-                  const next = !prev;
-                  try { localStorage.setItem('vantage_sidebar_pinned', String(next)); } catch {}
-                  return next;
-                });
-              }}
-            />
-
+          <div className="min-h-screen max-w-[100vw] w-full overflow-x-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased transition-colors duration-200 flex flex-col">
+            
             {/* Google Apps 9-Dot Grid Overlay & Persistent Docked Sidebar */}
             <GoogleAppsSidebarLauncher
               activeTab={activeTab}
@@ -826,6 +788,7 @@ export default function App() {
               dockSide="left"
               sidebarWidth={sidebarWidth}
               onSidebarWidthChange={setSidebarWidth}
+              onResizeStateChange={setIsResizingSidebar}
               onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
               onOpenPitchDeck={() => setIsPitchDeckOpen(true)}
               onOpenByokDrawer={() => setIsByokDrawerOpen(true)}
@@ -840,30 +803,75 @@ export default function App() {
               }}
             />
 
-            <main 
-              className="transition-all duration-150"
+            {/* Main Application Right Content Container - Dynamically resizes with expandable sidebar */}
+            <div 
+              className={`flex-1 flex flex-col min-w-0 ${isResizingSidebar ? 'transition-none select-none' : 'transition-all duration-150 ease-out'}`}
               style={{
-                paddingLeft: isSidebarPinned ? `${sidebarWidth}px` : undefined
+                marginLeft: isSidebarPinned ? `${sidebarWidth}px` : undefined,
+                width: isSidebarPinned ? `calc(100% - ${sidebarWidth}px)` : '100%',
+                maxWidth: isSidebarPinned ? `calc(100% - ${sidebarWidth}px)` : '100%',
               }}
             >
-              <WorkspaceHub
+              {/* Mobile PWA Add-to-Home-Screen Dynamic Header Banner */}
+              <MobileAddToHomeScreenBanner
+                currentPluginName={getCurrentPluginTitle()}
+                onOpenShareModal={() => setIsShareLinksModalOpen(true)}
+              />
+
+              <Navbar
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
-                initialWorkflowName={activeVoiceWorkflow}
-                revertedWorkflowName={revertedWorkflow}
-                onClearRevert={() => setRevertedWorkflow(null)}
-                onExecuteVoiceWorkflow={handleExecuteVoiceWorkflow}
-                importedWorkflow={pendingImportWorkflow}
-                onClearImport={() => setPendingImportWorkflow(null)}
+                user={user}
+                onLogout={handleLogout}
+                onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
+                onOpenMobileAdmin={() => setIsMobileAdminMode(true)}
+                onOpenWizard={() => setIsWizardOpen(true)}
+                onOpenSalesAssistant={() => setIsSalesAssistantOpen(true)}
+                onOpenScaffolding={() => setIsScaffoldingOpen(true)}
+                onOpenLicenseStudio={() => setIsLicenseStudioOpen(true)}
                 onOpenPitchDeck={() => setIsPitchDeckOpen(true)}
                 onOpenByokDrawer={() => setIsByokDrawerOpen(true)}
                 onOpenByokChecklist={() => setIsByokChecklistOpen(true)}
-                onOpenShareLinksModal={(propId?: string) => {
-                  setShareLinksPropertyId(propId);
-                  setIsShareLinksModalOpen(true);
+                onOpenShareLinksModal={() => setIsShareLinksModalOpen(true)}
+                onOpenPublicWebsite={() => {
+                  setViewMode('public');
+                  try {
+                    localStorage.setItem('vantage_view_mode', 'public');
+                    window.history.replaceState({}, document.title, window.location.pathname + '?view=public');
+                  } catch {}
+                }}
+                onToggleLauncher={() => setIsLauncherOpen((prev) => !prev)}
+                isLauncherOpen={isLauncherOpen}
+                isSidebarPinned={isSidebarPinned}
+                onTogglePinSidebar={() => {
+                  setIsSidebarPinned((prev) => {
+                    const next = !prev;
+                    try { localStorage.setItem('vantage_sidebar_pinned', String(next)); } catch {}
+                    return next;
+                  });
                 }}
               />
-            </main>
+
+              <main className="flex-1 w-full min-w-0">
+                <WorkspaceHub
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                  initialWorkflowName={activeVoiceWorkflow}
+                  revertedWorkflowName={revertedWorkflow}
+                  onClearRevert={() => setRevertedWorkflow(null)}
+                  onExecuteVoiceWorkflow={handleExecuteVoiceWorkflow}
+                  importedWorkflow={pendingImportWorkflow}
+                  onClearImport={() => setPendingImportWorkflow(null)}
+                  onOpenPitchDeck={() => setIsPitchDeckOpen(true)}
+                  onOpenByokDrawer={() => setIsByokDrawerOpen(true)}
+                  onOpenByokChecklist={() => setIsByokChecklistOpen(true)}
+                  onOpenShareLinksModal={(propId?: string) => {
+                    setShareLinksPropertyId(propId);
+                    setIsShareLinksModalOpen(true);
+                  }}
+                />
+              </main>
+            </div>
 
             {/* DRAGGABLE & DOCKABLE EXECUTIVE CONTROL DOCK */}
             <FloatingExecutiveControlDock

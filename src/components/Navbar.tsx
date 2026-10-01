@@ -213,9 +213,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   ];
 
   return (
-    <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 transition-colors duration-200 max-w-[100vw] overflow-x-hidden w-full">
-      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 max-w-[100vw] overflow-x-hidden">
-        <div className="flex items-center justify-between h-16 gap-2 max-w-[100vw] min-w-0">
+    <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 transition-colors duration-200 w-full max-w-full overflow-x-hidden">
+      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 w-full max-w-full overflow-x-hidden">
+        <div className="flex items-center justify-between h-16 gap-2 w-full max-w-full min-w-0">
           <div className="flex items-center gap-2 shrink-0 min-w-0">
             {/* Google Apps 9-Dot "Waffle" Launcher Button */}
             {onToggleLauncher && (

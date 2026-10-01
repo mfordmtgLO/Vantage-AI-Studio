@@ -58,6 +58,7 @@ export interface GoogleAppsSidebarLauncherProps {
   onToggleDockSide?: () => void;
   sidebarWidth?: number;
   onSidebarWidthChange?: (width: number) => void;
+  onResizeStateChange?: (isResizing: boolean) => void;
   onOpenVoiceModal?: () => void;
   onOpenPitchDeck?: () => void;
   onOpenByokDrawer?: () => void;
@@ -77,6 +78,7 @@ export const GoogleAppsSidebarLauncher: React.FC<GoogleAppsSidebarLauncherProps>
   onToggleDockSide,
   sidebarWidth = 336,
   onSidebarWidthChange,
+  onResizeStateChange,
   onOpenVoiceModal,
   onOpenPitchDeck,
   onOpenByokDrawer,
@@ -104,6 +106,7 @@ export const GoogleAppsSidebarLauncher: React.FC<GoogleAppsSidebarLauncherProps>
     startXRef.current = clientX;
     startWidthRef.current = sidebarWidth;
     setIsResizing(true);
+    if (onResizeStateChange) onResizeStateChange(true);
   };
 
   useEffect(() => {
@@ -127,6 +130,7 @@ export const GoogleAppsSidebarLauncher: React.FC<GoogleAppsSidebarLauncherProps>
     const handleMouseUp = () => {
       if (isResizing) {
         setIsResizing(false);
+        if (onResizeStateChange) onResizeStateChange(false);
       }
     };
 
@@ -655,7 +659,7 @@ export const GoogleAppsSidebarLauncher: React.FC<GoogleAppsSidebarLauncherProps>
           onMouseDown={handleResizeStart}
           onTouchStart={handleResizeStart}
           className={`absolute top-0 bottom-0 ${
-            dockSide === 'left' ? 'right-0 translate-x-1/2' : 'left-0 -translate-x-1/2'
+            dockSide === 'left' ? '-right-2.5 translate-x-0' : '-left-2.5 translate-x-0'
           } w-5 hover:w-6 cursor-col-resize z-[60] flex items-center justify-center group transition-all select-none`}
           title={`Drag to adjust sidebar width (${sidebarWidth}px)`}
         >
@@ -894,8 +898,10 @@ export const GoogleAppsSidebarLauncher: React.FC<GoogleAppsSidebarLauncherProps>
           )}
         </div>
 
-        {/* Scrollable Module Grid & List View */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-4">
+        {/* Scrollable Module Grid & List View - High Visibility Scrollbar with dedicated gutter */}
+        <div className={`flex-1 overflow-y-auto sidebar-scrollbar p-3 space-y-4 min-h-0 ${
+          dockSide === 'left' ? 'mr-3.5 pr-1.5' : 'ml-3.5 pl-1.5'
+        }`}>
           
           {/* SECTION 1: 4-IN-1 FLAGSHIP MODULES */}
           {(activeCategory === 'all' || activeCategory === 'flagship') && (
