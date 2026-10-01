@@ -5,7 +5,6 @@
 
 export interface UserByokKeys {
   geminiApiKey: string;
-  rentcastApiKey: string;
   deepseekApiKey: string;
 }
 
@@ -18,7 +17,6 @@ export function getClientByokKeys(): UserByokKeys {
       const parsed = JSON.parse(raw);
       return {
         geminiApiKey: parsed.geminiApiKey?.trim() || '',
-        rentcastApiKey: parsed.rentcastApiKey?.trim() || '',
         deepseekApiKey: parsed.deepseekApiKey?.trim() || ''
       };
     }
@@ -27,7 +25,6 @@ export function getClientByokKeys(): UserByokKeys {
   }
   return {
     geminiApiKey: '',
-    rentcastApiKey: '',
     deepseekApiKey: ''
   };
 }
@@ -37,7 +34,6 @@ export function saveClientByokKeys(keys: Partial<UserByokKeys>): void {
     const current = getClientByokKeys();
     const updated: UserByokKeys = {
       geminiApiKey: keys.geminiApiKey !== undefined ? keys.geminiApiKey.trim() : current.geminiApiKey,
-      rentcastApiKey: keys.rentcastApiKey !== undefined ? keys.rentcastApiKey.trim() : current.rentcastApiKey,
       deepseekApiKey: keys.deepseekApiKey !== undefined ? keys.deepseekApiKey.trim() : current.deepseekApiKey
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
@@ -66,9 +62,6 @@ export function getByokHttpHeaders(additionalHeaders: Record<string, string> = {
 
   if (keys.geminiApiKey) {
     headers['x-gemini-key'] = keys.geminiApiKey;
-  }
-  if (keys.rentcastApiKey) {
-    headers['x-rentcast-key'] = keys.rentcastApiKey;
   }
   if (keys.deepseekApiKey) {
     headers['x-deepseek-key'] = keys.deepseekApiKey;

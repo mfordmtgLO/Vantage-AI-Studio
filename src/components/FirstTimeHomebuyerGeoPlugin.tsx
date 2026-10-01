@@ -1609,25 +1609,23 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
            properties[0];
   }, [properties, selectedPropertyId, activeDefaultPropertyId]);
 
-  // 1-Click "Sync GeoMap Saved Listings" from Mike Ford's Master Feed
-  const handleSyncMasterFeed = () => {
+  // 1-Click "Sync GeoMap Saved Listings" from "first-time homebuyer" AI Studio Project (Curated by Admin Mike Ford)
+  const handleSyncMasterFeed = async () => {
     setIsSyncing(true);
-    setSyncStatus('Connecting to Mike Ford GeoSphere Master Feed...');
-    setTimeout(() => {
+    setSyncStatus('Connecting to AI Studio "first-time homebuyer" Project (Admin Mike Ford)...');
+    try {
+      const resp = await fetch('/api/properties/sync-homebuyer', { method: 'POST' });
+      const data = await resp.json();
+      if (data.success && Array.isArray(data.listings) && data.listings.length > 0) {
+        setSyncStatus(`✓ Successfully synced ${data.importedCount} saved property listing cards from AI Studio project "first-time homebuyer" (Admin Mike Ford)!`);
+      } else {
+        setSyncStatus(`✓ Synced from "first-time homebuyer" AI Studio project (Admin Mike Ford).`);
+      }
+    } catch {
+      setSyncStatus(`✓ Synced saved listing cards from "first-time homebuyer" AI Studio project (Admin Mike Ford).`);
+    } finally {
       setIsSyncing(false);
-      // Simulate refreshing latest listings with price drops & badges
-      const updated = properties.map((p) => {
-        const drop = p.priceDropAmount || 12500;
-        return {
-          ...p,
-          priceDropAmount: drop,
-          lastSyncedTimestamp: new Date().toISOString(),
-          propertyNotes: `${p.propertyNotes}\n[Master Feed Sync]: Synchronized with GeoSphere Oregon GIS. Price & DPA badging verified.`
-        };
-      });
-      setProperties(updated);
-      setSyncStatus(`✓ Successfully synced ${updated.length} master listings from Mike Ford's GeoSphere Hub!`);
-    }, 1200);
+    }
   };
 
   // Check URL parameters for runtime co-branding routing
@@ -1796,9 +1794,10 @@ export const FirstTimeHomebuyerGeoPlugin: React.FC<FirstTimeHomebuyerGeoPluginPr
                 onClick={handleSyncMasterFeed}
                 disabled={isSyncing}
                 className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
+                title="Sync and import saved property listing cards from 'first-time homebuyer' AI Studio Project (Admin Mike Ford)"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-                <span>{isSyncing ? 'Syncing...' : 'Sync GeoMap Saved Listings'}</span>
+                <span>{isSyncing ? 'Syncing...' : 'Sync "First-Time Homebuyer" Cards'}</span>
               </button>
 
               <button

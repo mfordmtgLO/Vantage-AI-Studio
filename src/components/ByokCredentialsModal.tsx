@@ -37,12 +37,10 @@ export const ByokCredentialsModal: React.FC<ByokCredentialsModalProps> = ({
 }) => {
   const [keys, setKeys] = useState<UserByokKeys>({
     geminiApiKey: '',
-    rentcastApiKey: '',
     deepseekApiKey: ''
   });
 
   const [showGemini, setShowGemini] = useState(false);
-  const [showRentcast, setShowRentcast] = useState(false);
   const [showDeepseek, setShowDeepseek] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
 
@@ -70,7 +68,6 @@ export const ByokCredentialsModal: React.FC<ByokCredentialsModalProps> = ({
       clearClientByokKeys();
       setKeys({
         geminiApiKey: '',
-        rentcastApiKey: '',
         deepseekApiKey: ''
       });
       setSaveStatus('Cleared custom keys.');
@@ -78,7 +75,7 @@ export const ByokCredentialsModal: React.FC<ByokCredentialsModalProps> = ({
     }
   };
 
-  const hasAnyKey = !!(keys.geminiApiKey || keys.rentcastApiKey || keys.deepseekApiKey);
+  const hasAnyKey = !!(keys.geminiApiKey || keys.deepseekApiKey);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-200">
@@ -187,45 +184,32 @@ export const ByokCredentialsModal: React.FC<ByokCredentialsModalProps> = ({
             </p>
           </div>
 
-          {/* Field 2: RentCast API Key */}
-          <div className="space-y-2">
+          {/* Field 2: Architectural Zero BYOK - Property Listings Synced by Admin Mike Ford */}
+          <div className="border border-emerald-200 dark:border-emerald-800/80 bg-emerald-50/50 dark:bg-emerald-950/30 rounded-2xl p-4 space-y-2.5">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                <Home className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                RentCast API Key (Live MLS Comps)
-                <span className="text-[10px] font-normal text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">
-                  50 Free Queries/Mo
-                </span>
-              </label>
-              <a
-                href="https://www.rentcast.io/api"
-                target="_blank"
-                rel="noreferrer"
-                className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 font-semibold"
-              >
-                <span>Get RentCast Key</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-inner">
+                  <Home className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                    Property Listings: Centralized First-Time Homebuyer Sync
+                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                      Zero BYOK Required
+                    </span>
+                  </h4>
+                  <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold">
+                    Admin Mike Ford (fordmj@gmail.com) is in sole charge of all property data pulls.
+                  </p>
+                </div>
+              </div>
+              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center gap-1 shadow-2xs">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                Synced Feed
+              </span>
             </div>
-            <div className="relative">
-              <input
-                type={showRentcast ? 'text' : 'password'}
-                placeholder="rc-..."
-                value={keys.rentcastApiKey}
-                onChange={(e) => setKeys(prev => ({ ...prev, rentcastApiKey: e.target.value }))}
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowRentcast(!showRentcast)}
-                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-                title={showRentcast ? 'Hide Key' : 'Show Key'}
-              >
-                {showRentcast ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Powers live MLS sale/rent comps and automated valuation scoring. (USDA 100% eligibility and DTI calculators work free out-of-the-box).
+            <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+              This application is <strong>not connected directly to rentcast.com by end-users</strong> and requires <strong>zero API keys</strong> for property data. All MLS listing cards, Oregon Bond grants, USDA 100% eligibility, and valuation comps are imported and kept up to date directly from Mike Ford's <strong>"first-time homebuyer"</strong> AI Studio project.
             </p>
           </div>
 

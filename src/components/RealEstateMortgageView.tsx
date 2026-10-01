@@ -58,13 +58,13 @@ export const RealEstateMortgageView: React.FC<RealEstateMortgageViewProps> = ({
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <div className="p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-1">
           <div className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
-            <Home className="w-3.5 h-3.5 text-blue-600" /> MLS Sync
+            <Home className="w-3.5 h-3.5 text-blue-600" /> First-Time Homebuyer Sync
           </div>
           <div className="text-lg font-black text-slate-900 dark:text-slate-100 font-mono">
             {SAMPLE_RENTCAST_LISTINGS.length} Properties
           </div>
           <div className="text-[10px] text-emerald-600 font-medium flex items-center gap-0.5">
-            <TrendingUp className="w-3 h-3" /> Avg -4.8% Price Cuts
+            <TrendingUp className="w-3 h-3" /> Synced by Admin Mike Ford
           </div>
         </div>
 

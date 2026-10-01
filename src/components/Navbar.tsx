@@ -286,7 +286,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 id="byok-settings-btn"
                 onClick={onOpenByokDrawer}
                 className="hidden md:flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800/70 text-xs font-bold rounded-xl transition shadow-xs cursor-pointer shrink-0"
-                title="Bring Your Own Keys (BYOK): Gemini, RentCast, DeepSeek"
+                title="Bring Your Own Keys (BYOK): Gemini AI & DeepSeek (Zero-Key Property Sync)"
               >
                 <Key className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                 <span className="hidden sm:inline">API Keys (BYOK)</span>

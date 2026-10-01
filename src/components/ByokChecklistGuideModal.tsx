@@ -46,11 +46,11 @@ Author: Mike Ford (fordmj@gmail.com) • Commercial Retail Ready
    - Free Tier Available (Generous rate limits)
    - Powers 2nd Brain Cognitive Core & Document Ingestion
 
-2. RentCast API Key:
-   - URL: https://www.rentcast.io/api
-   - 50 Free Queries / month
-   - Powers Live Nationwide MLS Comps & Valuation Scoring
-   - *Zero-Key Fallback*: USDA 100% eligibility math, 11-digit Census Tract FIPS, and DTI sliders operate 100% free out-of-the-box!
+2. Property Listings & Comps (Zero BYOK - Managed by Admin Mike Ford):
+   - No API Key Required for End-Users
+   - All property listings and MLS cards are managed and pulled exclusively by Admin Mike Ford
+   - Synced directly from the "first-time homebuyer" AI Studio Project
+   - USDA 100% eligibility math, 11-digit Census Tract FIPS, and DTI sliders operate 100% turnkey!
 
 3. DeepSeek API Key (Optional):
    - URL: https://platform.deepseek.com/
@@ -172,8 +172,8 @@ Author: Mike Ford (fordmj@gmail.com) • Commercial Retail Ready
             </ol>
           </div>
 
-          {/* Key 2: RentCast */}
-          <div className="border border-slate-200 dark:border-slate-800 rounded-2xl p-4 bg-white dark:bg-slate-900 space-y-2.5">
+          {/* Key 2: Property Listings (Zero BYOK - Managed by Admin Mike Ford) */}
+          <div className="border border-emerald-200 dark:border-emerald-800 rounded-2xl p-4 bg-emerald-50/40 dark:bg-emerald-950/20 space-y-2.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 flex items-center justify-center font-bold text-xs">
@@ -181,28 +181,23 @@ Author: Mike Ford (fordmj@gmail.com) • Commercial Retail Ready
                 </div>
                 <div>
                   <h5 className="font-bold text-slate-900 dark:text-slate-100 text-xs flex items-center gap-2">
-                    <Home className="w-4 h-4 text-emerald-600" /> RentCast API Key (MLS Comps & Comps Valuation)
+                    <Home className="w-4 h-4 text-emerald-600" /> Property Listings: Zero BYOK (Admin Managed)
                   </h5>
-                  <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">
-                    50 Free Property Comps / Month
+                  <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold">
+                    No API Key or Subscription Required for Users
                   </span>
                 </div>
               </div>
-              <a
-                href="https://www.rentcast.io/api"
-                target="_blank"
-                rel="noreferrer"
-                className="px-3 py-1 bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300 rounded-lg text-xs font-bold border border-emerald-200 dark:border-emerald-900 flex items-center gap-1"
-              >
-                <span>RentCast Developer Portal</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
+              <span className="px-2.5 py-1 bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-200 rounded-lg text-xs font-bold border border-emerald-300 dark:border-emerald-800 flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Auto-Synced</span>
+              </span>
             </div>
             <ol className="list-decimal list-inside text-xs text-slate-600 dark:text-slate-400 space-y-1 pl-1">
-              <li>Create a free developer account at <strong>RentCast.io/api</strong>.</li>
-              <li>Under API Keys, generate a personal key.</li>
-              <li>Paste into the Vantage BYOK Drawer or into <code className="font-mono text-[11px]">RENTCAST_API_KEY</code> in <code className="font-mono text-[11px]">.env</code>.</li>
-              <li><strong>Zero-Key Fallback:</strong> Even without a key, your buyers get instant access to verified MLS benchmark properties with live USDA 100% zero-down calculations and $10,000 CRA grant tags!</li>
+              <li><strong>Zero User Key Requirement:</strong> End-users, real estate agents, and loan officers do NOT need a RentCast API key.</li>
+              <li><strong>Single Admin Authority:</strong> Admin Mike Ford (<code className="font-mono text-[11px]">fordmj@gmail.com</code>) exclusively pulls, verifies, and manages all property listing cards and MLS comps.</li>
+              <li><strong>Imported from "First-Time Homebuyer" Project:</strong> All active listings, price drops, and comps are synced directly from the AI Studio project named <strong>"first-time homebuyer"</strong>.</li>
+              <li><strong>Turnkey Out-of-the-Box:</strong> Includes USDA 100% zero-down calculations, Oregon Bond grant stacking, and $10,000 CRA grant tags without any API fees.</li>
             </ol>
           </div>
 
